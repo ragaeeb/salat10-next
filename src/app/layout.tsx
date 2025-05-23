@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    description: 'tahqiq',
-    title: 'Tahqiq',
+    description: 'Salat10',
+    title: 'Salat10',
 };
 
 /**
