@@ -74,6 +74,12 @@ export const daily = (
     const result = formatAsObject(rest, timeZone, salatLabels);
 
     const nextPrayer = fard.nextPrayer();
+    console.log('nextPrayer', nextPrayer);
+
+    if (nextPrayer === 'none') {
+        return result;
+    }
+
     const diff = fard.timeForPrayer(nextPrayer)!.getTime() - now.getTime();
 
     return {
