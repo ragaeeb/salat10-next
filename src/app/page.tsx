@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { MultiStepLoader } from '@/components/ui/multi-step-loader';
 import { daily } from '@/lib/calculator';
@@ -77,7 +77,6 @@ export default function PrayerTimesPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [mounted, setMounted] = useState(false);
     const [showExplanation, setShowExplanation] = useState(false);
-    const explanationTimerRef = useRef<number | null>(null);
 
     useEffect(() => {
         const stored = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
@@ -103,10 +102,6 @@ export default function PrayerTimesPage() {
 
     useEffect(() => {
         if (!showExplanation) {
-            if (explanationTimerRef.current) {
-                window.clearTimeout(explanationTimerRef.current);
-                explanationTimerRef.current = null;
-            }
             return;
         }
 
@@ -182,37 +177,11 @@ export default function PrayerTimesPage() {
         }).steps;
     }, [coordinates, currentDate, latitudeNumber, longitudeNumber, parameters, settings.address, timeZone]);
 
-    const explanationStates = useMemo(
-        () => explanationSteps.map((step) => ({ text: step.text })),
-        [explanationSteps],
-    );
-
     useEffect(() => {
-        if (!showExplanation) {
-            if (explanationTimerRef.current) {
-                window.clearTimeout(explanationTimerRef.current);
-                explanationTimerRef.current = null;
-            }
-            return;
-        }
-
-        if (!explanationStates.length) {
+        if (showExplanation && explanationSteps.length === 0) {
             setShowExplanation(false);
-            return;
         }
-
-        const total = explanationStates.length * EXPLANATION_STEP_DURATION + 1500;
-        explanationTimerRef.current = window.setTimeout(() => {
-            setShowExplanation(false);
-        }, total);
-
-        return () => {
-            if (explanationTimerRef.current) {
-                window.clearTimeout(explanationTimerRef.current);
-                explanationTimerRef.current = null;
-            }
-        };
-    }, [explanationStates.length, showExplanation]);
+    }, [explanationSteps.length, showExplanation]);
 
     const hasValidCoordinates = Number.isFinite(latitudeNumber) && Number.isFinite(longitudeNumber);
 
@@ -409,9 +378,8 @@ export default function PrayerTimesPage() {
 
             <MultiStepLoader
                 duration={EXPLANATION_STEP_DURATION}
-                loading={showExplanation && explanationStates.length > 0}
-                loadingStates={explanationStates}
-                loop={false}
+                loading={showExplanation && explanationSteps.length > 0}
+                loadingStates={explanationSteps}
             />
 
             {showExplanation && (

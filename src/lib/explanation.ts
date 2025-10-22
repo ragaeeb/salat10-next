@@ -46,18 +46,7 @@ const seasonAdjustedMorningTwilight = (latitude: number, dayOfYearValue: number,
 
     const dyy = daysSinceSolstice(dayOfYearValue, year, latitude);
 
-    const adjustment =
-        dyy < 91
-            ? a + ((b - a) / 91.0) * dyy
-            : dyy < 137
-              ? b + ((c - b) / 46.0) * (dyy - 91)
-              : dyy < 183
-                ? c + ((d - c) / 46.0) * (dyy - 137)
-                : dyy < 229
-                  ? d + ((c - d) / 46.0) * (dyy - 183)
-                  : dyy < 275
-                    ? c + ((b - c) / 46.0) * (dyy - 229)
-                    : b + ((a - b) / 91.0) * (dyy - 275);
+    const adjustment = evaluateSeasonalAdjustment(dyy, a, b, c, d);
 
     return dateByAddingSeconds(sunrise, Math.round(adjustment * -60.0));
 };
@@ -93,18 +82,7 @@ const seasonAdjustedEveningTwilight = (
 
     const dyy = daysSinceSolstice(dayOfYearValue, year, latitude);
 
-    const adjustment =
-        dyy < 91
-            ? a + ((b - a) / 91.0) * dyy
-            : dyy < 137
-              ? b + ((c - b) / 46.0) * (dyy - 91)
-              : dyy < 183
-                ? c + ((d - c) / 46.0) * (dyy - 137)
-                : dyy < 229
-                  ? d + ((c - d) / 46.0) * (dyy - 183)
-                  : dyy < 275
-                    ? c + ((b - c) / 46.0) * (dyy - 229)
-                    : b + ((a - b) / 91.0) * (dyy - 275);
+    const adjustment = evaluateSeasonalAdjustment(dyy, a, b, c, d);
 
     return dateByAddingSeconds(sunset, Math.round(adjustment * 60.0));
 };
@@ -127,6 +105,25 @@ const daysSinceSolstice = (dayOfYearValue: number, year: number, latitude: numbe
         daysSince += daysInYear;
     }
     return daysSince;
+};
+
+const evaluateSeasonalAdjustment = (dyy: number, a: number, b: number, c: number, d: number) => {
+    if (dyy < 91) {
+        return a + ((b - a) / 91.0) * dyy;
+    }
+    if (dyy < 137) {
+        return b + ((c - b) / 46.0) * (dyy - 91);
+    }
+    if (dyy < 183) {
+        return c + ((d - c) / 46.0) * (dyy - 137);
+    }
+    if (dyy < 229) {
+        return d + ((c - d) / 46.0) * (dyy - 183);
+    }
+    if (dyy < 275) {
+        return c + ((b - c) / 46.0) * (dyy - 229);
+    }
+    return b + ((a - b) / 91.0) * (dyy - 275);
 };
 
 const julianDay = (year: number, month: number, day: number, hours = 0) => {
@@ -480,7 +477,17 @@ const shortTimeZone = (value: Date, timeZone: string) => {
 
 const shadowLengthFromMadhab = (madhab: string) => (madhab === 'hanafi' ? 2 : 1);
 
-export type ExplanationStep = { text: string };
+export type ExplanationReference = {
+    label: string;
+    url: string;
+};
+
+export type ExplanationStep = {
+    title: string;
+    summary: string;
+    details?: string[];
+    references?: ExplanationReference[];
+};
 
 export type PrayerCalculationExplanation = {
     steps: ExplanationStep[];
@@ -515,10 +522,76 @@ export const buildPrayerTimeExplanation = ({
     const declination = solarTime.solar.declination;
     const rightAscension = solarTime.solar.rightAscension;
     const sidereal = solarTime.solar.apparentSiderealTime;
+    const lunarLongitude = meanLunarLongitude(julianCenturyValue);
+    const ascendingNode = ascendingLunarNodeLongitude(julianCenturyValue);
+    const nutationLongitude = nutationInLongitude(julianCenturyValue, meanLongitude, lunarLongitude, ascendingNode);
+    const nutationObliquity = nutationInObliquity(julianCenturyValue, meanLongitude, lunarLongitude, ascendingNode);
+    const meanObliquityValue = meanObliquityOfTheEcliptic(julianCenturyValue);
+    const apparentObliquityValue = apparentObliquityOfTheEcliptic(julianCenturyValue, meanObliquityValue);
+    const siderealHours = sidereal / 15;
+    const nutationLongitudeArcsec = nutationLongitude * 3600;
+    const nutationObliquityArcsec = nutationObliquity * 3600;
 
     const sunriseTime = prayerTimes.sunrise;
     const sunsetTime = prayerTimes.sunset;
     const tomorrowSunrise = tomorrowTimes.sunrise;
+    const dayOfYearValue = dayOfYear(date);
+    const daysFromSolsticeValue = daysSinceSolstice(dayOfYearValue, date.getFullYear(), coordinates.latitude);
+    const absoluteLatitude = Math.abs(coordinates.latitude);
+    const morningCoefficients = {
+        a: 75 + (28.65 / 55.0) * absoluteLatitude,
+        b: 75 + (19.44 / 55.0) * absoluteLatitude,
+        c: 75 + (32.74 / 55.0) * absoluteLatitude,
+        d: 75 + (48.1 / 55.0) * absoluteLatitude,
+    };
+    const eveningCoefficients = (() => {
+        if (parameters.shafaq === 'ahmer') {
+            return {
+                a: 62 + (17.4 / 55.0) * absoluteLatitude,
+                b: 62 - (7.16 / 55.0) * absoluteLatitude,
+                c: 62 + (5.12 / 55.0) * absoluteLatitude,
+                d: 62 + (19.44 / 55.0) * absoluteLatitude,
+            };
+        }
+        if (parameters.shafaq === 'abyad') {
+            return {
+                a: 75 + (25.6 / 55.0) * absoluteLatitude,
+                b: 75 + (7.16 / 55.0) * absoluteLatitude,
+                c: 75 + (36.84 / 55.0) * absoluteLatitude,
+                d: 75 + (81.84 / 55.0) * absoluteLatitude,
+            };
+        }
+        return {
+            a: 75 + (25.6 / 55.0) * absoluteLatitude,
+            b: 75 + (2.05 / 55.0) * absoluteLatitude,
+            c: 75 - (9.21 / 55.0) * absoluteLatitude,
+            d: 75 + (6.14 / 55.0) * absoluteLatitude,
+        };
+    })();
+    const morningAdjustmentMinutes = evaluateSeasonalAdjustment(
+        daysFromSolsticeValue,
+        morningCoefficients.a,
+        morningCoefficients.b,
+        morningCoefficients.c,
+        morningCoefficients.d,
+    );
+    const eveningAdjustmentMinutes = evaluateSeasonalAdjustment(
+        daysFromSolsticeValue,
+        eveningCoefficients.a,
+        eveningCoefficients.b,
+        eveningCoefficients.c,
+        eveningCoefficients.d,
+    );
+    const shafaqLabel = (() => {
+        switch (parameters.shafaq) {
+            case 'ahmer':
+                return 'Ahmer (red) twilight definition';
+            case 'abyad':
+                return 'Abyad (white) twilight definition';
+            default:
+                return 'general twilight average';
+        }
+    })();
 
     const nightSeconds = (tomorrowSunrise.getTime() - sunsetTime.getTime()) / 1000;
     const nightHours = nightSeconds / SECONDS_PER_HOUR;
@@ -532,132 +605,285 @@ export const buildPrayerTimeExplanation = ({
     const fajrNightSeconds = nightPortions.fajr * nightSeconds;
     const ishaNightSeconds = nightPortions.isha * nightSeconds;
 
-    const safeFajr =
-        parameters.method === 'MoonsightingCommittee'
-            ? seasonAdjustedMorningTwilight(coordinates.latitude, dayOfYear(date), date.getFullYear(), sunriseTime)
-            : dateByAddingSeconds(sunriseTime, -fajrNightSeconds);
+    const usesMoonsighting = parameters.method === 'MoonsightingCommittee';
+    const usesIshaInterval = parameters.ishaInterval > 0;
 
-    const safeIsha =
-        parameters.method === 'MoonsightingCommittee'
-            ? seasonAdjustedEveningTwilight(
-                  coordinates.latitude,
-                  dayOfYear(date),
-                  date.getFullYear(),
-                  sunsetTime,
-                  parameters.shafaq,
-              )
-            : dateByAddingSeconds(sunsetTime, ishaNightSeconds);
+    const safeFajr = usesMoonsighting
+        ? seasonAdjustedMorningTwilight(coordinates.latitude, dayOfYearValue, date.getFullYear(), sunriseTime)
+        : dateByAddingSeconds(sunriseTime, -fajrNightSeconds);
+
+    const safeIsha = usesMoonsighting
+        ? seasonAdjustedEveningTwilight(
+              coordinates.latitude,
+              dayOfYearValue,
+              date.getFullYear(),
+              sunsetTime,
+              parameters.shafaq,
+          )
+        : dateByAddingSeconds(sunsetTime, ishaNightSeconds);
 
     const finalFajr = isNaN(rawFajrTime.getTime()) || safeFajr > rawFajrTime ? safeFajr : rawFajrTime;
     const usedSafeFajr = finalFajr.getTime() === safeFajr.getTime();
 
     const finalIsha =
-        parameters.ishaInterval > 0
+        usesIshaInterval
             ? rawIshaTime
             : isNaN(rawIshaTime.getTime()) || safeIsha < rawIshaTime
               ? safeIsha
               : rawIshaTime;
-    const usedSafeIsha = parameters.ishaInterval === 0 && finalIsha.getTime() === safeIsha.getTime();
+    const usedSafeIsha = !usesIshaInterval && finalIsha.getTime() === safeIsha.getTime();
 
+    const fajrOffsetMinutes = (sunriseTime.getTime() - finalFajr.getTime()) / (1000 * 60);
+    const ishaOffsetMinutes = (finalIsha.getTime() - sunsetTime.getTime()) / (1000 * 60);
+    const fajrNightMinutes = fajrNightSeconds / 60;
+    const ishaNightMinutes = ishaNightSeconds / 60;
+    const approxTransitDiffMinutes = (prayerTimes.dhuhr.getTime() - approxTransitDate.getTime()) / (1000 * 60);
     const asrShadow = shadowLengthFromMadhab(parameters.madhab);
-
     const timezoneLabel = shortTimeZone(date, timeZone);
+    const displayAddress = address?.trim()?.length ? address.trim() : 'your location';
+    const fajrAngleLabel = formatNumber(parameters.fajrAngle);
+    const ishaAngleLabel = formatNumber(parameters.ishaAngle);
+    const madhabLabel = parameters.madhab === 'hanafi' ? 'Ḥanafī' : 'Shāfiʿī';
+    const highLatitudeRuleLabel = (() => {
+        switch (parameters.highLatitudeRule) {
+            case 'twilightangle':
+                return 'twilight angle rule';
+            case 'seventhofthenight':
+                return 'seventh of the night rule';
+            default:
+                return 'middle of the night rule';
+        }
+    })();
+    const approxTransitLocal = formatTimeInZone(approxTransitDate, timeZone);
+    const sunriseLocal = formatTimeInZone(sunriseTime, timeZone);
+    const sunsetLocal = formatTimeInZone(sunsetTime, timeZone);
+    const finalFajrLocal = formatTimeInZone(finalFajr, timeZone);
+    const dhuhrLocal = formatTimeInZone(prayerTimes.dhuhr, timeZone);
+    const asrLocal = formatTimeInZone(prayerTimes.asr, timeZone);
+    const maghribLocal = formatTimeInZone(prayerTimes.maghrib, timeZone);
+    const finalIshaLocal = formatTimeInZone(finalIsha, timeZone);
+    const fajrComputedLocal = formatTimeInZone(prayerTimes.fajr, timeZone);
+    const sunriseComputedLocal = formatTimeInZone(prayerTimes.sunrise, timeZone);
+    const ishaComputedLocal = formatTimeInZone(prayerTimes.isha, timeZone);
+    const rawFajrDisplay = isNaN(rawFajrTime.getTime())
+        ? 'not defined because the sun does not reach that depression tonight'
+        : formatTimeInZone(rawFajrTime, timeZone);
+    const rawIshaDisplay = usesIshaInterval
+        ? formatTimeInZone(rawIshaTime, timeZone)
+        : isNaN(rawIshaTime.getTime())
+          ? 'not defined because the sun never reaches that depression tonight'
+          : formatTimeInZone(rawIshaTime, timeZone);
+    const approxTransitDifference = formatNumber(Math.abs(approxTransitDiffMinutes), 2);
+    const approxTransitDirection = approxTransitDiffMinutes >= 0 ? 'later' : 'earlier';
+    const solarAltitudeAbs = formatNumber(Math.abs(Angle.SolarAltitude), 3);
+    const siderealDegreesLabel = formatNumber(sidereal, 4);
+    const siderealHoursLabel = formatNumber(siderealHours, 4);
+    const nutationLongitudeLabel = formatNumber(nutationLongitude, 6);
+    const nutationObliquityLabel = formatNumber(nutationObliquity, 6);
+    const nutationLongitudeArcsecLabel = formatNumber(nutationLongitudeArcsec, 2);
+    const nutationObliquityArcsecLabel = formatNumber(nutationObliquityArcsec, 2);
+    const meanObliquityLabel = formatNumber(meanObliquityValue, 6);
+    const apparentObliquityLabel = formatNumber(apparentObliquityValue, 6);
+    const declinationLabel = formatNumber(declination, 4);
+    const rightAscensionLabel = formatNumber(rightAscension, 4);
+    const apparentLongitudeLabel = formatNumber(apparentLongitude, 4);
+    const meanLongitudeLabel = formatNumber(meanLongitude, 4);
+    const meanAnomalyLabel = formatNumber(meanAnomaly, 4);
+    const equationOfCenterLabel = formatNumber(equationOfCenter, 4);
+    const ascendingNodeLabel = formatNumber(ascendingNode, 4);
+    const lunarLongitudeLabel = formatNumber(lunarLongitude, 4);
+    const fajrOffsetLabel = formatNumber(fajrOffsetMinutes, 2);
+    const ishaOffsetLabel = formatNumber(ishaOffsetMinutes, 2);
+    const nightHoursLabel = formatNumber(nightHours, 2);
+    const fajrNightMinutesLabel = formatNumber(fajrNightMinutes, 2);
+    const ishaNightMinutesLabel = formatNumber(ishaNightMinutes, 2);
+    const morningAdjustmentLabel = formatNumber(morningAdjustmentMinutes, 2);
+    const eveningAdjustmentLabel = formatNumber(eveningAdjustmentMinutes, 2);
+    const latitudeDeclinationSeparation = formatNumber(Math.abs(coordinates.latitude - declination), 4);
 
     const steps: ExplanationStep[] = [
         {
-            text: `1. Location setup → We start with ${
-                address?.trim()?.length ? address.trim() : 'your location'
-            } at latitude ${formatNumber(coordinates.latitude, 4)}° and longitude ${formatNumber(
+            title: 'Locate yourself on Earth',
+            summary: `We start with ${displayAddress} at latitude ${formatNumber(coordinates.latitude, 4)}° and longitude ${formatNumber(
                 coordinates.longitude,
                 4,
-            )}°. Calculations use the ${parameters.method} method with Fajr angle ${formatNumber(
-                parameters.fajrAngle,
-            )}° and Isha angle ${
-                parameters.ishaInterval > 0
-                    ? `${parameters.ishaInterval} minute interval`
-                    : `${formatNumber(parameters.ishaAngle)}°`
-            } in ${timeZone} (${timezoneLabel}).`,
+            )}°, using the ${parameters.method} method.`,
+            details: [
+                "Coordinates in decimal degrees orient Adhan's astronomy routines; positive latitude means north of the equator while negative longitude places you west of Greenwich.",
+                `The ${parameters.method} profile applies Fajr angle ${fajrAngleLabel}° and ${
+                    usesIshaInterval ? `${parameters.ishaInterval}-minute` : `Isha angle ${ishaAngleLabel}°`
+                } settings with the ${madhabLabel} madhab for Asr.`,
+                `All results are displayed in ${timeZone} (${timezoneLabel}), converting the UTC calculations to your civil clock.`,
+            ],
         },
         {
-            text: `2. Astronomical clock → The Gregorian date ${date.toLocaleDateString()} converts to Julian Day ${formatNumber(
+            title: 'Translate the date into astronomical time',
+            summary: `The Gregorian date ${date.toLocaleDateString()} maps to Julian Day ${formatNumber(
                 julianDayValue,
                 5,
-            )} and Julian Century ${formatNumber(julianCenturyValue, 8)}, which let us reference the sun's position with continuous precision.`,
+            )} and Julian Century ${formatNumber(julianCenturyValue, 8)}.`,
+            details: [
+                'Julian Day counts days continuously from noon on 1 January 4713 BCE, avoiding the leap-year quirks of the civil calendar.',
+                `Dividing by 36525 yields ${formatNumber(
+                    julianCenturyValue,
+                    8,
+                )} centuries since the J2000 epoch, the unit used in Astronomical Algorithms for orbital polynomials.`,
+            ],
+            references: [
+                { label: 'Julian Day (Wikipedia)', url: 'https://en.wikipedia.org/wiki/Julian_day' },
+            ],
         },
         {
-            text: `3. Solar geometry → Mean solar longitude L₀ = ${formatNumber(meanLongitude)}°, mean anomaly M = ${formatNumber(
-                meanAnomaly,
-            )}°, and equation of the center C = ${formatNumber(
-                equationOfCenter,
-            )}°. Combining them yields an apparent longitude λ = ${formatNumber(
-                apparentLongitude,
-            )}°. From this we derive a solar declination δ = ${formatNumber(
-                declination,
-            )}° and right ascension α = ${formatNumber(rightAscension)}°, while sidereal time θ = ${formatNumber(
-                sidereal,
-            )}° anchors the sky relative to Earth.`,
+            title: 'Mean orbital elements of the sun',
+            summary: `Mean longitude L₀ = ${meanLongitudeLabel}°, mean anomaly M = ${meanAnomalyLabel}°, equation of the center C = ${equationOfCenterLabel}°, and apparent longitude λ = ${apparentLongitudeLabel}°.`,
+            details: [
+                'L₀ tracks the sun’s average ecliptic longitude assuming a circular orbit; we wrap it into 0–360° with unwindAngle.',
+                'The mean anomaly M measures Earth’s progress along its elliptical orbit. The equation of the center adds sinusoidal corrections so the result approximates Kepler’s equation.',
+                `Subtracting 0.00569° − 0.00478°·sin(Ω) with Ω = ${ascendingNodeLabel}° (the Moon’s ascending node) produces the apparent longitude tied to the true equinox. The lunar longitude L′ = ${lunarLongitudeLabel}° appears in the nutation terms.`,
+            ],
+            references: [
+                { label: 'Equation of the center', url: 'https://en.wikipedia.org/wiki/Equation_of_the_center' },
+            ],
         },
         {
-            text: `4. Solar noon (Dhuhr) → Starting from an approximate transit at ${formatTimeInZone(
-                approxTransitDate,
-                timeZone,
-            )}, we apply right-ascension corrections to land on true solar noon at ${formatTimeInZone(
-                prayerTimes.dhuhr,
-                timeZone,
-            )}. This moment defines Dhuhr.`,
+            title: 'Account for Earth’s tilt and nutation',
+            summary: `Mean obliquity ε₀ = ${meanObliquityLabel}° adjusts to apparent obliquity ε = ${apparentObliquityLabel}°, with nutation Δψ = ${nutationLongitudeLabel}° (${nutationLongitudeArcsecLabel}″) and Δε = ${nutationObliquityLabel}° (${nutationObliquityArcsecLabel}″).`,
+            details: [
+                'Earth’s ~23.4° axial tilt slowly decreases about 0.013° per century, so we evaluate ε₀ for the current epoch.',
+                'The Moon’s gravity introduces nutation: Δψ nudges the ecliptic longitude and Δε slightly tips the Earth’s axis by just a few arcseconds.',
+                'Applying these tiny adjustments yields the apparent obliquity, ensuring the equatorial coordinates align with the true equinox of date.',
+            ],
+            references: [
+                { label: 'Axial tilt overview', url: 'https://en.wikipedia.org/wiki/Axial_tilt' },
+                { label: 'Nutation explanation', url: 'https://en.wikipedia.org/wiki/Nutation' },
+            ],
         },
         {
-            text: `5. Sunrise & sunset → Solving when the sun's altitude reaches −0.833° gives sunrise at ${formatTimeInZone(
-                sunriseTime,
-                timeZone,
-            )} and sunset at ${formatTimeInZone(
-                sunsetTime,
-                timeZone,
-            )}. The night between them lasts about ${formatNumber(nightHours, 2)} hours.`,
+            title: 'Convert to equatorial coordinates',
+            summary: `Declination δ = ${declinationLabel}°, right ascension α = ${rightAscensionLabel}°, and apparent sidereal time θ = ${siderealDegreesLabel}° (${siderealHoursLabel} sidereal hours).`,
+            details: [
+                `Declination is the sun’s celestial latitude; today’s value of ${declinationLabel}° places it ${declination >= 0 ? 'north' : 'south'} of the celestial equator.`,
+                'Right ascension measures eastward rotation from the vernal equinox. We use atan2 and unwindAngle to keep α within 0–360°.',
+                'Apparent sidereal time tells where our meridian points relative to the stars once we include longitude and nutation.',
+            ],
+            references: [
+                { label: 'Equatorial coordinate system', url: 'https://en.wikipedia.org/wiki/Equatorial_coordinate_system' },
+            ],
         },
         {
-            text: `6. Fajr twilight → Using the ${
+            title: 'Estimate when the sun crosses the meridian',
+            summary: `Approximate transit m₀ corresponds to ${approxTransitLocal}, aligning longitude ${formatNumber(
+                coordinates.longitude,
+                4,
+            )}° with the sidereal clock.`,
+            details: [
+                `Astronomical.approximateTransit normalizes (α + Lw − θ₀)/360, where Lw = −longitude = ${formatNumber(-coordinates.longitude, 4)}°.`,
+                'Multiplying the resulting fraction of a day by 24 hours predicts when the sun would culminate if the orbit were perfectly circular.',
+                'This gives us a first guess before we correct for the equation of time.',
+            ],
+        },
+        {
+            title: 'Refine to true solar noon (Dhuhr)',
+            summary: `Corrected transit lands at ${dhuhrLocal}, ${approxTransitDifference} minutes ${approxTransitDirection} than the first guess.`,
+            details: [
+                'Astronomical.correctedTransit interpolates the sun’s right ascension using the previous and next days to capture the changing orbital speed.',
+                'We compute the hour angle H = θ − Lw − α, wrap it into ±180°, and apply dm = H/−360 to nudge the transit fraction.',
+                'That UTC instant defines local solar noon, which anchors the Dhuhr prayer.',
+            ],
+            references: [
+                { label: 'NOAA solar equations', url: 'https://gml.noaa.gov/grad/solcalc/solareqns.PDF' },
+            ],
+        },
+        {
+            title: 'Solve sunrise and sunset from solar altitude',
+            summary: `Setting the solar altitude to −${solarAltitudeAbs}° gives sunrise at ${sunriseLocal} and sunset at ${sunsetLocal}.`,
+            details: [
+                'The −0.833° threshold combines approximately 34′ of atmospheric refraction with the sun’s 16′ apparent radius so the upper limb just touches the horizon.',
+                'Astronomical.correctedHourAngle finds the pre- and post-noon hour angles where the sun reaches that altitude, then converts them to UTC times.',
+                `The interval between sunset and the next sunrise defines a night lasting ${nightHoursLabel} hours.`,
+            ],
+            references: [
+                { label: 'NOAA solar equations', url: 'https://gml.noaa.gov/grad/solcalc/solareqns.PDF' },
+            ],
+        },
+        {
+            title: 'Segment the night for safeguards',
+            summary: `The ${highLatitudeRuleLabel} splits the ${nightHoursLabel}-hour night with fractions for Fajr ${formatNumber(
+                nightPortions.fajr,
+                4,
+            )} and Isha ${formatNumber(nightPortions.isha, 4)}.`,
+            details: [
+                `Multiplying those fractions by the night length yields safeguards of ${fajrNightMinutesLabel} minutes before sunrise and ${ishaNightMinutesLabel} minutes after sunset.`,
+                `Moonsighting Committee tables use coefficients a=${formatNumber(morningCoefficients.a, 2)}, b=${formatNumber(morningCoefficients.b, 2)}, c=${formatNumber(morningCoefficients.c, 2)}, d=${formatNumber(morningCoefficients.d, 2)}. With ${daysFromSolsticeValue} days since the latest solstice they produce ${morningAdjustmentLabel} minutes for the morning twilight.`,
+                `Evening coefficients a=${formatNumber(eveningCoefficients.a, 2)}, b=${formatNumber(eveningCoefficients.b, 2)}, c=${formatNumber(eveningCoefficients.c, 2)}, d=${formatNumber(eveningCoefficients.d, 2)} and the ${shafaqLabel} give ${eveningAdjustmentLabel} minutes after sunset to stabilize Isha at high latitudes.`,
+            ],
+            references: [
+                { label: 'Moonsighting Committee method', url: 'https://www.moonsighting.com/how-we.html' },
+            ],
+        },
+        {
+            title: 'Determine the Fajr prayer time',
+            summary: `Fajr is placed at ${finalFajrLocal}, ${fajrOffsetLabel} minutes before sunrise.`,
+            details: [
+                `The geometric solution for the sun at −${fajrAngleLabel}° gives ${rawFajrDisplay}.`,
                 usedSafeFajr
-                    ? 'seasonally adjusted safeguard'
-                    : `${formatNumber(parameters.fajrAngle)}° solar depression`
-            }, we step back ${formatNumber(
-                (sunriseTime.getTime() - finalFajr.getTime()) / (1000 * 60),
-                2,
-            )} minutes from sunrise to set Fajr at ${formatTimeInZone(finalFajr, timeZone)}.`,
+                    ? `Because that solution was ${
+                          isNaN(rawFajrTime.getTime()) ? 'undefined' : 'later than the safeguard'
+                      }, we used the protection from step 9 (${usesMoonsighting ? `${morningAdjustmentLabel}-minute seasonal adjustment` : `${fajrNightMinutesLabel}-minute night fraction`} before sunrise).`
+                    : 'The requested angle was reachable tonight, so no safeguard override was needed.',
+                `After rounding to the nearest minute, Adhan reports ${fajrComputedLocal} in ${timeZone}.`,
+            ],
+            references: [
+                { label: 'Fajr prayer explanation', url: 'https://en.wikipedia.org/wiki/Fajr' },
+            ],
         },
         {
-            text: `7. Asr shadow → We wait until an object's shadow is ${asrShadow}× its height (the ${
-                parameters.madhab === 'hanafi' ? 'Ḥanafī' : 'Shāfiʿī'
-            } madhab rule), producing Asr at ${formatTimeInZone(prayerTimes.asr, timeZone)}.`,
+            title: 'When the afternoon shadow reaches the madhab ratio',
+            summary: `Asr occurs at ${asrLocal}, when an object’s shadow is ${asrShadow}× its height.`,
+            details: [
+                `SolarTime.afternoon solves for an altitude where tan(angle) = 1 / (${asrShadow} + tan(|latitude − declination|)); here |latitude − declination| = ${latitudeDeclinationSeparation}°.`,
+                `Switching between the ${madhabLabel} madhab and its alternative changes the shadow factor (1 vs. 2), shifting Asr by tens of minutes.`,
+                `Feeding that altitude into correctedHourAngle after transit yields the clock time ${asrLocal}.`,
+            ],
+            references: [
+                { label: 'Asr prayer overview', url: 'https://en.wikipedia.org/wiki/Asr' },
+            ],
         },
         {
-            text: `8. Evening twilight → ${
-                parameters.ishaInterval > 0
-                    ? `Adding ${parameters.ishaInterval} minutes to sunset`
-                    : `Extending the night by ${formatNumber(
-                          (finalIsha.getTime() - sunsetTime.getTime()) / (1000 * 60),
-                          2,
-                      )} minutes using the ${
-                          usedSafeIsha
-                              ? 'seasonal adjustment'
-                              : `${formatNumber(parameters.ishaAngle)}° angle`
-                      }`
-            } sets Maghrib at ${formatTimeInZone(prayerTimes.maghrib, timeZone)} and Isha at ${formatTimeInZone(
-                finalIsha,
-                timeZone,
-            )}.`,
+            title: 'Set Maghrib and Isha from evening twilight',
+            summary: `Maghrib remains at sunset (${maghribLocal}), and Isha lands ${
+                usesIshaInterval ? `${parameters.ishaInterval} minutes` : `${ishaOffsetLabel} minutes`
+            } later at ${finalIshaLocal}.`,
+            details: [
+                usesIshaInterval
+                    ? `The chosen method specifies a fixed ${parameters.ishaInterval}-minute interval after sunset, so the raw and final times coincide at ${rawIshaDisplay}.`
+                    : `Solving for the sun at −${ishaAngleLabel}° gives ${rawIshaDisplay}.`,
+                usedSafeIsha
+                    ? `Because that solution was ${
+                          isNaN(rawIshaTime.getTime()) ? 'undefined' : 'later than the safeguard'
+                      }, we used ${
+                          usesMoonsighting
+                              ? `${eveningAdjustmentLabel}-minute seasonal adjustment based on the ${shafaqLabel}`
+                              : `${ishaNightMinutesLabel}-minute night fraction`
+                      } to protect high-latitude nights.`
+                    : 'No safeguard was needed, so the geometric solution stands.',
+                `The final rounded time appears as ${ishaComputedLocal} in ${timeZone}.`,
+            ],
+            references: [
+                { label: 'Isha prayer explanation', url: 'https://en.wikipedia.org/wiki/Isha_(prayer)' },
+            ],
         },
         {
-            text: `9. Final schedule → The computed times are Fajr ${formatTimeInZone(
-                prayerTimes.fajr,
-                timeZone,
-            )}, Sunrise ${formatTimeInZone(prayerTimes.sunrise, timeZone)}, Dhuhr ${formatTimeInZone(
-                prayerTimes.dhuhr,
-                timeZone,
-            )}, Asr ${formatTimeInZone(prayerTimes.asr, timeZone)}, Maghrib ${formatTimeInZone(
-                prayerTimes.maghrib,
-                timeZone,
-            )}, and Isha ${formatTimeInZone(prayerTimes.isha, timeZone)}.`,
+            title: 'Review the complete prayer schedule',
+            summary: `Today’s prayers in ${timeZone} are Fajr ${fajrComputedLocal}, Sunrise ${sunriseComputedLocal}, Dhuhr ${dhuhrLocal}, Asr ${asrLocal}, Maghrib ${maghribLocal}, and Isha ${ishaComputedLocal}.`,
+            details: [
+                `Fajr – ${fajrComputedLocal}`,
+                `Sunrise – ${sunriseComputedLocal}`,
+                `Dhuhr – ${dhuhrLocal}`,
+                `Asr – ${asrLocal}`,
+                `Maghrib – ${maghribLocal}`,
+                `Isha – ${ishaComputedLocal}`,
+            ],
         },
     ];
 
