@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import * as React from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 const TooltipProvider = TooltipPrimitive.Provider;
 
@@ -14,21 +14,21 @@ const TooltipTrigger = TooltipPrimitive.Trigger;
 const TooltipPortal = TooltipPrimitive.Portal;
 
 const TooltipContent = React.forwardRef<
-  React.ElementRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+    React.ElementRef<typeof TooltipPrimitive.Content>,
+    React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 4, ...props }, ref) => (
-  <TooltipPrimitive.Content
-    ref={ref}
-    sideOffset={sideOffset}
-    className={cn(
-      "z-50 overflow-hidden rounded-xl bg-green-900 px-3 py-2 text-xs text-white shadow-lg ring-1 ring-white/20",
-      "data-[state=delayed-open]:data-[side=top]:animate-in data-[state=delayed-open]:data-[side=top]:fade-in",
-      "data-[state=delayed-open]:data-[side=top]:zoom-in-95",
-      "data-[state=closed]:animate-out data-[state=closed]:fade-out",
-      className,
-    )}
-    {...props}
-  />
+    <TooltipPrimitive.Content
+        ref={ref}
+        sideOffset={sideOffset}
+        className={cn(
+            'z-50 overflow-hidden rounded-xl bg-green-900 px-3 py-2 text-white text-xs shadow-lg ring-1 ring-white/20',
+            'data-[state=delayed-open]:data-[side=top]:fade-in data-[state=delayed-open]:data-[side=top]:animate-in',
+            'data-[state=delayed-open]:data-[side=top]:zoom-in-95',
+            'data-[state=closed]:fade-out data-[state=closed]:animate-out',
+            className,
+        )}
+        {...props}
+    />
 ));
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 

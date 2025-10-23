@@ -21,9 +21,13 @@ const kuwaiticalendar = (adjust: number, now: Date) => {
 
     let a = Math.floor(y / 100);
     let b = 2 - a + Math.floor(a / 4);
-    if (y < 1583) b = 0;
+    if (y < 1583) {
+        b = 0;
+    }
     if (y === 1582) {
-        if (m > 10) b = -10;
+        if (m > 10) {
+            b = -10;
+        }
         if (m === 10) {
             b = 0;
             if (day > 4) {
@@ -50,7 +54,7 @@ const kuwaiticalendar = (adjust: number, now: Date) => {
         month = ee - 13;
     }
     year = cc - 4716;
-    let wd;
+    let wd = 0;
 
     if (adjust) {
         wd = gmod(jd + 1 - adjust, 7) + 1;
@@ -98,10 +102,5 @@ export const writeIslamicDate = (adjustment: number, today: Date) => {
     ];
 
     const [, , , , day, date, month, year] = kuwaiticalendar(adjustment, today);
-    return {
-        date: date!,
-        day: wdNames[day!]!,
-        month: iMonthNames[month!]!,
-        year: year!,
-    };
+    return { date: date!, day: wdNames[day!]!, month: iMonthNames[month!]!, year: year! };
 };
