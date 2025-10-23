@@ -17,8 +17,6 @@ const MultiStepLoader = dynamic(() => import('@/components/ui/multi-step-loader'
     ssr: false,
 });
 
-const EXPLANATION_STEP_DURATION = 3200;
-
 type Quote = { text: string; citation: string };
 
 const salatLabels = {
@@ -34,6 +32,11 @@ const salatLabels = {
 };
 
 const formatCoordinate = (value: number, label: 'N' | 'S' | 'E' | 'W') => `${Math.abs(value).toFixed(4)}° ${label}`;
+
+const primaryPillButton =
+    'inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 font-semibold text-sm text-white shadow-lg transition hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-200';
+const secondaryPillButton =
+    'inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/85 px-5 py-2 font-semibold text-emerald-800 text-sm shadow-sm transition hover:border-orange-300 hover:text-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-orange-200';
 
 type ExplanationHookOptions = {
     address: string;
@@ -308,10 +311,7 @@ export default function PrayerTimesPage() {
                                         finished time.
                                     </p>
                                 </div>
-                                <Link
-                                    className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-4 py-2 font-semibold text-emerald-800 text-sm shadow-sm transition hover:border-orange-300 hover:text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                    href="/settings"
-                                >
+                                <Link className={primaryPillButton} href="/settings">
                                     <Settings2 className="h-4 w-4" /> Open settings
                                 </Link>
                             </div>
@@ -330,11 +330,7 @@ export default function PrayerTimesPage() {
 
                         <section className="space-y-8 rounded-3xl bg-white/85 p-8 shadow-lg ring-1 ring-emerald-100/80 backdrop-blur-md">
                             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <button
-                                    className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-4 py-2 font-semibold text-emerald-800 text-sm shadow-sm transition hover:border-orange-300 hover:text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                    onClick={() => navigateDate(-1)}
-                                    type="button"
-                                >
+                                <button className={secondaryPillButton} onClick={() => navigateDate(-1)} type="button">
                                     <ChevronLeft size={18} /> Previous day
                                 </button>
 
@@ -357,11 +353,7 @@ export default function PrayerTimesPage() {
                                     </p>
                                 </div>
 
-                                <button
-                                    className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-4 py-2 font-semibold text-emerald-800 text-sm shadow-sm transition hover:border-orange-300 hover:text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                    onClick={() => navigateDate(1)}
-                                    type="button"
-                                >
+                                <button className={secondaryPillButton} onClick={() => navigateDate(1)} type="button">
                                     Next day <ChevronRight size={18} />
                                 </button>
                             </div>
@@ -403,8 +395,7 @@ export default function PrayerTimesPage() {
                 </div>
 
                 <MultiStepLoader
-                    duration={EXPLANATION_STEP_DURATION}
-                    loading={showExplanation && !explanationLoading && Boolean(explanation?.steps.length)}
+                    open={showExplanation && !explanationLoading && Boolean(explanation?.steps.length)}
                     steps={explanation?.steps ?? []}
                     summary={explanation?.summary ?? null}
                 />

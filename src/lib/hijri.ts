@@ -1,12 +1,50 @@
 const gmod = (n: number, m: number) => ((n % m) + m) % m;
 
-const kuwaiticalendar = (adjust: number, now: Date) => {
+const weekdayNames = ['al-ʾAḥad', 'al-ʾIthnayn', 'ath-Thulāthāʾ', 'al-ʾArbiʿāʾ', 'al-Khamīs', 'al-Jumuʿah', 'al-Sabt'];
+
+const islamicMonthNames = [
+    'al-Muḥarram',
+    'Ṣafar',
+    'Rabīʿ al-ʾAwwal',
+    'Rabīʿ al-ʾĀkhir',
+    'Jumadā al-ʾŪlā',
+    'Jumādā al-ʾĀkhirah',
+    'Rajab',
+    'Shaʿbān',
+    'Ramaḍān',
+    'Shawwāl',
+    'Ḏū al-Qaʿdah',
+    'Ḏū al-Ḥijjah',
+];
+
+const KUWAITI_CYCLE_DAYS = 10631;
+const KUWAITI_AVERAGE_YEAR = KUWAITI_CYCLE_DAYS / 30;
+const KUWAITI_EPOCH = 1948084;
+const KUWAITI_SHIFT = 8.01 / 60;
+
+type KuwaitiResult = {
+    ceDay: number;
+    ceMonth: number;
+    ceYear: number;
+    julianDayNumber: number;
+    rawJulianDay: number;
+    weekdayIndex: number;
+    islamicDay: number;
+    islamicMonthIndex: number;
+    islamicYear: number;
+    cycleIndex: number;
+    remainderAfterCycles: number;
+    remainderAfterYears: number;
+    rawMonth: number;
+};
+
+const kuwaiticalendar = (adjust: number, now: Date): KuwaitiResult => {
     let today = now;
 
     if (adjust) {
-        const adjustmili = 1000 * 60 * 60 * 24 * adjust;
-        const todaymili = today.getTime() + adjustmili;
-        today = new Date(todaymili);
+        const adjustMilliseconds = 1000 * 60 * 60 * 24 * adjust;
+        const todayMilliseconds = today.getTime() + adjustMilliseconds;
+        today = new Date(todayMilliseconds);
     }
 
     let day = today.getDate();
@@ -36,14 +74,14 @@ const kuwaiticalendar = (adjust: number, now: Date) => {
         }
     }
 
-    const jd = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + b - 1524;
+    const rawJulianDay = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + b - 1524;
 
     b = 0;
-    if (jd > 2299160) {
-        a = Math.floor((jd - 1867216.25) / 36524.25);
+    if (rawJulianDay > 2299160) {
+        a = Math.floor((rawJulianDay - 1867216.25) / 36524.25);
         b = 1 + a - Math.floor(a / 4);
     }
-    const bb = jd + b + 1524;
+    const bb = rawJulianDay + b + 1524;
     let cc = Math.floor((bb - 122.1) / 365.25);
     const dd = Math.floor(365.25 * cc);
     const ee = Math.floor((bb - dd) / 30.6001);
@@ -54,53 +92,92 @@ const kuwaiticalendar = (adjust: number, now: Date) => {
         month = ee - 13;
     }
     year = cc - 4716;
-    let wd = 0;
+    const weekdayIndex = adjust ? gmod(rawJulianDay + 1 - adjust, 7) : gmod(rawJulianDay + 1, 7);
 
-    if (adjust) {
-        wd = gmod(jd + 1 - adjust, 7) + 1;
-    } else {
-        wd = gmod(jd + 1, 7) + 1;
+    let remainderAfterCycles = rawJulianDay - KUWAITI_EPOCH;
+    const cycleIndex = Math.floor(remainderAfterCycles / KUWAITI_CYCLE_DAYS);
+    remainderAfterCycles -= KUWAITI_CYCLE_DAYS * cycleIndex;
+    const yearsInCycle = Math.floor((remainderAfterCycles - KUWAITI_SHIFT) / KUWAITI_AVERAGE_YEAR);
+    const islamicYear = 30 * cycleIndex + yearsInCycle;
+    const remainderAfterYears = remainderAfterCycles - Math.floor(yearsInCycle * KUWAITI_AVERAGE_YEAR + KUWAITI_SHIFT);
+    let rawMonth = Math.floor((remainderAfterYears + 28.5001) / 29.5);
+    if (rawMonth === 13) {
+        rawMonth = 12;
     }
 
-    const iyear = 10631 / 30;
-    const epochastro = 1948084;
-    const shift1 = 8.01 / 60;
+    const islamicDay = Math.floor(remainderAfterYears - Math.floor(29.5001 * rawMonth - 29));
+    const islamicMonthIndex = rawMonth - 1;
 
-    let z = jd - epochastro;
-    const cyc = Math.floor(z / 10631);
-    z -= 10631 * cyc;
-    const j = Math.floor((z - shift1) / iyear);
-    const iy = 30 * cyc + j;
-    z -= Math.floor(j * iyear + shift1);
-    let im = Math.floor((z + 28.5001) / 29.5);
-    if (im === 13) {
-        im = 12;
-    }
+    return {
+        ceDay: day,
+        ceMonth: month,
+        ceYear: year,
+        cycleIndex,
+        islamicDay,
+        islamicMonthIndex,
+        islamicYear,
+        julianDayNumber: rawJulianDay - 1,
+        rawJulianDay,
+        rawMonth,
+        remainderAfterCycles,
+        remainderAfterYears,
+        weekdayIndex,
+    };
+};
 
-    const id = z - Math.floor(29.5001 * im - 29);
+export type HijriExplanation = {
+    weekdayName: string;
+    julianDayNumber: number;
+    offsetFromEpoch: number;
+    constants: { epoch: number; cycleDays: number; averageYear: number; shift: number };
+    cycle: { index: number; remainderDays: number; yearsIntoCycle: number; remainderAfterYears: number };
+    islamic: { day: number; monthIndex: number; monthName: string; year: number };
+    monthCalculation: { rawMonth: number };
+};
 
-    // calculated day (CE), calculated month (CE), calculated year (CE), julian day number, weekday number, islamic date, islamic month, islamic year
-    return [day, month, year, jd - 1, wd - 1, id, im - 1, iy];
+export const explainHijriConversion = (adjustment: number, today: Date): HijriExplanation => {
+    const result = kuwaiticalendar(adjustment, today);
+    const yearsIntoCycle = result.islamicYear - 30 * result.cycleIndex;
+    const safeMonthIndex = Math.min(
+        Math.max(result.islamicMonthIndex, 0),
+        islamicMonthNames.length - 1,
+    );
+    const monthName = islamicMonthNames[safeMonthIndex] ?? islamicMonthNames[0]!;
+    const safeWeekdayIndex = Math.min(Math.max(result.weekdayIndex, 0), weekdayNames.length - 1);
+    const weekdayName = weekdayNames[safeWeekdayIndex] ?? weekdayNames[0]!;
+
+    return {
+        constants: {
+            averageYear: KUWAITI_AVERAGE_YEAR,
+            cycleDays: KUWAITI_CYCLE_DAYS,
+            epoch: KUWAITI_EPOCH,
+            shift: KUWAITI_SHIFT,
+        },
+        cycle: {
+            index: result.cycleIndex,
+            remainderAfterYears: result.remainderAfterYears,
+            remainderDays: result.remainderAfterCycles,
+            yearsIntoCycle,
+        },
+        islamic: {
+            day: result.islamicDay,
+            monthIndex: result.islamicMonthIndex,
+            monthName,
+            year: result.islamicYear,
+        },
+        julianDayNumber: result.julianDayNumber,
+        monthCalculation: { rawMonth: result.rawMonth },
+        offsetFromEpoch: result.rawJulianDay - KUWAITI_EPOCH,
+        weekdayName,
+    };
 };
 
 export const writeIslamicDate = (adjustment: number, today: Date) => {
-    const wdNames = ['al-ʾAḥad', 'al-ʾIthnayn', 'ath-Thulāthāʾ', 'al-ʾArbiʿāʾ', 'al-Khamīs', 'al-Jumuʿah', 'al-Sabt'];
-
-    const iMonthNames = [
-        'al-Muḥarram',
-        'Ṣafar',
-        'Rabīʿ al-ʾAwwal',
-        'Rabīʿ al-ʾĀkhir',
-        'Jumadā al-ʾŪlā',
-        'Jumādā al-ʾĀkhirah',
-        'Rajab',
-        'Shaʿbān',
-        'Ramaḍān',
-        'Shawwāl',
-        'Ḏū al-Qaʿdah',
-        'Ḏū al-Ḥijjah',
-    ];
-
-    const [, , , , day, date, month, year] = kuwaiticalendar(adjustment, today);
-    return { date: date!, day: wdNames[day!]!, month: iMonthNames[month!]!, year: year! };
+    const explained = explainHijriConversion(adjustment, today);
+    return {
+        date: explained.islamic.day,
+        day: explained.weekdayName,
+        month: explained.islamic.monthName,
+        year: explained.islamic.year,
+    };
 };

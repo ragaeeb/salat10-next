@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import Image from 'next/image';
-import { memo, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import type { ExplanationStep, ExplanationSummary } from '@/lib/explanation/types';
 import { cn } from '@/lib/utils';
@@ -62,7 +62,7 @@ const StepTimeline = memo(
         const displayActiveIndex = Math.min(resolvedActiveIndex, Math.max(displayed.length - 1, 0));
 
         return (
-            <ScrollArea className="relative mx-auto mt-6 max-h-[70vh] w-full max-w-xl pr-2">
+            <ScrollArea className="relative mx-auto mt-6 max-h-[65vh] w-full max-w-xl pr-2 md:mt-0 md:h-full md:max-h-none md:pr-3">
                 <div className="flex flex-col gap-3">
                     {displayed.map((step, index) => {
                         const distance = Math.abs(index - displayActiveIndex);
@@ -159,6 +159,7 @@ const StepVisual = ({ step }: { step: ExplanationStep }) => {
                         fill
                         sizes="(min-width: 1024px) 420px, 90vw"
                         src={step.visual.src}
+                        unoptimized
                     />
                 </div>
                 {step.visual.caption ? <p className="text-emerald-700 text-xs">{step.visual.caption}</p> : null}
@@ -250,29 +251,25 @@ const StepControls = ({
     canGoBack,
     canGoForward,
     onNext,
-    onPause,
     onPrevious,
     onToggleDetails,
     showDetails,
     showDetailsButton,
-    isPaused,
 }: {
     canGoBack: boolean;
     canGoForward: boolean;
     onNext: () => void;
-    onPause: () => void;
     onPrevious: () => void;
     onToggleDetails: () => void;
     showDetails: boolean;
     showDetailsButton: boolean;
-    isPaused: boolean;
 }) => (
     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-2">
             <button
                 type="button"
                 onClick={onPrevious}
-                className="rounded-full border border-emerald-300 px-4 py-2 font-semibold text-emerald-800 text-sm transition hover:border-orange-300 hover:text-orange-500 disabled:cursor-not-allowed disabled:border-emerald-100 disabled:text-emerald-400"
+                className="rounded-full border border-emerald-300 bg-white px-4 py-2 font-semibold text-emerald-800 text-sm shadow-sm transition hover:border-orange-300 hover:text-orange-500 disabled:cursor-not-allowed disabled:border-emerald-100 disabled:text-emerald-300 disabled:shadow-none"
                 disabled={!canGoBack}
             >
                 Previous
@@ -280,41 +277,27 @@ const StepControls = ({
             <button
                 type="button"
                 onClick={onNext}
-                className="rounded-full border border-emerald-300 px-4 py-2 font-semibold text-emerald-800 text-sm transition hover:border-orange-300 hover:text-orange-500 disabled:cursor-not-allowed disabled:border-emerald-100 disabled:text-emerald-400"
+                className="rounded-full bg-emerald-600 px-4 py-2 font-semibold text-sm text-white shadow transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-white/70 disabled:shadow-none"
                 disabled={!canGoForward}
             >
                 Next
             </button>
         </div>
-        <div className="flex items-center gap-2">
-            {showDetailsButton && (
-                <button
-                    type="button"
-                    onClick={onToggleDetails}
-                    className="rounded-full bg-orange-500 px-4 py-2 font-semibold text-sm text-white transition hover:bg-orange-400"
-                >
-                    {showDetails ? 'Hide extra context' : 'Show extra context'}
-                </button>
-            )}
+        {showDetailsButton ? (
             <button
                 type="button"
-                onClick={onPause}
-                className={cn(
-                    'rounded-full px-4 py-2 font-semibold text-sm transition',
-                    isPaused
-                        ? 'border border-emerald-400 text-emerald-700 hover:border-orange-400 hover:text-orange-500'
-                        : 'bg-emerald-700 text-white hover:bg-emerald-600',
-                )}
+                onClick={onToggleDetails}
+                className="rounded-full bg-orange-500 px-4 py-2 font-semibold text-sm text-white shadow transition hover:bg-orange-400"
             >
-                {isPaused ? 'Resume autoplay' : 'Pause here'}
+                {showDetails ? 'Hide extra context' : 'Show extra context'}
             </button>
-        </div>
+        ) : null}
     </div>
 );
 
 const StepDetail = memo(({ step, showDetails }: { step: ExplanationStep; showDetails: boolean }) => (
-    <ScrollArea className="h-full">
-        <div className="space-y-4 pr-2">
+    <ScrollArea className="h-full pr-3">
+        <div className="space-y-4 pr-1">
             <h3 className="font-bold text-2xl text-emerald-950">{step.title}</h3>
             <p className="text-base text-emerald-800">{step.summary}</p>
 
@@ -329,8 +312,8 @@ const StepDetail = memo(({ step, showDetails }: { step: ExplanationStep; showDet
 
             {showDetails && step.details && (
                 <div className="space-y-3 text-emerald-800 text-sm">
-                    {step.details.map((detail) => (
-                        <p key={`${step.id}-${detail}`}>{detail}</p>
+                    {step.details.map((detail, index) => (
+                        <p key={`${step.id}-detail-${index}`}>{detail}</p>
                     ))}
                 </div>
             )}
@@ -342,8 +325,8 @@ const StepDetail = memo(({ step, showDetails }: { step: ExplanationStep; showDet
 StepDetail.displayName = 'StepDetail';
 
 const SummaryView = memo(({ summary }: { summary: ExplanationSummary }) => (
-    <ScrollArea className="h-full">
-        <div className="space-y-4 pr-2">
+    <ScrollArea className="h-full pr-3">
+        <div className="space-y-4 pr-1">
             {summary.intro.map((line) => (
                 <p key={`intro-${line}`} className="text-emerald-800 text-sm">
                     {line}
@@ -351,8 +334,8 @@ const SummaryView = memo(({ summary }: { summary: ExplanationSummary }) => (
             ))}
             <div className="rounded-2xl border border-emerald-100 bg-white/80 p-4 shadow-inner">
                 <h3 className="font-semibold text-emerald-700 text-sm uppercase tracking-wide">Math trail</h3>
-                <ScrollArea className="mt-3 max-h-64 rounded-xl border border-emerald-100">
-                    <ul className="space-y-3 p-3">
+                <ScrollArea className="mt-3 max-h-64 rounded-xl border border-emerald-100 pr-3">
+                    <ul className="space-y-3 p-3 pr-1">
                         {summary.lines.map((line) => (
                             <li key={line.id} className="rounded-xl bg-emerald-50/70 px-3 py-2">
                                 <p className="font-semibold text-emerald-700 text-xs uppercase tracking-wide">
@@ -375,34 +358,33 @@ const SummaryView = memo(({ summary }: { summary: ExplanationSummary }) => (
 ));
 SummaryView.displayName = 'SummaryView';
 
-export type MultiStepLoaderProps = {
-    steps: ExplanationStep[];
-    summary?: ExplanationSummary | null;
-    loading?: boolean;
-    duration?: number;
-    loop?: boolean;
-};
+export type MultiStepLoaderProps = { steps: ExplanationStep[]; summary?: ExplanationSummary | null; open: boolean };
 
-export const MultiStepLoader = ({ steps, summary, loading, duration = 3200, loop = false }: MultiStepLoaderProps) => {
+export const MultiStepLoader = ({ steps, summary, open }: MultiStepLoaderProps) => {
     const [currentStep, setCurrentStep] = useState(0);
-    const [isPaused, setIsPaused] = useState(false);
-    const [showDetails, setShowDetails] = useState(false);
+    const [showDetails, setShowDetails] = useState(true);
     const [activeTab, setActiveTab] = useState<'story' | 'math'>('story');
     const [visibleCount, setVisibleCount] = useState(() => Math.min(steps.length, INITIAL_TIMELINE_STEPS));
-    const deferredIndex = useDeferredValue(currentStep);
 
     useEffect(() => {
-        if (!loading) {
+        if (steps.length === 0) {
             setCurrentStep(0);
-            setIsPaused(false);
-            setShowDetails(false);
+            return;
+        }
+        setCurrentStep((prev) => Math.min(prev, steps.length - 1));
+    }, [steps.length]);
+
+    useEffect(() => {
+        if (open) {
+            setCurrentStep(0);
+            setShowDetails(true);
             setActiveTab('story');
             setVisibleCount(Math.min(steps.length, INITIAL_TIMELINE_STEPS));
         }
-    }, [loading, steps.length]);
+    }, [open, steps.length]);
 
     useEffect(() => {
-        if (!loading) {
+        if (!open) {
             return;
         }
         setVisibleCount(Math.min(steps.length, INITIAL_TIMELINE_STEPS));
@@ -450,7 +432,7 @@ export const MultiStepLoader = ({ steps, summary, loading, duration = 3200, loop
                 window.clearTimeout(timeoutHandle);
             }
         };
-    }, [loading, steps.length]);
+    }, [open, steps.length]);
 
     useEffect(() => {
         if (currentStep >= visibleCount - 3 && visibleCount < steps.length) {
@@ -458,70 +440,35 @@ export const MultiStepLoader = ({ steps, summary, loading, duration = 3200, loop
         }
     }, [currentStep, steps.length, visibleCount]);
 
-    useEffect(() => {
-        if (!loading || isPaused || steps.length === 0 || activeTab !== 'story') {
-            return;
-        }
-        if (!loop && currentStep === steps.length - 1) {
-            return;
-        }
-
-        const timeout = window.setTimeout(() => {
-            setCurrentStep((prev) => {
-                if (prev === steps.length - 1) {
-                    return loop ? 0 : prev;
-                }
-                return prev + 1;
-            });
-        }, duration);
-
-        return () => window.clearTimeout(timeout);
-    }, [activeTab, currentStep, duration, isPaused, loading, loop, steps.length]);
-
-    const activeStep = useMemo(() => steps[deferredIndex] ?? steps[currentStep], [currentStep, deferredIndex, steps]);
-    const displayedStep = activeStep ?? steps[0];
+    const hasSteps = steps.length > 0;
+    const safeIndex = hasSteps ? Math.min(currentStep, steps.length - 1) : 0;
+    const activeStep = hasSteps ? steps[safeIndex] : undefined;
+    const displayedStep = activeStep;
 
     const handleSelect = (index: number) => {
         setCurrentStep(index);
-        setIsPaused(true);
         setShowDetails(true);
         setActiveTab('story');
     };
 
-    const handleTogglePause = () => {
-        setIsPaused((prev) => {
-            const next = !prev;
-            if (next) {
-                setShowDetails(true);
-            }
-            return next;
-        });
-    };
-
     const handleNext = () => {
         setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
-        setIsPaused(true);
+        setShowDetails(true);
     };
 
     const handlePrevious = () => {
         setCurrentStep((prev) => Math.max(prev - 1, 0));
-        setIsPaused(true);
+        setShowDetails(true);
     };
 
     const toggleDetails = () => {
-        setShowDetails((prev) => {
-            const next = !prev;
-            if (next) {
-                setIsPaused(true);
-            }
-            return next;
-        });
+        setShowDetails((prev) => !prev);
     };
 
     const handleTabChange = (tab: 'story' | 'math') => {
         setActiveTab(tab);
-        if (tab === 'math') {
-            setIsPaused(true);
+        if (tab === 'story') {
+            setShowDetails(true);
         }
     };
 
@@ -531,15 +478,15 @@ export const MultiStepLoader = ({ steps, summary, loading, duration = 3200, loop
 
     return (
         <AnimatePresence mode="wait">
-            {loading && steps.length > 0 && activeStep && (
+            {open && hasSteps && activeStep && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-[100] flex items-center justify-center bg-emerald-950/20 px-4 py-8 backdrop-blur-2xl"
                 >
-                    <div className="relative flex w-full max-w-6xl flex-col gap-6 rounded-3xl bg-white/85 p-6 shadow-2xl ring-1 ring-emerald-200 md:flex-row md:gap-8">
-                        <div className="md:w-1/2">
+                    <div className="relative flex w-full max-w-6xl flex-col gap-6 rounded-3xl bg-white/85 p-6 shadow-2xl ring-1 ring-emerald-200 md:h-[85vh] md:max-h-[85vh] md:flex-row md:gap-8">
+                        <div className="md:min-h-0 md:w-[42%]">
                             <StepTimeline
                                 steps={steps}
                                 activeIndex={currentStep}
@@ -548,10 +495,10 @@ export const MultiStepLoader = ({ steps, summary, loading, duration = 3200, loop
                                 visibleCount={visibleCount}
                             />
                         </div>
-                        <div className="flex flex-1 flex-col justify-between gap-4 rounded-2xl bg-white/90 p-6 shadow-inner">
+                        <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-2xl bg-white/90 p-6 shadow-inner">
                             <div className="flex items-center justify-between gap-3">
                                 <p className="font-semibold text-emerald-700 text-xs uppercase tracking-wide">
-                                    Step {currentStep + 1} of {steps.length}
+                                    Step {safeIndex + 1} of {steps.length}
                                 </p>
                                 <TabSwitcher
                                     activeTab={activeTab}
@@ -560,24 +507,24 @@ export const MultiStepLoader = ({ steps, summary, loading, duration = 3200, loop
                                 />
                             </div>
 
-                            {activeTab === 'story' ? (
-                                displayedStep ? (
-                                    <StepDetail step={displayedStep} showDetails={showDetails} />
-                                ) : null
-                            ) : summary ? (
-                                <SummaryView summary={summary} />
-                            ) : null}
+                            <div className="min-h-0 flex-1">
+                                {activeTab === 'story' ? (
+                                    displayedStep ? (
+                                        <StepDetail step={displayedStep} showDetails={showDetails} />
+                                    ) : null
+                                ) : summary ? (
+                                    <SummaryView summary={summary} />
+                                ) : null}
+                            </div>
 
                             <StepControls
-                                canGoBack={currentStep > 0}
-                                canGoForward={currentStep < steps.length - 1}
+                                canGoBack={safeIndex > 0}
+                                canGoForward={safeIndex < steps.length - 1}
                                 onNext={handleNext}
-                                onPause={handleTogglePause}
                                 onPrevious={handlePrevious}
                                 onToggleDetails={toggleDetails}
                                 showDetails={showDetails}
                                 showDetailsButton={activeTab === 'story'}
-                                isPaused={isPaused}
                             />
                         </div>
                     </div>

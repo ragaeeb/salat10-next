@@ -20,6 +20,9 @@ type GeocodeStatus = 'idle' | 'loading' | 'success' | 'error';
 
 type GeocodeResult = { latitude: number; longitude: number; label?: string };
 
+const primaryPillButton =
+    'inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 font-semibold text-sm text-white shadow-lg transition hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-200';
+
 const buildAngleState = (
     prev: Settings,
     field: 'fajrAngle' | 'ishaAngle' | 'ishaInterval',
@@ -189,10 +192,7 @@ export default function SettingsPage() {
                                 so the explorer page updates instantly.
                             </p>
                         </div>
-                        <Link
-                            className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-4 py-2 font-semibold text-emerald-800 text-sm shadow-sm transition hover:border-orange-300 hover:text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                            href="/"
-                        >
+                        <Link className={primaryPillButton} href="/">
                             <ArrowLeft className="h-4 w-4" /> Back to prayer times
                         </Link>
                     </div>

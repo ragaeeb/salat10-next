@@ -42,6 +42,7 @@ export const buildPrayerTimeExplanation = (inputs: CalculationInputs): PrayerTim
         adjustments,
         prayerTimes,
         sunnahTimes,
+        hijri,
     } = context;
 
     const timeZone = details.timeZone;
@@ -136,6 +137,22 @@ export const buildPrayerTimeExplanation = (inputs: CalculationInputs): PrayerTim
         references: [{ label: 'Julian day', url: 'https://en.wikipedia.org/wiki/Julian_day' }],
         summary: `The date ${formatDateInZone(inputs.date, timeZone)} becomes Julian Day ${formatNumber(julian.day, 5)} and Julian Century ${formatNumber(julian.century, 8)}.`,
         title: 'Turn the calendar into a space number',
+    });
+
+    builder.addStep({
+        details: [
+            `The Hijri calendar starts with the Prophet ﷺ migrating to Madīnah in 622 CE. Historians mark that moment as Julian Day ${formatNumber(hijri.constants.epoch, 0)}.`,
+            `Subtracting that starting point from today gives ${formatNumber(hijri.offsetFromEpoch, 0)} days since the Hijrah. We stack those days into ${formatNumber(hijri.constants.cycleDays, 0)}-day bundles—each bundle covers 30 lunar years—so ${hijri.cycle.index} full bundles have passed with ${formatNumber(hijri.cycle.remainderDays, 0)} days spilling into the current bundle.`,
+            `A lunar year averages ${formatNumber(hijri.constants.averageYear, 3)} days. The remaining days equal ${hijri.cycle.yearsIntoCycle} years and ${formatNumber(hijri.cycle.remainderAfterYears, 0)} days, and dividing by 29.5-day months lands on month #${hijri.monthCalculation.rawMonth}, called ${hijri.islamic.monthName}. That places us on ${hijri.weekdayName}, day ${hijri.islamic.day} of ${hijri.islamic.year} AH—"Anno Hegirae," meaning "in the year of the Hijrah."`,
+        ],
+        finalValue: `${hijri.weekdayName}, ${hijri.islamic.day} ${hijri.islamic.monthName} ${hijri.islamic.year} AH`,
+        id: 'hijri',
+        references: [
+            { label: 'Tabular Islamic calendar', url: 'https://en.wikipedia.org/wiki/Tabular_Islamic_calendar' },
+            { label: 'Hijri calendar overview', url: 'https://www.timeanddate.com/calendar/islamic-calendar.html' },
+        ],
+        summary: `The same date is ${hijri.islamic.day} ${hijri.islamic.monthName} ${hijri.islamic.year} AH (${hijri.weekdayName}).`,
+        title: 'Follow the days into the Hijri calendar',
     });
 
     builder.addStep({
@@ -341,6 +358,33 @@ export const buildPrayerTimeExplanation = (inputs: CalculationInputs): PrayerTim
         result: `${formatNumber(julian.century, 8)}`,
     });
     builder.addMath({
+        expression: `z = JD − ${formatNumber(hijri.constants.epoch, 0)}`,
+        id: 'math-hijri-offset',
+        label: 'Days since Hijrah',
+        result: `${formatNumber(hijri.offsetFromEpoch, 0)}`,
+    });
+    builder.addMath({
+        expression: `cycle = floor(z / ${formatNumber(hijri.constants.cycleDays, 0)})`,
+        id: 'math-hijri-cycle',
+        label: '30-year lunar cycles',
+        result: `${hijri.cycle.index} cycles`,
+    });
+    builder.addMath({
+        expression: `year = cycle·30 + floor((remainder − ${formatNumber(hijri.constants.shift, 3)}) / ${formatNumber(
+            hijri.constants.averageYear,
+            3,
+        )})`,
+        id: 'math-hijri-year',
+        label: 'Hijri year',
+        result: `${hijri.islamic.year} AH`,
+    });
+    builder.addMath({
+        expression: `month = floor((remainder + 28.5001) / 29.5)`,
+        id: 'math-hijri-month',
+        label: 'Hijri month & day',
+        result: `${hijri.islamic.monthName} ${hijri.islamic.day}`,
+    });
+    builder.addMath({
         expression: `L₀ = 280.4664567 + 36000.76983·T`,
         id: 'math-longitude',
         label: 'Mean solar longitude',
@@ -470,6 +514,7 @@ export const buildPrayerTimeExplanation = (inputs: CalculationInputs): PrayerTim
     const intro = [
         `Location: ${details.address} (${locationFinal}).`,
         `Method: ${methodLabel}. Time zone: ${details.timeZone} (${details.timezoneLabel}).`,
+        `Hijri date: ${hijri.islamic.day} ${hijri.islamic.monthName} ${hijri.islamic.year} AH (${hijri.weekdayName}).`,
     ];
 
     const outro = [

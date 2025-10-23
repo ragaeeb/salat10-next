@@ -1,5 +1,5 @@
 import { type CalculationParameters, type Coordinates, PrayerTimes, SunnahTimes } from 'adhan';
-
+import { explainHijriConversion, type HijriExplanation } from '../hijri';
 import {
     apparentObliquityOfTheEcliptic,
     apparentSolarLongitude,
@@ -103,6 +103,7 @@ export interface CalculationContext {
     adjustments: { approxTransitDiffMinutes: number; approxTransitDirection: 'earlier' | 'later' | 'exact' };
     prayerTimes: PrayerTimes;
     sunnahTimes: SunnahTimes;
+    hijri: HijriExplanation;
 }
 
 class SolarCoordinates {
@@ -352,6 +353,7 @@ export const buildCalculationContext = ({
     return {
         adjustments: { approxTransitDiffMinutes, approxTransitDirection },
         geometry: { asrShadow, latitudeDeclinationSeparation },
+        hijri: explainHijriConversion(0, date),
         inputs: {
             address: trimmedAddress,
             coordinates,
