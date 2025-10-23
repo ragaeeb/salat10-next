@@ -59,7 +59,7 @@ const StepTimeline = memo(({ steps, activeIndex, onSelect, onLoadMore, visibleCo
     const displayActiveIndex = Math.min(resolvedActiveIndex, Math.max(displayed.length - 1, 0));
 
     return (
-        <ScrollArea className="h-full pr-2">
+        <ScrollArea className="h-full min-h-0 pr-2">
             <div className="flex flex-col gap-3">
                 {displayed.map((step, index) => {
                     const distance = Math.abs(index - displayActiveIndex);
@@ -280,7 +280,7 @@ const StepControls = ({
 );
 
 const StepDetail = memo(({ step, showDetails }: { step: ExplanationStep; showDetails: boolean }) => (
-    <ScrollArea className="h-full pr-2">
+    <ScrollArea className="h-full min-h-0 pr-2">
         <div className="space-y-4 pr-1">
             <h3 className="font-bold text-2xl text-foreground">{step.title}</h3>
             <p className="text-base text-muted-foreground">{step.summary}</p>
@@ -309,7 +309,7 @@ const StepDetail = memo(({ step, showDetails }: { step: ExplanationStep; showDet
 StepDetail.displayName = 'StepDetail';
 
 const SummaryView = memo(({ summary }: { summary: ExplanationSummary }) => (
-    <ScrollArea className="h-full pr-2">
+    <ScrollArea className="h-full min-h-0 pr-2">
         <div className="space-y-4 pr-1">
             {summary.intro.map((line) => (
                 <p key={`intro-${line}`} className="text-muted-foreground text-sm">
@@ -318,8 +318,8 @@ const SummaryView = memo(({ summary }: { summary: ExplanationSummary }) => (
             ))}
             <div className="rounded-2xl border border-border/60 bg-card/80 p-4 shadow-inner">
                 <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">Math trail</h3>
-                <ScrollArea className="mt-3 h-72 rounded-xl border border-border/50 pr-3">
-                    <ul className="space-y-3 p-3 pr-1">
+                <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border border-border/50 pr-1">
+                    <ul className="space-y-3 p-3 pr-2">
                         {summary.lines.map((line) => (
                             <li key={line.id} className="rounded-xl bg-primary/10 px-3 py-2">
                                 <p className="font-semibold text-muted-foreground/80 text-xs uppercase tracking-wide">
@@ -330,7 +330,7 @@ const SummaryView = memo(({ summary }: { summary: ExplanationSummary }) => (
                             </li>
                         ))}
                     </ul>
-                </ScrollArea>
+                </div>
             </div>
             {summary.outro.map((line) => (
                 <p key={`outro-${line}`} className="text-muted-foreground text-sm">
@@ -475,11 +475,11 @@ export const MultiStepLoader = ({ steps, summary, open, onClose }: MultiStepLoad
                     className="fixed inset-0 z-[100] flex flex-col bg-background/98 text-foreground"
                 >
                     <div className="flex flex-col gap-4 px-4 pt-4 md:px-8">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <p className="font-semibold text-primary/80 text-xs uppercase tracking-wide">
+                        <div className="flex items-start gap-3">
+                            <p className="flex-1 font-semibold text-primary/80 text-xs uppercase tracking-wide">
                                 Step {safeIndex + 1} of {steps.length}
                             </p>
-                            <div className="flex items-center gap-3">
+                            <div className="ml-auto flex items-center gap-2">
                                 <TabSwitcher
                                     activeTab={activeTab}
                                     hasSummary={Boolean(summary)}

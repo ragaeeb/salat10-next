@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { Geist, Geist_Mono } from 'next/font/google';
 
+import { Footer } from '@/components/footer';
 import { ThemeProvider } from '@/components/theme-provider';
 
 import './globals.css';
@@ -23,7 +24,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-                <ThemeProvider>{children}</ThemeProvider>
+                <ThemeProvider>
+                    <div className="flex min-h-screen flex-col">
+                        <main className="flex-1">{children}</main>
+                        <Footer />
+                    </div>
+                </ThemeProvider>
             </body>
         </html>
     );

@@ -181,8 +181,8 @@ export default function SettingsPage() {
     return (
         <div className="relative min-h-screen overflow-hidden bg-background px-6 py-10">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,var(--primary)/0.12,transparent_70%)]" />
-            <div className="pointer-events-none absolute bottom-[-20%] left-[-15%] h-96 w-96 rounded-full bg-[rgba(18,40,111,0.25)] blur-3xl" />
-            <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col gap-10">
+            <div className="pointer-events-none absolute bottom-[-20%] left-[-15%] h-96 w-96 rounded-full bg-[rgba(11,95,131,0.25)] blur-3xl" />
+            <div className="relative z-10 flex w-full flex-col gap-10">
                 <header className="rounded-3xl border border-border/60 bg-card/90 p-8 shadow-lg backdrop-blur">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="space-y-2">
@@ -363,7 +363,7 @@ export default function SettingsPage() {
                 <footer className="rounded-3xl border border-border/60 bg-card/80 p-6 text-muted-foreground text-xs shadow-inner">
                     Settings are stored in your browser&apos;s local storage. Clearing site data will reset them to the
                     defaults below:
-                    <pre className="mt-2 rounded-xl bg-secondary/60 p-4 font-mono text-foreground text-sm">
+                    <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-secondary/60 p-4 font-mono text-foreground text-sm">
                         {currentSettingsJson}
                     </pre>
                 </footer>

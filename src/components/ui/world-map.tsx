@@ -3,7 +3,9 @@
 import DottedMap from 'dotted-map';
 import { motion } from 'motion/react';
 import Image from 'next/image';
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
+
+import { useThemeMode } from '@/components/theme-provider';
 
 interface MapProps {
     dots?: Array<{
@@ -13,11 +15,17 @@ interface MapProps {
     lineColor?: string;
 }
 
-export default function WorldMap({ dots = [], lineColor = '#0ea5e9' }: MapProps) {
+export default function WorldMap({ dots = [], lineColor }: MapProps) {
     const svgRef = useRef<SVGSVGElement>(null);
-    const map = new DottedMap({ grid: 'diagonal', height: 100 });
+    const { theme } = useThemeMode();
 
-    const svgMap = map.getSVG({ backgroundColor: 'transparent', color: '#0f172a33', radius: 0.22, shape: 'circle' });
+    const arcColor = lineColor ?? (theme === 'dark' ? '#ffffff' : '#0f88b3');
+    const dotColor = theme === 'dark' ? '#ffffff66' : '#0f88b366';
+
+    const svgMap = useMemo(() => {
+        const map = new DottedMap({ grid: 'diagonal', height: 100 });
+        return map.getSVG({ backgroundColor: 'transparent', color: dotColor, radius: 0.22, shape: 'circle' });
+    }, [dotColor]);
 
     const projectPoint = (lat: number, lng: number) => {
         const x = (lng + 180) * (800 / 360);
@@ -32,7 +40,7 @@ export default function WorldMap({ dots = [], lineColor = '#0ea5e9' }: MapProps)
     };
 
     return (
-        <div className="relative aspect-[2/1] w-full rounded-lg bg-white font-sans dark:bg-black">
+        <div className="relative aspect-[2/1] w-full rounded-lg bg-card font-sans text-foreground">
             <Image
                 alt="world map"
                 className="pointer-events-none h-full w-full select-none [mask-image:linear-gradient(to_bottom,transparent,white_10%,white_90%,transparent)]"
@@ -72,8 +80,8 @@ export default function WorldMap({ dots = [], lineColor = '#0ea5e9' }: MapProps)
                 <defs>
                     <linearGradient id="path-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="white" stopOpacity="0" />
-                        <stop offset="5%" stopColor={lineColor} stopOpacity="1" />
-                        <stop offset="95%" stopColor={lineColor} stopOpacity="1" />
+                        <stop offset="5%" stopColor={arcColor} stopOpacity="1" />
+                        <stop offset="95%" stopColor={arcColor} stopOpacity="1" />
                         <stop offset="100%" stopColor="white" stopOpacity="0" />
                     </linearGradient>
                 </defs>
@@ -87,13 +95,13 @@ export default function WorldMap({ dots = [], lineColor = '#0ea5e9' }: MapProps)
                                     cx={projectPoint(dot.start.lat, dot.start.lng).x}
                                     cy={projectPoint(dot.start.lat, dot.start.lng).y}
                                     r="2"
-                                    fill={lineColor}
+                                    fill={arcColor}
                                 />
                                 <circle
                                     cx={projectPoint(dot.start.lat, dot.start.lng).x}
                                     cy={projectPoint(dot.start.lat, dot.start.lng).y}
                                     r="2"
-                                    fill={lineColor}
+                                    fill={arcColor}
                                     opacity="0.5"
                                 >
                                     <animate
@@ -119,13 +127,13 @@ export default function WorldMap({ dots = [], lineColor = '#0ea5e9' }: MapProps)
                                     cx={projectPoint(dot.end.lat, dot.end.lng).x}
                                     cy={projectPoint(dot.end.lat, dot.end.lng).y}
                                     r="2"
-                                    fill={lineColor}
+                                    fill={arcColor}
                                 />
                                 <circle
                                     cx={projectPoint(dot.end.lat, dot.end.lng).x}
                                     cy={projectPoint(dot.end.lat, dot.end.lng).y}
                                     r="2"
-                                    fill={lineColor}
+                                    fill={arcColor}
                                     opacity="0.5"
                                 >
                                     <animate

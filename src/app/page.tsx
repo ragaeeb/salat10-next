@@ -19,6 +19,17 @@ const MultiStepLoader = dynamic(() => import('@/components/ui/multi-step-loader'
     ssr: false,
 });
 
+type ExplanationModule = typeof import('@/lib/explanation');
+
+let explanationModulePromise: Promise<ExplanationModule> | null = null;
+
+const preloadExplanationModule = () => {
+    if (!explanationModulePromise) {
+        explanationModulePromise = import('@/lib/explanation');
+    }
+    return explanationModulePromise;
+};
+
 type Quote = { text: string; citation: string };
 
 const salatLabels = {
@@ -92,6 +103,12 @@ const usePrayerExplanation = ({
     const cacheRef = useRef(new Map<string, PrayerTimeExplanation>());
 
     useEffect(() => {
+        preloadExplanationModule().catch((error) => {
+            console.warn('Unable to preload explanations', error);
+        });
+    }, []);
+
+    useEffect(() => {
         if (!showExplanation) {
             return;
         }
@@ -128,7 +145,7 @@ const usePrayerExplanation = ({
         setExplanation(null);
 
         const build = async () => {
-            const { buildPrayerTimeExplanation } = await import('@/lib/explanation');
+            const { buildPrayerTimeExplanation } = await preloadExplanationModule();
             if (cancelled) {
                 return;
             }
@@ -140,22 +157,10 @@ const usePrayerExplanation = ({
             }
         };
 
-        let idleHandle: number | null = null;
-        let timeoutHandle: number | null = null;
-        if (typeof window !== 'undefined' && window.requestIdleCallback) {
-            idleHandle = window.requestIdleCallback(build);
-        } else {
-            timeoutHandle = window.setTimeout(build, 0);
-        }
+        void build();
 
         return () => {
             cancelled = true;
-            if (idleHandle !== null) {
-                window.cancelIdleCallback?.(idleHandle);
-            }
-            if (timeoutHandle !== null) {
-                window.clearTimeout(timeoutHandle);
-            }
         };
     }, [address, coordinates, date, hasValidCoordinates, key, parameters, showExplanation, timeZone]);
 
@@ -344,8 +349,8 @@ export default function PrayerTimesPage() {
     return (
         <TooltipProvider>
             <div className="relative min-h-screen overflow-hidden">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(28,63,170,0.18),transparent_65%)]" />
-                <div className="pointer-events-none absolute top-[-18%] right-[-20%] h-96 w-96 rounded-full bg-[rgba(19,36,107,0.3)] blur-3xl" />
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(15,136,179,0.18),transparent_65%)]" />
+                <div className="pointer-events-none absolute top-[-18%] right-[-20%] h-96 w-96 rounded-full bg-[rgba(11,95,131,0.3)] blur-3xl" />
 
                 {!showExplanation && (
                     <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">

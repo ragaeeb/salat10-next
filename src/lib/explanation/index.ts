@@ -166,10 +166,10 @@ export const buildPrayerTimeExplanation = (inputs: CalculationInputs): PrayerTim
         summary: `Mean longitude L₀ = ${formatNumber(orbital.meanLongitude, 4)}°, mean anomaly M = ${formatNumber(orbital.meanAnomaly, 4)}°, equation of the center C = ${formatNumber(orbital.equationOfCenter, 4)}°, apparent longitude λ = ${formatNumber(orbital.apparentLongitude, 4)}°.`,
         title: 'Follow the sun along its oval track',
         visual: {
-            alt: 'Diagram of an elliptical orbit showing the Sun at one focus and a planet moving around the oval path.',
+            alt: 'Illustration of Earth travelling on an oval path around the sun with perihelion and aphelion labelled.',
             caption:
-                'Earth circles the sun along a gentle oval. The mean anomaly is the steady lap counter and the equation of the center nudges us toward the true position on the oval.',
-            src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Elliptic_orbit.svg/640px-Elliptic_orbit.svg.png',
+                'Because Earth’s path is oval, we get closest at perihelion and farthest at aphelion. The equation of the center corrects that oval path so our timing matches the real Sun.',
+            src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Earth_Orbit_Eccentricity.png/640px-Earth_Orbit_Eccentricity.png',
             type: 'image',
         },
     });
