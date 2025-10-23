@@ -138,10 +138,7 @@ export type HijriExplanation = {
 export const explainHijriConversion = (adjustment: number, today: Date): HijriExplanation => {
     const result = kuwaiticalendar(adjustment, today);
     const yearsIntoCycle = result.islamicYear - 30 * result.cycleIndex;
-    const safeMonthIndex = Math.min(
-        Math.max(result.islamicMonthIndex, 0),
-        islamicMonthNames.length - 1,
-    );
+    const safeMonthIndex = Math.min(Math.max(result.islamicMonthIndex, 0), islamicMonthNames.length - 1);
     const monthName = islamicMonthNames[safeMonthIndex] ?? islamicMonthNames[0]!;
     const safeWeekdayIndex = Math.min(Math.max(result.weekdayIndex, 0), weekdayNames.length - 1);
     const weekdayName = weekdayNames[safeWeekdayIndex] ?? weekdayNames[0]!;
@@ -159,12 +156,7 @@ export const explainHijriConversion = (adjustment: number, today: Date): HijriEx
             remainderDays: result.remainderAfterCycles,
             yearsIntoCycle,
         },
-        islamic: {
-            day: result.islamicDay,
-            monthIndex: result.islamicMonthIndex,
-            monthName,
-            year: result.islamicYear,
-        },
+        islamic: { day: result.islamicDay, monthIndex: result.islamicMonthIndex, monthName, year: result.islamicYear },
         julianDayNumber: result.julianDayNumber,
         monthCalculation: { rawMonth: result.rawMonth },
         offsetFromEpoch: result.rawJulianDay - KUWAITI_EPOCH,

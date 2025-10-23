@@ -1,11 +1,13 @@
 'use client';
 
 import { Coordinates } from 'adhan';
-import { ChevronLeft, ChevronRight, Loader2, Settings2 } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Copy, Loader2, Settings2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { ThemeToggle } from '@/components/theme-toggle';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { daily } from '@/lib/calculator';
 import type { PrayerTimeExplanation } from '@/lib/explanation/types';
@@ -32,11 +34,6 @@ const salatLabels = {
 };
 
 const formatCoordinate = (value: number, label: 'N' | 'S' | 'E' | 'W') => `${Math.abs(value).toFixed(4)}° ${label}`;
-
-const primaryPillButton =
-    'inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 font-semibold text-sm text-white shadow-lg transition hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-200';
-const secondaryPillButton =
-    'inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/85 px-5 py-2 font-semibold text-emerald-800 text-sm shadow-sm transition hover:border-orange-300 hover:text-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-orange-200';
 
 type ExplanationHookOptions = {
     address: string;
@@ -178,6 +175,8 @@ export default function PrayerTimesPage() {
     const { settings, hydrated, numeric } = useSettings();
     const [currentDate, setCurrentDate] = useState(new Date());
     const { quote, error: quoteError } = useMotivationalQuote();
+    const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+    const copyTimeoutRef = useRef<number | null>(null);
 
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
 
@@ -257,9 +256,13 @@ export default function PrayerTimesPage() {
             timeZone,
         });
 
-    if (!hydrated) {
-        return null;
-    }
+    useEffect(() => {
+        return () => {
+            if (copyTimeoutRef.current) {
+                window.clearTimeout(copyTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const methodLabel = methodLabelMap[settings.method] ?? settings.method;
     const locationLabel = settings.address || 'Your location';
@@ -277,12 +280,12 @@ export default function PrayerTimesPage() {
     }) => (
         <div className={`flex items-baseline justify-between ${className}`}>
             <span
-                className={`font-semibold ${isMainPrayer ? 'text-4xl lg:text-5xl' : 'text-2xl lg:text-3xl'} text-emerald-950`}
+                className={`font-semibold ${isMainPrayer ? 'text-4xl lg:text-5xl' : 'text-2xl lg:text-3xl'} text-foreground`}
             >
                 {name}
             </span>
             <span
-                className={`font-semibold ${isMainPrayer ? 'text-4xl lg:text-5xl' : 'text-2xl lg:text-3xl'} text-orange-600`}
+                className={`font-semibold ${isMainPrayer ? 'text-4xl lg:text-5xl' : 'text-2xl lg:text-3xl'} text-primary`}
             >
                 {time}
             </span>
@@ -293,50 +296,120 @@ export default function PrayerTimesPage() {
     const longitudeLabel = numeric.longitude >= 0 ? 'E' : 'W';
     const isIntervalMethod = ishaInterval > 0;
 
+    const handleCopyQuote = useCallback(async () => {
+        if (!quote) {
+            return;
+        }
+
+        if (copyTimeoutRef.current) {
+            window.clearTimeout(copyTimeoutRef.current);
+        }
+
+        const payload = `“${quote.text}” - ${quote.citation}\n\nShared from Salat10 [https://salat10.vercel.app]`;
+
+        try {
+            if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(payload);
+            } else if (typeof document !== 'undefined') {
+                const textarea = document.createElement('textarea');
+                textarea.value = payload;
+                textarea.setAttribute('readonly', 'true');
+                textarea.style.position = 'absolute';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+            setCopyStatus('copied');
+            copyTimeoutRef.current = window.setTimeout(() => setCopyStatus('idle'), 2000);
+        } catch (error) {
+            console.warn('Unable to copy quote', error);
+            setCopyStatus('error');
+            copyTimeoutRef.current = window.setTimeout(() => setCopyStatus('idle'), 2500);
+        }
+    }, [quote]);
+
+    const displayQuote =
+        quote?.text ??
+        (quoteError ? 'Anchor your heart to remembrance and intention.' : 'Gathering a reflection for today…');
+    const displayCitation = quote?.citation ?? 'Salat10';
+    const copyMessage = copyStatus === 'copied' ? 'Copied!' : copyStatus === 'error' ? 'Copy unavailable' : null;
+    const canCopyQuote = Boolean(quote);
+
+    if (!hydrated) {
+        return null;
+    }
+
     return (
         <TooltipProvider>
             <div className="relative min-h-screen overflow-hidden">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18),transparent_60%)]" />
-                <div className="-top-32 pointer-events-none absolute right-[-10%] h-80 w-80 rounded-full bg-orange-200/40 blur-3xl" />
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(11,124,166,0.18),transparent_65%)]" />
+                <div className="pointer-events-none absolute top-[-18%] right-[-20%] h-96 w-96 rounded-full bg-[rgba(244,217,165,0.35)] blur-3xl" />
 
-                <div className="relative z-10 flex min-h-screen flex-col items-center px-6 py-10">
-                    <div className="w-full max-w-6xl space-y-10">
-                        <section className="rounded-3xl bg-white/85 p-8 shadow-lg ring-1 ring-emerald-100/80 backdrop-blur-md">
-                            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div className="space-y-3">
-                                    <h1 className="font-bold text-3xl text-emerald-950">Prayer Time Explorer</h1>
-                                    <p className="text-base text-emerald-800">
-                                        Discover how Adhan&apos;s astronomy turns your coordinates into the daily prayer
-                                        schedule. Follow each calculation, learn the vocabulary, and celebrate every
-                                        finished time.
+                {!showExplanation && (
+                    <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
+                        <ThemeToggle />
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button asChild className="shadow-lg backdrop-blur" size="icon">
+                                    <Link aria-label="Open settings" href="/settings">
+                                        <Settings2 className="h-5 w-5" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Open settings</TooltipContent>
+                        </Tooltip>
+                    </div>
+                )}
+
+                <div className="relative z-10 flex min-h-screen flex-col items-center px-4 pt-20 pb-16 sm:px-6 lg:px-10">
+                    <div className="w-full space-y-10">
+                        <section className="w-full rounded-3xl border border-primary/15 bg-card/95 p-8 shadow-xl backdrop-blur">
+                            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                                <blockquote className="flex-1 text-balance text-foreground/90 text-lg">
+                                    <p className="relative text-pretty pl-6 before:absolute before:top-1 before:left-0 before:font-serif before:text-5xl before:text-primary before:content-['“'] after:ml-1 after:text-4xl after:text-primary after:content-['”']">
+                                        {displayQuote}
                                     </p>
+                                    <footer className="mt-4 pl-6 text-muted-foreground text-sm">
+                                        — {displayCitation}
+                                    </footer>
+                                </blockquote>
+                                <div className="flex items-center gap-3 self-end sm:self-start">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                aria-label="Copy quote"
+                                                disabled={!canCopyQuote}
+                                                onClick={handleCopyQuote}
+                                                size="icon"
+                                                variant="ghost"
+                                            >
+                                                {copyStatus === 'copied' ? (
+                                                    <Check className="h-5 w-5" />
+                                                ) : (
+                                                    <Copy className="h-5 w-5" />
+                                                )}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{canCopyQuote ? 'Copy quote' : 'Quote loading'}</TooltipContent>
+                                    </Tooltip>
+                                    <span aria-live="polite" className="h-4 min-w-[3rem] text-muted-foreground text-xs">
+                                        {copyMessage}
+                                    </span>
                                 </div>
-                                <Link className={primaryPillButton} href="/settings">
-                                    <Settings2 className="h-4 w-4" /> Open settings
-                                </Link>
                             </div>
-                            {quote && (
-                                <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-emerald-900 text-sm shadow-inner">
-                                    {quote.text} —{' '}
-                                    <span className="font-semibold text-emerald-700">{quote.citation}</span>
-                                </p>
-                            )}
-                            {quoteError && !quote && (
-                                <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-emerald-700 text-sm shadow-inner">
-                                    We&apos;ll share a motivating quote next time.
-                                </p>
-                            )}
                         </section>
 
-                        <section className="space-y-8 rounded-3xl bg-white/85 p-8 shadow-lg ring-1 ring-emerald-100/80 backdrop-blur-md">
+                        <section className="w-full space-y-8 rounded-3xl border border-primary/15 bg-card/95 p-8 shadow-xl backdrop-blur">
                             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <button className={secondaryPillButton} onClick={() => navigateDate(-1)} type="button">
-                                    <ChevronLeft size={18} /> Previous day
-                                </button>
+                                <Button onClick={() => navigateDate(-1)} type="button" variant="outline">
+                                    <ChevronLeft className="mr-2 h-4 w-4" /> Previous day
+                                </Button>
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <span className="cursor-help text-center font-medium text-emerald-900 text-sm">
+                                        <span className="cursor-help text-center font-medium text-foreground/80 text-sm">
                                             {locationLabel} — {timeZone}
                                         </span>
                                     </TooltipTrigger>
@@ -347,15 +420,15 @@ export default function PrayerTimesPage() {
                                 </Tooltip>
 
                                 <div className="text-center">
-                                    <h3 className="font-semibold text-emerald-950 text-lg">{result.date}</h3>
-                                    <p className="text-emerald-700 text-sm">
+                                    <h3 className="font-semibold text-foreground text-lg">{result.date}</h3>
+                                    <p className="text-muted-foreground text-sm">
                                         {hijri.day}, {hijri.date} {hijri.month} {hijri.year} H
                                     </p>
                                 </div>
 
-                                <button className={secondaryPillButton} onClick={() => navigateDate(1)} type="button">
-                                    Next day <ChevronRight size={18} />
-                                </button>
+                                <Button onClick={() => navigateDate(1)} type="button" variant="outline">
+                                    Next day <ChevronRight className="ml-2 h-4 w-4" />
+                                </Button>
                             </div>
 
                             <div className="space-y-4">
@@ -370,25 +443,19 @@ export default function PrayerTimesPage() {
                             </div>
 
                             <div className="flex flex-col gap-4 pt-4 md:flex-row md:items-center md:justify-between">
-                                <div className="text-emerald-700 text-sm">
-                                    Method: <span className="font-semibold text-emerald-900">{methodLabel}</span> · Fajr
-                                    angle{' '}
-                                    <span className="font-semibold text-emerald-900">{fajrAngle.toFixed(2)}°</span> ·
-                                    ʿIshāʾ{' '}
-                                    <span className="font-semibold text-emerald-900">
+                                <div className="text-muted-foreground text-sm">
+                                    Method: <span className="font-semibold text-foreground">{methodLabel}</span> · Fajr
+                                    angle <span className="font-semibold text-foreground">{fajrAngle.toFixed(2)}°</span>{' '}
+                                    · ʿIshāʾ{' '}
+                                    <span className="font-semibold text-foreground">
                                         {isIntervalMethod
                                             ? `${ishaInterval.toFixed(0)} min after Maghrib`
                                             : `${ishaAngle.toFixed(2)}°`}
                                     </span>
                                 </div>
-                                <button
-                                    className="rounded-full bg-orange-500 px-6 py-3 font-semibold text-sm text-white shadow transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-orange-200"
-                                    disabled={!hasValidCoordinates}
-                                    onClick={openExplanation}
-                                    type="button"
-                                >
+                                <Button disabled={!hasValidCoordinates} onClick={openExplanation} type="button">
                                     Explain today&apos;s calculations
-                                </button>
+                                </Button>
                             </div>
                         </section>
                     </div>
@@ -401,22 +468,23 @@ export default function PrayerTimesPage() {
                 />
 
                 {showExplanation && explanationLoading && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-emerald-950/20 backdrop-blur">
-                        <div className="flex flex-col items-center gap-3 rounded-3xl bg-white/90 px-6 py-6 shadow-2xl ring-1 ring-emerald-200">
-                            <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
-                            <p className="font-medium text-emerald-800 text-sm">Preparing the story…</p>
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-foreground/20 backdrop-blur">
+                        <div className="flex flex-col items-center gap-3 rounded-3xl bg-card/95 px-6 py-6 shadow-2xl ring-1 ring-primary/20">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            <p className="font-medium text-muted-foreground text-sm">Preparing the story…</p>
                         </div>
                     </div>
                 )}
 
                 {showExplanation && (
-                    <button
-                        className="fixed top-6 right-6 z-[120] rounded-full bg-emerald-800 px-4 py-2 font-semibold text-sm text-white shadow-lg transition hover:bg-emerald-700"
+                    <Button
+                        className="fixed top-24 right-6 z-[120]"
                         onClick={closeExplanation}
-                        type="button"
+                        size="sm"
+                        variant="secondary"
                     >
                         Close explanation
-                    </button>
+                    </Button>
                 )}
             </div>
         </TooltipProvider>
