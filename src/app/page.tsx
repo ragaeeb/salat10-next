@@ -344,8 +344,8 @@ export default function PrayerTimesPage() {
     return (
         <TooltipProvider>
             <div className="relative min-h-screen overflow-hidden">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(11,124,166,0.18),transparent_65%)]" />
-                <div className="pointer-events-none absolute top-[-18%] right-[-20%] h-96 w-96 rounded-full bg-[rgba(244,217,165,0.35)] blur-3xl" />
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(28,63,170,0.18),transparent_65%)]" />
+                <div className="pointer-events-none absolute top-[-18%] right-[-20%] h-96 w-96 rounded-full bg-[rgba(19,36,107,0.3)] blur-3xl" />
 
                 {!showExplanation && (
                     <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
@@ -462,6 +462,7 @@ export default function PrayerTimesPage() {
                 </div>
 
                 <MultiStepLoader
+                    onClose={closeExplanation}
                     open={showExplanation && !explanationLoading && Boolean(explanation?.steps.length)}
                     steps={explanation?.steps ?? []}
                     summary={explanation?.summary ?? null}
@@ -476,16 +477,7 @@ export default function PrayerTimesPage() {
                     </div>
                 )}
 
-                {showExplanation && (
-                    <Button
-                        className="fixed top-24 right-6 z-[120]"
-                        onClick={closeExplanation}
-                        size="sm"
-                        variant="secondary"
-                    >
-                        Close explanation
-                    </Button>
-                )}
+                {/* Close button now lives within the explanation overlay */}
             </div>
         </TooltipProvider>
     );

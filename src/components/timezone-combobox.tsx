@@ -40,17 +40,17 @@ export function TimezoneCombobox({ value, onChange, ariaLabelledBy }: TimezoneCo
                 <button
                     type="button"
                     className={cn(
-                        'flex w-full items-center justify-between rounded-xl border border-emerald-200 bg-white/70 px-4 py-3 text-left font-medium text-emerald-900 text-sm shadow-sm transition',
-                        'hover:border-orange-300 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200',
+                        'flex w-full items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3 text-left font-medium text-foreground text-sm shadow-sm transition',
+                        'hover:border-primary/40 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/40',
                     )}
                     aria-haspopup="listbox"
                     aria-labelledby={ariaLabelledBy}
                 >
                     <span className="flex items-center gap-2">
-                        <Globe2 className="h-4 w-4 text-emerald-500" />
+                        <Globe2 className="h-4 w-4 text-primary" />
                         <span>{formatZone(selected)}</span>
                     </span>
-                    <ChevronsUpDown className="h-4 w-4 text-emerald-500" />
+                    <ChevronsUpDown className="h-4 w-4 text-primary" />
                 </button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0">
@@ -65,7 +65,7 @@ export function TimezoneCombobox({ value, onChange, ariaLabelledBy }: TimezoneCo
                                     value={zone}
                                     onSelect={() => handleSelect(zone)}
                                     className={cn(
-                                        selected === zone && 'data-[selected=true] bg-white text-emerald-900',
+                                        selected === zone && 'data-[selected=true] bg-primary/10 text-foreground',
                                     )}
                                 >
                                     <span>{formatZone(zone)}</span>
@@ -74,7 +74,7 @@ export function TimezoneCombobox({ value, onChange, ariaLabelledBy }: TimezoneCo
                         </CommandGroup>
                     </CommandList>
                 </Command>
-                {isPending && <div className="px-3 pb-3 text-emerald-500 text-xs">Updating selection…</div>}
+                {isPending && <div className="px-3 pb-3 text-muted-foreground text-xs">Updating selection…</div>}
             </PopoverContent>
         </Popover>
     );

@@ -12,7 +12,7 @@ const Command = React.forwardRef<
     <CommandPrimitive
         ref={ref}
         className={cn(
-            'flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white/95 text-emerald-900 shadow-lg ring-1 ring-emerald-100',
+            'flex h-full w-full flex-col overflow-hidden rounded-2xl bg-card text-foreground shadow-lg ring-1 ring-border/60 backdrop-blur',
             className,
         )}
         {...props}
@@ -24,11 +24,11 @@ const CommandInput = React.forwardRef<
     React.ElementRef<typeof CommandPrimitive.Input>,
     React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
-    <div className="flex items-center border-emerald-100 border-b px-3">
+    <div className="flex items-center border-border/60 border-b px-3">
         <CommandPrimitive.Input
             ref={ref}
             className={cn(
-                'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-emerald-500 disabled:cursor-not-allowed disabled:opacity-50',
+                'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground/70 disabled:cursor-not-allowed disabled:opacity-50',
                 className,
             )}
             {...props}
@@ -55,7 +55,7 @@ const CommandEmpty = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <CommandPrimitive.Empty
         ref={ref}
-        className={cn('px-3 py-6 text-center text-emerald-600 text-sm', className)}
+        className={cn('px-3 py-6 text-center text-muted-foreground text-sm', className)}
         {...props}
     />
 ));
@@ -68,7 +68,7 @@ const CommandGroup = React.forwardRef<
     <CommandPrimitive.Group
         ref={ref}
         className={cn(
-            'overflow-hidden rounded-xl bg-emerald-50/60 p-1 text-emerald-800 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-emerald-500 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide',
+            'overflow-hidden rounded-xl bg-secondary/60 p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide',
             className,
         )}
         {...props}
@@ -80,7 +80,7 @@ const CommandSeparator = React.forwardRef<
     React.ElementRef<typeof CommandPrimitive.Separator>,
     React.ComponentPropsWithoutRef<typeof CommandPrimitive.Separator>
 >(({ className, ...props }, ref) => (
-    <CommandPrimitive.Separator ref={ref} className={cn('my-1 h-px bg-emerald-100', className)} {...props} />
+    <CommandPrimitive.Separator ref={ref} className={cn('my-1 h-px bg-border/60', className)} {...props} />
 ));
 CommandSeparator.displayName = CommandPrimitive.Separator.displayName;
 
@@ -91,7 +91,7 @@ const CommandItem = React.forwardRef<
     <CommandPrimitive.Item
         ref={ref}
         className={cn(
-            'relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition data-[disabled=true]:pointer-events-none data-[highlighted=true]:bg-white data-[selected=true]:bg-white data-[highlighted=true]:text-emerald-900 data-[selected=true]:text-emerald-900 data-[disabled=true]:opacity-50',
+            'relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition data-[disabled=true]:pointer-events-none data-[highlighted=true]:bg-primary/10 data-[selected=true]:bg-primary/10 data-[highlighted=true]:text-foreground data-[selected=true]:text-foreground data-[disabled=true]:opacity-50',
             className,
         )}
         {...props}
@@ -100,7 +100,7 @@ const CommandItem = React.forwardRef<
 CommandItem.displayName = CommandPrimitive.Item.displayName;
 
 const CommandShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
-    return <span className={cn('ml-auto text-emerald-500 text-xs tracking-widest', className)} {...props} />;
+    return <span className={cn('ml-auto text-muted-foreground text-xs tracking-widest', className)} {...props} />;
 };
 CommandShortcut.displayName = 'CommandShortcut';
 

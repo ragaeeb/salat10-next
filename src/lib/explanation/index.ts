@@ -165,6 +165,13 @@ export const buildPrayerTimeExplanation = (inputs: CalculationInputs): PrayerTim
         id: 'orbital',
         summary: `Mean longitude L₀ = ${formatNumber(orbital.meanLongitude, 4)}°, mean anomaly M = ${formatNumber(orbital.meanAnomaly, 4)}°, equation of the center C = ${formatNumber(orbital.equationOfCenter, 4)}°, apparent longitude λ = ${formatNumber(orbital.apparentLongitude, 4)}°.`,
         title: 'Follow the sun along its oval track',
+        visual: {
+            alt: 'Diagram of an elliptical orbit showing the Sun at one focus and a planet moving around the oval path.',
+            caption:
+                'Earth circles the sun along a gentle oval. The mean anomaly is the steady lap counter and the equation of the center nudges us toward the true position on the oval.',
+            src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Elliptic_orbit.svg/640px-Elliptic_orbit.svg.png',
+            type: 'image',
+        },
     });
 
     builder.addStep({

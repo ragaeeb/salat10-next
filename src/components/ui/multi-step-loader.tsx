@@ -1,5 +1,6 @@
 'use client';
 
+import { X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import Image from 'next/image';
 import { memo, useEffect, useState } from 'react';
@@ -7,6 +8,7 @@ import { memo, useEffect, useState } from 'react';
 import type { ExplanationStep, ExplanationSummary } from '@/lib/explanation/types';
 import { cn } from '@/lib/utils';
 
+import { Button } from './button';
 import { ScrollArea } from './scroll-area';
 import WorldMap from './world-map';
 
@@ -42,81 +44,71 @@ const CheckFilled = ({ className }: { className?: string }) => (
     </svg>
 );
 
-const StepTimeline = memo(
-    ({
-        steps,
-        activeIndex,
-        onSelect,
-        onLoadMore,
-        visibleCount,
-    }: {
-        steps: ExplanationStep[];
-        activeIndex: number;
-        onSelect: (index: number) => void;
-        onLoadMore: () => void;
-        visibleCount: number;
-    }) => {
-        const displayed = steps.slice(0, visibleCount);
-        const hasMore = visibleCount < steps.length;
-        const resolvedActiveIndex = Math.min(activeIndex, steps.length - 1);
-        const displayActiveIndex = Math.min(resolvedActiveIndex, Math.max(displayed.length - 1, 0));
+type StepTimelineProps = {
+    steps: ExplanationStep[];
+    activeIndex: number;
+    onSelect: (index: number) => void;
+    onLoadMore: () => void;
+    visibleCount: number;
+};
 
-        return (
-            <ScrollArea className="relative mx-auto mt-6 max-h-[65vh] w-full max-w-xl pr-2 md:mt-0 md:h-full md:max-h-none md:pr-3">
-                <div className="flex flex-col gap-3">
-                    {displayed.map((step, index) => {
-                        const distance = Math.abs(index - displayActiveIndex);
-                        const opacity = Math.max(1 - distance * 0.2, 0.25);
-                        const isCurrent = displayActiveIndex === index;
-                        const isComplete = index < resolvedActiveIndex;
+const StepTimeline = memo(({ steps, activeIndex, onSelect, onLoadMore, visibleCount }: StepTimelineProps) => {
+    const displayed = steps.slice(0, visibleCount);
+    const hasMore = visibleCount < steps.length;
+    const resolvedActiveIndex = Math.min(activeIndex, steps.length - 1);
+    const displayActiveIndex = Math.min(resolvedActiveIndex, Math.max(displayed.length - 1, 0));
 
-                        return (
-                            <motion.button
-                                key={step.id}
-                                type="button"
-                                onClick={() => onSelect(index)}
-                                className={cn(
-                                    'flex w-full items-start gap-3 rounded-2xl border border-transparent px-4 py-3 text-left transition',
-                                    isCurrent
-                                        ? 'bg-white text-emerald-950 shadow-lg'
-                                        : 'bg-white/50 text-emerald-900 hover:border-orange-200 hover:bg-white/80',
-                                )}
-                                style={{ opacity }}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <div className="pt-1">
-                                    {isComplete ? (
-                                        <CheckFilled className="text-orange-500" />
-                                    ) : (
-                                        <CheckIcon className={cn(isCurrent ? 'text-orange-500' : 'text-emerald-700')} />
-                                    )}
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="font-semibold text-emerald-700 text-xs uppercase tracking-wide">
-                                        Step {index + 1}
-                                    </p>
-                                    <h3 className="font-semibold text-emerald-900 text-lg">{step.title}</h3>
-                                    <p className="text-emerald-800 text-sm">{step.summary}</p>
-                                </div>
-                            </motion.button>
-                        );
-                    })}
-                    {hasMore ? (
-                        <button
+    return (
+        <ScrollArea className="h-full pr-2">
+            <div className="flex flex-col gap-3">
+                {displayed.map((step, index) => {
+                    const distance = Math.abs(index - displayActiveIndex);
+                    const opacity = Math.max(1 - distance * 0.15, 0.3);
+                    const isCurrent = displayActiveIndex === index;
+                    const isComplete = index < resolvedActiveIndex;
+
+                    return (
+                        <motion.button
+                            key={step.id}
                             type="button"
-                            onClick={onLoadMore}
-                            className="inline-flex items-center justify-center rounded-2xl border border-emerald-200 border-dashed bg-white/50 px-4 py-3 font-semibold text-emerald-700 text-sm transition hover:border-orange-300 hover:text-orange-500"
+                            onClick={() => onSelect(index)}
+                            className={cn(
+                                'flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                                isCurrent
+                                    ? 'border-primary bg-primary/10 text-foreground shadow-lg'
+                                    : 'border-transparent bg-card/70 text-muted-foreground hover:border-border/70 hover:bg-card hover:text-foreground',
+                            )}
+                            style={{ opacity }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity }}
+                            transition={{ duration: 0.3 }}
                         >
-                            Load more steps
-                        </button>
-                    ) : null}
-                </div>
-            </ScrollArea>
-        );
-    },
-);
+                            <div className="pt-1 text-primary">
+                                {isComplete ? (
+                                    <CheckFilled className="text-primary" />
+                                ) : (
+                                    <CheckIcon className="text-primary" />
+                                )}
+                            </div>
+                            <div className="space-y-1">
+                                <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+                                    Step {index + 1}
+                                </p>
+                                <h3 className="font-semibold text-foreground text-lg">{step.title}</h3>
+                                <p className="text-muted-foreground/80 text-sm">{step.summary}</p>
+                            </div>
+                        </motion.button>
+                    );
+                })}
+                {hasMore ? (
+                    <Button type="button" variant="outline" size="sm" onClick={onLoadMore} className="border-dashed">
+                        Load more steps
+                    </Button>
+                ) : null}
+            </div>
+        </ScrollArea>
+    );
+});
 StepTimeline.displayName = 'StepTimeline';
 
 const INITIAL_TIMELINE_STEPS = 24;
@@ -144,7 +136,7 @@ const StepVisual = ({ step }: { step: ExplanationStep }) => {
                         },
                     ]}
                 />
-                <p className="text-emerald-700 text-xs">{step.visual.caption}</p>
+                <p className="text-muted-foreground text-xs">{step.visual.caption}</p>
             </div>
         );
     }
@@ -152,7 +144,7 @@ const StepVisual = ({ step }: { step: ExplanationStep }) => {
     if (step.visual.type === 'image') {
         return (
             <div className="space-y-2">
-                <div className="relative aspect-[3/2] w-full overflow-hidden rounded-2xl border border-emerald-100">
+                <div className="relative aspect-[3/2] w-full overflow-hidden rounded-2xl border border-border/60">
                     <Image
                         alt={step.visual.alt}
                         className="object-cover"
@@ -162,7 +154,7 @@ const StepVisual = ({ step }: { step: ExplanationStep }) => {
                         unoptimized
                     />
                 </div>
-                {step.visual.caption ? <p className="text-emerald-700 text-xs">{step.visual.caption}</p> : null}
+                {step.visual.caption ? <p className="text-muted-foreground text-xs">{step.visual.caption}</p> : null}
             </div>
         );
     }
@@ -173,11 +165,13 @@ const StepVisual = ({ step }: { step: ExplanationStep }) => {
                 initial={{ opacity: 0.6, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="relative overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 via-white to-emerald-50 p-4 shadow-inner"
+                className="relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-r from-primary/10 via-card to-secondary/40 p-4 shadow-inner"
             >
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(250,204,21,0.35),transparent_55%)]" />
-                <p className="relative font-semibold text-orange-600 text-sm">Achievement step</p>
-                <p className="relative text-emerald-800 text-xs">A prayer time or key milestone was calculated here.</p>
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,var(--primary)_0%,transparent_55%)] opacity-30" />
+                <p className="relative font-semibold text-primary text-sm">Achievement step</p>
+                <p className="relative text-muted-foreground text-xs">
+                    A prayer time or key milestone was calculated here.
+                </p>
             </motion.div>
         );
     }
@@ -191,15 +185,15 @@ const StepReferences = ({ references }: { references?: ExplanationStep['referenc
     }
     return (
         <div className="space-y-2 pt-2 text-sm">
-            <p className="font-semibold text-emerald-900">Further reading</p>
-            <ul className="list-disc space-y-1 pl-5 text-emerald-800">
+            <p className="font-semibold text-foreground">Further reading</p>
+            <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
                 {references.map((reference) => (
                     <li key={reference.url}>
                         <a
                             href={reference.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-orange-600 underline-offset-4 hover:underline"
+                            className="text-primary underline-offset-4 hover:underline"
                         >
                             {reference.label}
                         </a>
@@ -219,13 +213,15 @@ const TabSwitcher = ({
     hasSummary: boolean;
     onTabChange: (tab: 'story' | 'math') => void;
 }) => (
-    <div className="flex items-center gap-2 rounded-full bg-emerald-100/70 p-1">
+    <div className="flex items-center gap-2 rounded-full bg-primary/10 p-1">
         <button
             type="button"
             onClick={() => onTabChange('story')}
             className={cn(
                 'rounded-full px-3 py-1 font-semibold text-xs transition',
-                activeTab === 'story' ? 'bg-white text-emerald-900 shadow' : 'text-emerald-700 hover:text-emerald-900',
+                activeTab === 'story'
+                    ? 'bg-primary text-primary-foreground shadow'
+                    : 'text-muted-foreground hover:text-foreground',
             )}
         >
             Story
@@ -237,8 +233,8 @@ const TabSwitcher = ({
                 className={cn(
                     'rounded-full px-3 py-1 font-semibold text-xs transition',
                     activeTab === 'math'
-                        ? 'bg-white text-emerald-900 shadow'
-                        : 'text-emerald-700 hover:text-emerald-900',
+                        ? 'bg-primary text-primary-foreground shadow'
+                        : 'text-muted-foreground hover:text-foreground',
                 )}
             >
                 Math trail
@@ -246,6 +242,16 @@ const TabSwitcher = ({
         )}
     </div>
 );
+
+type StepControlsProps = {
+    canGoBack: boolean;
+    canGoForward: boolean;
+    onNext: () => void;
+    onPrevious: () => void;
+    onToggleDetails: () => void;
+    showDetails: boolean;
+    showDetailsButton: boolean;
+};
 
 const StepControls = ({
     canGoBack,
@@ -255,63 +261,41 @@ const StepControls = ({
     onToggleDetails,
     showDetails,
     showDetailsButton,
-}: {
-    canGoBack: boolean;
-    canGoForward: boolean;
-    onNext: () => void;
-    onPrevious: () => void;
-    onToggleDetails: () => void;
-    showDetails: boolean;
-    showDetailsButton: boolean;
-}) => (
+}: StepControlsProps) => (
     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-2">
-            <button
-                type="button"
-                onClick={onPrevious}
-                className="rounded-full border border-emerald-300 bg-white px-4 py-2 font-semibold text-emerald-800 text-sm shadow-sm transition hover:border-orange-300 hover:text-orange-500 disabled:cursor-not-allowed disabled:border-emerald-100 disabled:text-emerald-300 disabled:shadow-none"
-                disabled={!canGoBack}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={onPrevious} disabled={!canGoBack}>
                 Previous
-            </button>
-            <button
-                type="button"
-                onClick={onNext}
-                className="rounded-full bg-emerald-600 px-4 py-2 font-semibold text-sm text-white shadow transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-white/70 disabled:shadow-none"
-                disabled={!canGoForward}
-            >
+            </Button>
+            <Button type="button" size="sm" onClick={onNext} disabled={!canGoForward}>
                 Next
-            </button>
+            </Button>
         </div>
         {showDetailsButton ? (
-            <button
-                type="button"
-                onClick={onToggleDetails}
-                className="rounded-full bg-orange-500 px-4 py-2 font-semibold text-sm text-white shadow transition hover:bg-orange-400"
-            >
+            <Button type="button" variant="secondary" size="sm" onClick={onToggleDetails}>
                 {showDetails ? 'Hide extra context' : 'Show extra context'}
-            </button>
+            </Button>
         ) : null}
     </div>
 );
 
 const StepDetail = memo(({ step, showDetails }: { step: ExplanationStep; showDetails: boolean }) => (
-    <ScrollArea className="h-full pr-3">
+    <ScrollArea className="h-full pr-2">
         <div className="space-y-4 pr-1">
-            <h3 className="font-bold text-2xl text-emerald-950">{step.title}</h3>
-            <p className="text-base text-emerald-800">{step.summary}</p>
+            <h3 className="font-bold text-2xl text-foreground">{step.title}</h3>
+            <p className="text-base text-muted-foreground">{step.summary}</p>
 
             {step.finalValue && (
-                <div className="inline-flex items-center gap-2 rounded-full bg-orange-100/80 px-3 py-1 font-semibold text-orange-700 text-sm shadow-sm">
-                    <span className="text-orange-500 text-xs uppercase tracking-wide">Final value</span>
-                    <span className="text-base text-orange-800">{step.finalValue}</span>
+                <div className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 font-semibold text-primary text-sm shadow-sm">
+                    <span className="text-primary/80 text-xs uppercase tracking-wide">Final value</span>
+                    <span className="text-base text-primary">{step.finalValue}</span>
                 </div>
             )}
 
             <StepVisual step={step} />
 
             {showDetails && step.details && (
-                <div className="space-y-3 text-emerald-800 text-sm">
+                <div className="space-y-3 text-muted-foreground text-sm">
                     {step.details.map((detail, index) => (
                         <p key={`${step.id}-detail-${index}`}>{detail}</p>
                     ))}
@@ -325,31 +309,31 @@ const StepDetail = memo(({ step, showDetails }: { step: ExplanationStep; showDet
 StepDetail.displayName = 'StepDetail';
 
 const SummaryView = memo(({ summary }: { summary: ExplanationSummary }) => (
-    <ScrollArea className="h-full pr-3">
+    <ScrollArea className="h-full pr-2">
         <div className="space-y-4 pr-1">
             {summary.intro.map((line) => (
-                <p key={`intro-${line}`} className="text-emerald-800 text-sm">
+                <p key={`intro-${line}`} className="text-muted-foreground text-sm">
                     {line}
                 </p>
             ))}
-            <div className="rounded-2xl border border-emerald-100 bg-white/80 p-4 shadow-inner">
-                <h3 className="font-semibold text-emerald-700 text-sm uppercase tracking-wide">Math trail</h3>
-                <ScrollArea className="mt-3 max-h-64 rounded-xl border border-emerald-100 pr-3">
+            <div className="rounded-2xl border border-border/60 bg-card/80 p-4 shadow-inner">
+                <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">Math trail</h3>
+                <ScrollArea className="mt-3 h-72 rounded-xl border border-border/50 pr-3">
                     <ul className="space-y-3 p-3 pr-1">
                         {summary.lines.map((line) => (
-                            <li key={line.id} className="rounded-xl bg-emerald-50/70 px-3 py-2">
-                                <p className="font-semibold text-emerald-700 text-xs uppercase tracking-wide">
+                            <li key={line.id} className="rounded-xl bg-primary/10 px-3 py-2">
+                                <p className="font-semibold text-muted-foreground/80 text-xs uppercase tracking-wide">
                                     {line.label}
                                 </p>
-                                <p className="text-emerald-600 text-xs">{line.expression}</p>
-                                <p className="font-semibold text-emerald-900 text-sm">{line.result}</p>
+                                <p className="text-muted-foreground text-xs">{line.expression}</p>
+                                <p className="font-semibold text-foreground text-sm">{line.result}</p>
                             </li>
                         ))}
                     </ul>
                 </ScrollArea>
             </div>
             {summary.outro.map((line) => (
-                <p key={`outro-${line}`} className="text-emerald-800 text-sm">
+                <p key={`outro-${line}`} className="text-muted-foreground text-sm">
                     {line}
                 </p>
             ))}
@@ -358,9 +342,14 @@ const SummaryView = memo(({ summary }: { summary: ExplanationSummary }) => (
 ));
 SummaryView.displayName = 'SummaryView';
 
-export type MultiStepLoaderProps = { steps: ExplanationStep[]; summary?: ExplanationSummary | null; open: boolean };
+export type MultiStepLoaderProps = {
+    steps: ExplanationStep[];
+    summary?: ExplanationSummary | null;
+    open: boolean;
+    onClose?: () => void;
+};
 
-export const MultiStepLoader = ({ steps, summary, open }: MultiStepLoaderProps) => {
+export const MultiStepLoader = ({ steps, summary, open, onClose }: MultiStepLoaderProps) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [showDetails, setShowDetails] = useState(true);
     const [activeTab, setActiveTab] = useState<'story' | 'math'>('story');
@@ -483,10 +472,36 @@ export const MultiStepLoader = ({ steps, summary, open }: MultiStepLoaderProps) 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-emerald-950/20 px-4 py-8 backdrop-blur-2xl"
+                    className="fixed inset-0 z-[100] flex flex-col bg-background/98 text-foreground"
                 >
-                    <div className="relative flex w-full max-w-6xl flex-col gap-6 rounded-3xl bg-white/85 p-6 shadow-2xl ring-1 ring-emerald-200 md:h-[85vh] md:max-h-[85vh] md:flex-row md:gap-8">
-                        <div className="md:min-h-0 md:w-[42%]">
+                    <div className="flex flex-col gap-4 px-4 pt-4 md:px-8">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="font-semibold text-primary/80 text-xs uppercase tracking-wide">
+                                Step {safeIndex + 1} of {steps.length}
+                            </p>
+                            <div className="flex items-center gap-3">
+                                <TabSwitcher
+                                    activeTab={activeTab}
+                                    hasSummary={Boolean(summary)}
+                                    onTabChange={handleTabChange}
+                                />
+                                {onClose ? (
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="ghost"
+                                        aria-label="Close explanation"
+                                        onClick={onClose}
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </Button>
+                                ) : null}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-1 flex-col gap-6 overflow-hidden px-4 pt-4 pb-6 md:flex-row md:px-8 md:pt-6 md:pb-10">
+                        <div className="flex h-72 flex-none flex-col rounded-3xl border border-border/60 bg-card/80 p-4 shadow-inner md:h-full md:w-[38%]">
                             <StepTimeline
                                 steps={steps}
                                 activeIndex={currentStep}
@@ -495,18 +510,7 @@ export const MultiStepLoader = ({ steps, summary, open }: MultiStepLoaderProps) 
                                 visibleCount={visibleCount}
                             />
                         </div>
-                        <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-2xl bg-white/90 p-6 shadow-inner">
-                            <div className="flex items-center justify-between gap-3">
-                                <p className="font-semibold text-emerald-700 text-xs uppercase tracking-wide">
-                                    Step {safeIndex + 1} of {steps.length}
-                                </p>
-                                <TabSwitcher
-                                    activeTab={activeTab}
-                                    hasSummary={Boolean(summary)}
-                                    onTabChange={handleTabChange}
-                                />
-                            </div>
-
+                        <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-3xl border border-border/60 bg-card/90 p-4 shadow-xl">
                             <div className="min-h-0 flex-1">
                                 {activeTab === 'story' ? (
                                     displayedStep ? (
