@@ -1,4 +1,5 @@
 import { CalculationParameters, Coordinates, PrayerTimes, SunnahTimes } from 'adhan';
+import type { MethodValue } from './settings';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const FRIDAY = 5;
@@ -52,7 +53,7 @@ type Calculation = {
     ishaAngle: number;
     latitude: string;
     longitude: string;
-    method: string;
+    method: MethodValue;
     timeZone: string;
 };
 
@@ -64,7 +65,7 @@ export const daily = (
     const fard = new PrayerTimes(
         new Coordinates(Number(latitude), Number(longitude)),
         now,
-        new CalculationParameters(method as any, fajrAngle, ishaAngle),
+        new CalculationParameters(method, fajrAngle, ishaAngle),
     );
 
     const sunan = new SunnahTimes(fard);

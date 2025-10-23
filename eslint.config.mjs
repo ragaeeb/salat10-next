@@ -1,27 +1,31 @@
-import { FlatCompat } from '@eslint/eslintrc';
-import eslintConfigPrettier from 'eslint-config-prettier';
-import perfectionist from 'eslint-plugin-perfectionist';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
-import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import js from '@eslint/js';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-    baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-    ...compat.extends('next/core-web-vitals', 'next/typescript'),
-    perfectionist.configs['recommended-natural'],
-    eslintPluginPrettierRecommended,
-    eslintConfigPrettier,
+export default [
     {
+        ignores: ['node_modules', '.next', 'public', 'eslint.config.mjs', '**/*.config.*'],
+    },
+    js.configs.recommended,
+    ...tseslint.configs.recommendedTypeChecked,
+    {
+        files: ['**/*.{ts,tsx}'],
+        languageOptions: {
+            parser: tseslint.parser,
+            parserOptions: {
+                project: './tsconfig.json',
+                tsconfigRootDir: process.cwd(),
+            },
+            globals: {
+                ...globals.browser,
+                ...globals.node,
+            },
+        },
+        plugins: {
+            '@typescript-eslint': tseslint.plugin,
+        },
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
         },
     },
 ];
-
-export default eslintConfig;
