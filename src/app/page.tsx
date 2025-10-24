@@ -2,6 +2,7 @@
 
 import { Coordinates } from 'adhan';
 import { Settings2 } from 'lucide-react';
+import { motion } from 'motion/react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useCopyFeedback } from '@/hooks/use-copy-feedback';
 import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
+import { usePrayerParallax } from '@/hooks/use-prayer-parallax';
 import { daily } from '@/lib/calculator';
 import type { PrayerTimeExplanation } from '@/lib/explanation/types';
 import { writeIslamicDate } from '@/lib/hijri';
@@ -83,6 +85,17 @@ export default function PrayerTimesPage() {
         loading: false,
     });
     const [showExplanation, setShowExplanation] = useState(false);
+
+    // Prayer parallax hook
+    const { sunX, sunY, skyColor, scrollYProgress, getPrayerLabel } = usePrayerParallax();
+    const [currentPrayerLabel, setCurrentPrayerLabel] = useState('');
+
+    useEffect(() => {
+        const unsubscribe = scrollYProgress.on('change', (latest) => {
+            setCurrentPrayerLabel(getPrayerLabel(latest));
+        });
+        return () => unsubscribe();
+    }, [scrollYProgress, getPrayerLabel]);
 
     useEffect(() => {
         void loadExplanationModule().catch((error) => {
@@ -248,7 +261,7 @@ export default function PrayerTimesPage() {
 
     const onCopyQuote = async () => {
         const sourceQuote = quote ?? { citation: 'Salat10', text: 'Remembrance keeps the heart alive.' };
-        await copy(`“${sourceQuote.text}” - [${sourceQuote.citation}]${QUOTE_WATERMARK}`);
+        await copy(`"${sourceQuote.text}" - [${sourceQuote.citation}]${QUOTE_WATERMARK}`);
     };
 
     const explanationLoading = explanationState.loading;
@@ -263,7 +276,32 @@ export default function PrayerTimesPage() {
 
     return (
         <TooltipProvider>
-            <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(10,46,120,0.6),_transparent_65%)]">
+            <div className="relative min-h-[300vh]">
+                {/* Parallax sky background */}
+                <motion.div className="-z-10 pointer-events-none fixed inset-0" style={{ backgroundColor: skyColor }} />
+
+                {/* Sun */}
+                <motion.div
+                    className="-z-10 pointer-events-none fixed h-20 w-20 rounded-full bg-yellow-400"
+                    style={{
+                        boxShadow: '0 0 60px 20px rgba(255, 215, 0, 0.4)',
+                        left: sunX,
+                        top: sunY,
+                        x: '-50%',
+                        y: '-50%',
+                    }}
+                />
+
+                {/* Prayer time label */}
+                <div className="-translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none fixed top-1/2 left-1/2">
+                    <p className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50">
+                        {currentPrayerLabel}
+                    </p>
+                </div>
+
+                {/* Original background gradient */}
+                <div className="-z-20 fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(10,46,120,0.6),_transparent_65%)]" />
+
                 {!showExplanation && (
                     <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
                         <ThemeToggle />
