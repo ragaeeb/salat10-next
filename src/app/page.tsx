@@ -203,7 +203,7 @@ export default function PrayerTimesPage() {
             const progress = (now - sunrise) / (dhuhr - sunrise);
             x = 70 - progress * 20;
             y = 80 - progress * 60;
-        } else if (now < asr) {
+        } else if (now < asr!) {
             // Dhuhr to Asr - afternoon, sun descending
             const progress = (now - dhuhr) / ((asr || dhuhr + 3600000) - dhuhr);
             x = 50 - progress * 20;
