@@ -30,18 +30,20 @@ const formatDate = (fajr: Date) =>
 /**
  * Formats raw prayer time objects into a sorted, display-friendly collection.
  */
+type FormattedTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
+
 const formatAsObject = (
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     { sunset, ...calculationResult }: Record<string, Date>,
     timeZone: string,
     salatLabels: Record<string, string>,
 ) => {
-    const timings = Object.entries(calculationResult)
+    const timings: FormattedTiming[] = Object.entries(calculationResult)
         .sort(([, value], [, nextValue]) => value.getTime() - nextValue.getTime())
         .map(([event, t]) => ({
             event,
             isFard: isFard(event),
-            label: salatLabels[event],
+            label: salatLabels[event] ?? event,
             time: formatTime(t, timeZone),
             value: t,
         }));
@@ -80,18 +82,25 @@ export const daily = (
     const result = formatAsObject(rest, timeZone, salatLabels);
     const currentPrayer = fard.currentPrayer(now);
     const nextPrayer = fard.nextPrayer(now);
+    const nowMs = now.getTime();
+    const activeEntry = [...result.timings].reverse().find((timing) => nowMs >= timing.value.getTime());
+    const fallbackEntry = result.timings[0];
+    const activeEvent = activeEntry?.event ?? fallbackEntry?.event ?? null;
+
+    const base = {
+        ...result,
+        activeEvent,
+        currentPrayer: currentPrayer === 'none' ? null : currentPrayer,
+        istijaba: false,
+    };
 
     if (nextPrayer === 'none') {
-        return { ...result, currentPrayer: currentPrayer === 'none' ? null : currentPrayer };
+        return base;
     }
 
     const diff = fard.timeForPrayer(nextPrayer)!.getTime() - now.getTime();
 
-    return {
-        ...result,
-        currentPrayer: currentPrayer === 'none' ? null : currentPrayer,
-        istijaba: now.getDay() === FRIDAY && nextPrayer === 'maghrib' && diff < ONE_HOUR,
-    };
+    return { ...base, istijaba: now.getDay() === FRIDAY && nextPrayer === 'maghrib' && diff < ONE_HOUR };
 };
 
 /**

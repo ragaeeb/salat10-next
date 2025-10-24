@@ -6,7 +6,7 @@ Welcome! This repository powers the Salat10 Next prayer-time explorer. Please fo
 
 - Use **Bun** for everything: `bun install`, `bun run dev`, `bun run build`, `bun test`, and `bun run lint`.
 - Biome replaced ESLint/Prettier. Format and lint with `bun run lint` only; do **not** add Prettier configs back.
-- Unit tests live in `tests/` and run via `bun test`. Add tests whenever you touch calculation logic.
+- Unit tests live next to the modules they cover (e.g. `src/lib/calculator.test.ts`) and run via `bun test`. Add tests whenever you touch calculation logic.
 - Avoid `ls -R`/`grep -R`; prefer `rg` as the codebase is sizeable.
 
 ## Code Style
@@ -25,7 +25,7 @@ Welcome! This repository powers the Salat10 Next prayer-time explorer. Please fo
 
 ## Testing Expectations
 
-- Modify calculations? Update or add `bun:test` suites in `tests/`.
+- Modify calculations? Update or add the co-located `bun:test` suites alongside the affected modules.
 - UI-only changes still require `bun run lint` and `bun test` to pass.
 - When touching time-sensitive logic, assert against deterministic dates to avoid timezone flakiness.
 

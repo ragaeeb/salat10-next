@@ -134,7 +134,11 @@ export default function PrayerTimesPage() {
                 {!showExplanation && (
                     <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
                         <ThemeToggle />
-                        <Button asChild className="rounded-full bg-background/70 shadow-lg backdrop-blur" size="icon">
+                        <Button
+                            asChild
+                            className="rounded-full border border-white/40 bg-white/20 text-foreground shadow-lg backdrop-blur transition hover:bg-white/40"
+                            size="icon"
+                        >
                             <Link aria-label="Open settings" href="/settings">
                                 <Settings2 className="h-5 w-5" />
                             </Link>
@@ -152,7 +156,7 @@ export default function PrayerTimesPage() {
                     />
 
                     <PrayerTimesCard
-                        activePrayer={result.currentPrayer}
+                        activeEvent={result.activeEvent}
                         addressLabel={addressLabel}
                         dateLabel={result.date}
                         explanationDisabled={explanationDisabled}

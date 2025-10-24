@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { formatAngle, formatDateInZone, formatMinutes, formatNumber, formatTimeInZone } from '@/lib/explanation/format';
+import { formatAngle, formatDateInZone, formatMinutes, formatNumber, formatTimeInZone } from './format';
 
 describe('format helpers', () => {
     const sample = new Date('2024-03-11T17:14:00Z');
@@ -11,8 +11,14 @@ describe('format helpers', () => {
     });
 
     test('fall back gracefully when timezone is invalid', () => {
-        const fallback = formatTimeInZone(sample, 'Invalid/Zone');
-        expect(typeof fallback).toBe('string');
+        const originalWarn = console.warn;
+        console.warn = () => {};
+        try {
+            const fallback = formatTimeInZone(sample, 'Invalid/Zone');
+            expect(typeof fallback).toBe('string');
+        } finally {
+            console.warn = originalWarn;
+        }
     });
 
     test('numeric helpers add units', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { explainHijriConversion, writeIslamicDate } from '@/lib/hijri';
+import { explainHijriConversion, writeIslamicDate } from './hijri';
 
 describe('Hijri conversion helpers', () => {
     test('produces known Ramadan date for March 11, 2024', () => {

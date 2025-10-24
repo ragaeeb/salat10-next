@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { daily, monthly, yearly } from '@/lib/calculator';
+import { daily, monthly, yearly } from './calculator';
 
 const labels = {
     asr: 'Asr',
@@ -29,6 +29,7 @@ describe('calculator helpers', () => {
         const result = daily(labels, calculation, new Date('2024-03-11T14:30:00-05:00'));
         expect(result.timings[0]?.event).toBe('fajr');
         expect(result.currentPrayer).toBe('dhuhr');
+        expect(result.activeEvent).toBe('dhuhr');
     });
 
     test('monthly calendar spans every day in month', () => {

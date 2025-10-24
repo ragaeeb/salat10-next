@@ -16,7 +16,7 @@ import {
     seasonAdjustedMorningTwilight,
     shortTimeZone,
     unwindAngle,
-} from '@/lib/explanation/math';
+} from './math';
 
 describe('astronomy math helpers', () => {
     test('angle conversions are inverses', () => {

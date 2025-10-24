@@ -43,7 +43,7 @@ Salat10 Next is an educational prayer time explorer built with Next.js 16 and Bu
 
 ## Testing
 
-Unit tests are implemented with `bun:test` and live under the `tests/` directory.
+Unit tests are implemented with `bun:test` and live next to the modules they cover (for example `src/lib/calculator.test.ts`).
 
 ```bash
 bun test

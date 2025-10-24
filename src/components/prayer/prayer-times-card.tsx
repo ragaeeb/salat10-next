@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 export type PrayerTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
 
 export type PrayerTimesCardProps = {
-    activePrayer: string | null;
+    activeEvent: string | null;
     addressLabel: string;
     dateLabel: string;
     explanationDisabled: boolean;
@@ -74,7 +74,7 @@ const PrayerTimeRow = ({
  * Displays the daily schedule with navigation and explanation triggers.
  */
 export function PrayerTimesCard({
-    activePrayer,
+    activeEvent,
     addressLabel,
     dateLabel,
     explanationDisabled,
@@ -89,29 +89,37 @@ export function PrayerTimesCard({
     onToday,
     timings,
 }: PrayerTimesCardProps) {
+    const activeLabel = activeEvent ? (timings.find((t) => t.event === activeEvent)?.label ?? '—') : '—';
+
     return (
         <motion.section
             animate={{ opacity: 1, y: 0 }}
             className="relative w-full overflow-hidden rounded-3xl border border-white/15 bg-background/90 p-6 shadow-2xl backdrop-blur"
             initial={{ opacity: 0, y: 16 }}
         >
-            <Meteors className="pointer-events-none bg-primary/60" number={18} />
+            <Meteors className="pointer-events-none" number={18} />
             <div className="relative z-10 space-y-6">
-                <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="flex flex-col gap-1 text-foreground/80 text-sm uppercase tracking-wide">
-                        <span>{dateLabel}</span>
-                        <span>{hijriLabel}</span>
-                        <span>{methodLabel}</span>
+                <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex flex-wrap items-center gap-2 text-foreground/80 text-xs uppercase tracking-wide">
+                        <span className="rounded-full bg-white/20 px-3 py-1 font-semibold text-foreground">
+                            {dateLabel}
+                        </span>
+                        <span className="rounded-full bg-white/10 px-3 py-1 font-medium text-foreground/90">
+                            {hijriLabel}
+                        </span>
+                        <span className="rounded-full bg-white/5 px-3 py-1 font-medium text-foreground/70">
+                            {methodLabel}
+                        </span>
                     </div>
                     {istijaba ? (
-                        <span className="rounded-full bg-emerald-500/20 px-4 py-1 font-medium text-emerald-100 text-sm">
+                        <span className="inline-flex items-center rounded-full bg-emerald-500/20 px-4 py-1 font-medium text-emerald-100 text-sm">
                             Special hour of Istijaba — make extra duʿāʾ
                         </span>
                     ) : null}
                 </header>
 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Button
                             onClick={onPrevDay}
                             variant="outline"
@@ -134,9 +142,14 @@ export function PrayerTimesCard({
                     </div>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <span className="cursor-help font-semibold text-foreground/80 text-sm">{addressLabel}</span>
+                            <span className="max-w-[min(70vw,18rem)] cursor-help truncate font-semibold text-foreground/80 text-sm">
+                                {addressLabel}
+                            </span>
                         </TooltipTrigger>
-                        <TooltipContent>{locationDetail}</TooltipContent>
+                        <TooltipContent className="max-w-xs space-y-1 break-words">
+                            <p className="font-semibold text-foreground">{addressLabel}</p>
+                            <p className="text-muted-foreground text-xs">{locationDetail}</p>
+                        </TooltipContent>
                     </Tooltip>
                 </div>
 
@@ -144,7 +157,7 @@ export function PrayerTimesCard({
                     {timings.map((timing) => (
                         <PrayerTimeRow
                             key={timing.event}
-                            active={timing.event === activePrayer}
+                            active={timing.event === activeEvent}
                             isFard={timing.isFard}
                             label={timing.label}
                             time={timing.time}
@@ -152,7 +165,7 @@ export function PrayerTimesCard({
                     ))}
                 </ul>
 
-                <div className="flex flex-col gap-4 border-white/10 border-t pt-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-4 border-white/10 border-t pt-4 lg:flex-row lg:items-center lg:justify-between">
                     <p className="text-foreground/70 text-sm">
                         Need the full derivation? Walk through the astronomy, prophetic guidance, and safeguards step by
                         step.
@@ -173,9 +186,9 @@ export function PrayerTimesCard({
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/5 px-4 py-3 text-foreground/70 text-xs">
-                    <span>
-                        <strong>Active prayer:</strong>{' '}
-                        {activePrayer ? (timings.find((t) => t.event === activePrayer)?.label ?? '—') : '—'}
+                    <span className="flex items-center gap-2">
+                        <strong className="font-semibold text-foreground">Active prayer:</strong>
+                        <span className="max-w-[12rem] truncate sm:max-w-none">{activeLabel}</span>
                     </span>
                     <span>
                         <Link

@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { Coordinates } from 'adhan';
 
-import { buildCalculationContext } from '@/lib/explanation/context';
-import { createParameters } from '@/lib/settings';
+import { createParameters } from '../settings';
+import { buildCalculationContext } from './context';
 
 describe('calculation context', () => {
     test('includes astronomy, hijri, and input metadata', () => {
