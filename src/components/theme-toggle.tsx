@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler';
+import { AnimatedThemeToggler } from '@/components/magicui/animated-theme-toggler';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 

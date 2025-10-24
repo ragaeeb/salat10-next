@@ -17,10 +17,10 @@ import type { PrayerTimeExplanation } from '@/lib/explanation/types';
 import { writeIslamicDate } from '@/lib/hijri';
 import { createParameters, methodLabelMap, useSettings } from '@/lib/settings';
 
-const MultiStepLoader = dynamic(() => import('@/components/ui/multi-step-loader').then((mod) => mod.MultiStepLoader), {
-    loading: () => null,
-    ssr: false,
-});
+const MultiStepLoader = dynamic(
+    () => import('@/components/aceternity/multi-step-loader').then((mod) => mod.MultiStepLoader),
+    { loading: () => null, ssr: false },
+);
 
 type ExplanationStatus = { data: PrayerTimeExplanation | null; loading: boolean; error: string | null };
 

@@ -3,10 +3,9 @@
 import { ChevronLeft, ChevronRight, Loader2, Play } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-
-import { AuroraText } from '@/components/ui/aurora-text';
+import { AuroraText } from '@/components/magicui/aurora-text';
+import { Meteors } from '@/components/magicui/meteors';
 import { Button } from '@/components/ui/button';
-import { Meteors } from '@/components/ui/meteors';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 

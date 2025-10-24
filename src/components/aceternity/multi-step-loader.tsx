@@ -4,13 +4,11 @@ import { Loader2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import Image from 'next/image';
 import { memo, useEffect, useState } from 'react';
-
+import WorldMap from '@/components/aceternity/world-map';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import type { ExplanationStep, ExplanationSummary } from '@/lib/explanation/types';
 import { cn } from '@/lib/utils';
-
-import { Button } from './button';
-import { ScrollArea } from './scroll-area';
-import WorldMap from './world-map';
 
 const CheckIcon = ({ className }: { className?: string }) => (
     <svg

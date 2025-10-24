@@ -3,6 +3,7 @@
 import type React from 'react';
 import { memo } from 'react';
 import { useThemeMode } from '@/components/theme-provider';
+import { ShinyText } from '../magicui/shiny-text';
 
 interface AuroraTextProps {
     children: React.ReactNode;
@@ -25,8 +26,6 @@ export const AuroraText = memo(({ children, className = '', colors, speed = 1 }:
         WebkitTextFillColor: 'transparent',
     };
 
-    const lightThemeStyle = { color: '#0b6d8c' };
-
     return (
         <span className={`relative inline-block ${className}`}>
             <span className="sr-only">{children}</span>
@@ -39,9 +38,7 @@ export const AuroraText = memo(({ children, className = '', colors, speed = 1 }:
                     {children}
                 </span>
             ) : (
-                <span className="relative" style={lightThemeStyle} aria-hidden="true">
-                    {children}
-                </span>
+                <ShinyText className={className}>{children}</ShinyText>
             )}
         </span>
     );

@@ -3,8 +3,8 @@
 import { AlertCircle, Check, Copy } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useMemo } from 'react';
+import { TextAnimate } from '@/components/magicui/text-animate';
 import { Button } from '@/components/ui/button';
-import { TextAnimate } from '@/components/ui/text-animate';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Quote } from '@/hooks/use-motivational-quote';
 
