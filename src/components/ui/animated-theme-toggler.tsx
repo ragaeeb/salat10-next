@@ -15,7 +15,7 @@ type AnimatedThemeTogglerProps = ComponentPropsWithoutRef<'button'> & { duration
  * Animated theme switcher built on top of Magic UI's registry component.
  */
 export const AnimatedThemeToggler = forwardRef<HTMLButtonElement, AnimatedThemeTogglerProps>(
-    ({ className, duration = 400, type = 'button', ...props }, forwardedRef) => {
+    ({ className, duration = 400, type = 'button', ...rest }, forwardedRef) => {
         const buttonRef = useRef<HTMLButtonElement>(null);
         const { ready, setTheme, theme } = useThemeMode();
         const [isDark, setIsDark] = useState(false);
@@ -66,6 +66,7 @@ export const AnimatedThemeToggler = forwardRef<HTMLButtonElement, AnimatedThemeT
 
         return (
             <button
+                {...rest}
                 ref={(node) => {
                     buttonRef.current = node;
                     if (typeof forwardedRef === 'function') {
@@ -77,7 +78,6 @@ export const AnimatedThemeToggler = forwardRef<HTMLButtonElement, AnimatedThemeT
                 onClick={toggleTheme}
                 className={cn('relative flex h-10 w-10 items-center justify-center rounded-full', className)}
                 type={type}
-                {...props}
             >
                 {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                 <span className="sr-only">Toggle theme</span>
