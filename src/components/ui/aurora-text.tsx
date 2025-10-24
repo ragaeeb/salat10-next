@@ -2,6 +2,7 @@
 
 import type React from 'react';
 import { memo } from 'react';
+import { useThemeMode } from '@/components/theme-provider';
 
 interface AuroraTextProps {
     children: React.ReactNode;
@@ -10,33 +11,32 @@ interface AuroraTextProps {
     speed?: number;
 }
 
-export const AuroraText = memo(
-    ({
-        children,
-        className = '',
-        colors = ['#FF0080', '#7928CA', '#0070F3', '#38bdf8'],
-        speed = 1,
-    }: AuroraTextProps) => {
-        const gradientStyle = {
-            animationDuration: `${10 / speed}s`,
-            backgroundImage: `linear-gradient(135deg, ${colors.join(', ')}, ${colors[0]})`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-        };
+export const AuroraText = memo(({ children, className = '', colors, speed = 1 }: AuroraTextProps) => {
+    const { theme } = useThemeMode();
 
-        return (
-            <span className={`relative inline-block ${className}`}>
-                <span className="sr-only">{children}</span>
-                <span
-                    className="relative animate-aurora bg-[length:200%_auto] bg-clip-text text-transparent"
-                    style={gradientStyle}
-                    aria-hidden="true"
-                >
-                    {children}
-                </span>
+    const defaultColors = theme === 'dark' ? ['#ffffff', '#bcd7ff', '#80b8ff'] : ['#0f88b3', '#1193c0', '#13a0cf'];
+
+    const finalColors = colors || defaultColors;
+
+    const gradientStyle = {
+        animationDuration: `${10 / speed}s`,
+        backgroundImage: `linear-gradient(135deg, ${finalColors.join(', ')}, ${finalColors[0]})`,
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+    };
+
+    return (
+        <span className={`relative inline-block ${className}`}>
+            <span className="sr-only">{children}</span>
+            <span
+                className="relative animate-aurora bg-[length:200%_auto] bg-clip-text text-transparent"
+                style={gradientStyle}
+                aria-hidden="true"
+            >
+                {children}
             </span>
-        );
-    },
-);
+        </span>
+    );
+});
 
 AuroraText.displayName = 'AuroraText';
