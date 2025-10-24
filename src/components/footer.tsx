@@ -1,43 +1,23 @@
 import packageJson from '@/../package.json';
 
-type PackageAuthor = string | { name?: string } | undefined;
-
-const packageInfo = packageJson as unknown as { version: string; homepage?: string; author?: PackageAuthor };
-
-const homepageUrl =
-    typeof packageInfo.homepage === 'string' && packageInfo.homepage.length > 0
-        ? packageInfo.homepage
-        : 'https://salat10.vercel.app';
-
-const resolveAuthor = (value: PackageAuthor) => {
-    if (!value) {
-        return 'Salat10';
-    }
-    if (typeof value === 'string') {
-        return value;
-    }
-    return value.name ?? 'Salat10';
-};
-
-const normalizedHomepage = homepageUrl.replace(/\/$/, '');
-const versionUrl = `${normalizedHomepage}/releases/tag/v${packageInfo.version}`;
+const normalizedHomepage = packageJson.homepage.replace(/\/$/, '');
+const versionUrl = `${normalizedHomepage}/releases/tag/v${packageJson.version}`;
 
 export const Footer = () => {
     const currentYear = new Date().getFullYear();
-    const authorName = resolveAuthor(packageInfo.author);
 
     return (
         <footer className="py-6">
             <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground text-sm sm:flex-row">
                 <p className="text-center">
-                    © {currentYear} {authorName}. All Rights Reserved.{' '}
+                    © {currentYear} {packageJson.author}. All Rights Reserved.{' '}
                     <a
                         href={versionUrl}
                         className="underline hover:text-foreground"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
-                        v{packageInfo.version}
+                        v{packageJson.version}
                     </a>
                 </p>
                 <a

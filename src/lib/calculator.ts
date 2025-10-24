@@ -5,6 +5,9 @@ import { createParameters, type MethodValue } from './settings';
 const ONE_HOUR = 60 * 60 * 1000;
 const FRIDAY = 5;
 
+/**
+ * Formats a JavaScript date into a localized 12-hour time string.
+ */
 const formatTime = (t: Date, timeZone: string) => {
     const time = new Date(t).toLocaleTimeString('en-US', {
         hour: 'numeric',
@@ -24,6 +27,9 @@ const formatDate = (fajr: Date) =>
  * @param {*} latitude
  * @param {*} longitude
  */
+/**
+ * Formats raw prayer time objects into a sorted, display-friendly collection.
+ */
 const formatAsObject = (
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     { sunset, ...calculationResult }: Record<string, Date>,
@@ -31,7 +37,6 @@ const formatAsObject = (
     salatLabels: Record<string, string>,
 ) => {
     const timings = Object.entries(calculationResult)
-        // sort the events from earliest to latest (to sort from fajr - isha)
         .sort(([, value], [, nextValue]) => value.getTime() - nextValue.getTime())
         .map(([event, t]) => ({
             event,
@@ -54,6 +59,9 @@ type Calculation = {
     timeZone: string;
 };
 
+/**
+ * Builds the daily prayer timetable along with metadata for the active prayer and istijaba reminder.
+ */
 export const daily = (
     salatLabels: Record<string, string>,
     { fajrAngle, ishaAngle, ishaInterval, latitude, longitude, method, timeZone }: Calculation,
@@ -61,7 +69,6 @@ export const daily = (
 ) => {
     const params = createParameters({ fajrAngle, ishaAngle, ishaInterval, method });
     const fard = new PrayerTimes(new Coordinates(Number(latitude), Number(longitude)), now, params);
-
     const sunan = new SunnahTimes(fard);
     const {
         calculationParameters: _calcParameters,
@@ -71,18 +78,25 @@ export const daily = (
     } = { ...fard, ...sunan };
 
     const result = formatAsObject(rest, timeZone, salatLabels);
-
-    const nextPrayer = fard.nextPrayer();
+    const currentPrayer = fard.currentPrayer(now);
+    const nextPrayer = fard.nextPrayer(now);
 
     if (nextPrayer === 'none') {
-        return result;
+        return { ...result, currentPrayer: currentPrayer === 'none' ? null : currentPrayer };
     }
 
     const diff = fard.timeForPrayer(nextPrayer)!.getTime() - now.getTime();
 
-    return { ...result, istijaba: now.getDay() === FRIDAY && nextPrayer === 'maghrib' && diff < ONE_HOUR };
+    return {
+        ...result,
+        currentPrayer: currentPrayer === 'none' ? null : currentPrayer,
+        istijaba: now.getDay() === FRIDAY && nextPrayer === 'maghrib' && diff < ONE_HOUR,
+    };
 };
 
+/**
+ * Generates a month of prayer times for the provided target date.
+ */
 export const monthly = (salatLabels: Record<string, string>, calculation: Calculation, targetDate = new Date()) => {
     const times = [];
     const now = new Date(targetDate.getTime());
@@ -103,6 +117,9 @@ export const monthly = (salatLabels: Record<string, string>, calculation: Calcul
     return { dates: times, label: `${monthName} ${targetDate.getFullYear()}` };
 };
 
+/**
+ * Generates a year-long calendar of prayer times for the given target date.
+ */
 export const yearly = (salatLabels: Record<string, string>, calculation: Calculation, targetDate = new Date()) => {
     const times = [];
     const now = new Date(targetDate.getFullYear(), 0, 1);
@@ -118,4 +135,7 @@ export const yearly = (salatLabels: Record<string, string>, calculation: Calcula
     return { dates: times, label: targetDate.getFullYear() };
 };
 
+/**
+ * Determines whether the provided prayer event is one of the five obligatory prayers.
+ */
 export const isFard = (event: string) => ['asr', 'dhuhr', 'fajr', 'isha', 'maghrib'].includes(event);
