@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -41,75 +41,112 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
     --radius-xl: calc(var(--radius) + 4px);
+    --animate-aurora: aurora 8s ease-in-out infinite alternate;
+    @keyframes aurora {
+        0% {
+            background-position: 0% 50%;
+            transform: rotate(-5deg) scale(0.9);
+        }
+        25% {
+            background-position: 50% 100%;
+            transform: rotate(5deg) scale(1.1);
+        }
+        50% {
+            background-position: 100% 50%;
+            transform: rotate(-3deg) scale(0.95);
+        }
+        75% {
+            background-position: 50% 0%;
+            transform: rotate(3deg) scale(1.05);
+        }
+        100% {
+            background-position: 0% 50%;
+            transform: rotate(-5deg) scale(0.9);
+        }
+    }
+    --animate-meteor: meteor 5s linear infinite;
+    @keyframes meteor {
+        0% {
+            transform: rotate(var(--angle)) translateX(0);
+            opacity: 1;
+        }
+        70% {
+            opacity: 1;
+        }
+        100% {
+            transform: rotate(var(--angle)) translateX(-500px);
+            opacity: 0;
+        }
+    }
 }
 
 :root {
     --radius: 0.625rem;
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --background: #ffffff;
+    --foreground: #0f88b3;
+    --card: #edf7fb;
+    --card-foreground: #0f88b3;
+    --popover: #ffffff;
+    --popover-foreground: #0f88b3;
+    --primary: #0f88b3;
+    --primary-foreground: #ffffff;
+    --secondary: #d4ecf5;
+    --secondary-foreground: #0b6d8c;
+    --muted: #c8e5f1;
+    --muted-foreground: #2f6f86;
+    --accent: #c0dfeb;
+    --accent-foreground: #0d5f79;
+    --destructive: #d64545;
+    --border: #a9d4e4;
+    --input: #a9d4e4;
+    --ring: #0f88b3;
+    --chart-1: #0f88b3;
+    --chart-2: #1193c0;
+    --chart-3: #13a0cf;
+    --chart-4: #3bb8dd;
+    --chart-5: #0b6d8c;
+    --sidebar: #edf7fb;
+    --sidebar-foreground: #0f88b3;
+    --sidebar-primary: #0f88b3;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #d4ecf5;
+    --sidebar-accent-foreground: #0b6d8c;
+    --sidebar-border: #a9d4e4;
+    --sidebar-ring: #0f88b3;
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: #0f88b3;
+    --foreground: #ffffff;
+    --card: #0c6f92;
+    --card-foreground: #ffffff;
+    --popover: #0c6f92;
+    --popover-foreground: #ffffff;
+    --primary: #ffffff;
+    --primary-foreground: #0f88b3;
+    --secondary: #0d7a9f;
+    --secondary-foreground: #e6f4f9;
+    --muted: #0c6a93;
+    --muted-foreground: #d6eef6;
+    --accent: #0b5f83;
+    --accent-foreground: #e6f4f9;
+    --destructive: #f19999;
+    --border: #0a5a7b;
+    --input: #0a5a7b;
+    --ring: #ffffff;
+    --chart-1: #ffffff;
+    --chart-2: #b7e4f3;
+    --chart-3: #7fd0e7;
+    --chart-4: #40b5d8;
+    --chart-5: #e6f4f9;
+    --sidebar: #0c6f92;
+    --sidebar-foreground: #ffffff;
+    --sidebar-primary: #ffffff;
+    --sidebar-primary-foreground: #0f88b3;
+    --sidebar-accent: #0b5f83;
+    --sidebar-accent-foreground: #e6f4f9;
+    --sidebar-border: #0a5a7b;
+    --sidebar-ring: #ffffff;
 }
 
 @layer base {
@@ -119,4 +156,16 @@
     body {
         @apply bg-background text-foreground;
     }
+}
+
+/* biome-ignore lint/correctness/noUnknownTypeSelector: view transitions require experimental pseudo-elements */
+::view-transition-old(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+/* biome-ignore lint/correctness/noUnknownTypeSelector: view transitions require experimental pseudo-elements */
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
 }

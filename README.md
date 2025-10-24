@@ -1,163 +1,80 @@
-# Tahqiq - Arabic Transcript Editor
+# Salat10 Next
 
-[![wakatime](https://wakatime.com/badge/user/a0b906ce-b8e7-4463-8bce-383238df6d4b/project/cbaed121-0d22-440a-bc93-70f59bcf3bb2.svg)](https://wakatime.com/badge/user/a0b906ce-b8e7-4463-8bce-383238df6d4b/project/cbaed121-0d22-440a-bc93-70f59bcf3bb2)
-[![Vercel Deploy](https://deploy-badge.vercel.app/vercel/tahqiq)](https://tahqiq.vercel.app)
-[![typescript](https://badgen.net/badge/icon/typescript?icon=typescript&label&color=blue)](https://www.typescriptlang.org)
-[![Node.js CI](https://github.com/ragaeeb/tahqiq/actions/workflows/build.yml/badge.svg)](https://github.com/ragaeeb/tahqiq/actions/workflows/build.yml)
-![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white)
-![GitHub License](https://img.shields.io/github/license/ragaeeb/tahqiq)
-
-Tahqiq is a specialized web application for Arabic transcript editing and management. It provides a user-friendly interface for importing, editing, and exporting transcript data with support for right-to-left text and Arabic-specific formatting.
+Salat10 Next is an educational prayer time explorer built with Next.js 16 and Bun. It walks visitors through the complete chain of astronomical calculations used to determine the five daily prayers, pairs the math with plain-language narration, and surfaces prophetic narrations and seasonal safeguards along the way.
 
 ## Features
 
-- **Arabic Text Support**: Built-in RTL direction and specialized handling for Arabic text
-- **Transcript Import**: Drag-and-drop JSON transcript import
-- **Segment Management**: Edit, merge, split, and delete transcript segments
-- **Time Synchronization**: Edit start/end times for accurate transcript timing
-- **Segment Status Tracking**: Mark segments as complete with visual indicators
-- **Part Selection**: Navigate between different parts of a multi-part transcript
-- **Text Formatting Options**: Configure formatting preferences for Arabic text
-- **AI-Powered Translation**: Built-in translation capabilities using Google Gemini API
+- **Interactive explanations** – A multi-step loader pauses on each astronomical and fiqh concept with optional deep-dive math trail, imagery, and achievements when a prayer time is derived.
+- **Customisable calculations** – Configure latitude/longitude, method presets, or custom twilight angles with automatic detection and live JSON previews.
+- **Hijri calendar insights** – Gregorian dates are mapped to Hijri with contextual narration so learners can trace the lunar calendar math.
+- **Rich visuals** – Royal-blue theme, animated meteors, aurora-highlighted active prayers, motivational quotes with fade-in text, and world map storytelling.
+- **Offline-friendly settings** – Location, angles, and timezone are persisted in local storage and can be restored at any time.
 
 ## Tech Stack
 
-- [Next.js 15](https://nextjs.org/) with App Router
+- [Next.js 16](https://nextjs.org/) with the App Router
 - [React 19](https://react.dev/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Zustand](https://github.com/pmndrs/zustand) for state management
-- [Radix UI](https://www.radix-ui.com/) for accessible UI components
-- [Google Generative AI](https://ai.google.dev/) for translation capabilities
-- [Paragrafs](https://www.npmjs.com/package/paragrafs) for transcript segment handling
+- [Bun](https://bun.sh/) for runtime, package management, and testing
+- [Tailwind CSS](https://tailwindcss.com/) utilities with custom design tokens
+- [Adhan](https://github.com/batoulapps/adhan-js) for the core prayer time calculations
+- [Biome](https://biomejs.dev/) for linting and formatting
 
 ## Getting Started
 
-### Prerequisites
+1. **Install dependencies**
 
-- [Node.js](https://nodejs.org/) (v22 or later)
-- [Bun](https://bun.sh/) (recommended) or npm/yarn/pnpm
+   ```bash
+   bun install
+   ```
 
-### Environment Variables
+2. **Run the development server**
 
-Create a `.env.local` file in the project root with the following variables:
+   ```bash
+   bun run dev
+   ```
 
-```
-GOOGLE_GENAI_API_KEY=your_google_genai_api_key
-GOOGLE_GENAI_MODEL=gemini-pro
-TRANSLATION_PROMPT=your_translation_prompt
-```
+   Visit [http://localhost:3000](http://localhost:3000) to explore the app.
 
-### Installation
+3. **Build for production**
 
-1. Clone the repository:
+   ```bash
+   bun run build
+   ```
 
-    ```bash
-    git clone https://github.com/ragaeeb/tahqiq.git
-    cd tahqiq
-    ```
+## Testing
 
-2. Install dependencies:
-
-    ```bash
-    bun install
-    # or
-    npm install
-    ```
-
-3. Start the development server:
-
-    ```bash
-    bun dev
-    # or
-    npm run dev
-    ```
-
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-## Usage
-
-1. **Import Transcript**: Drag and drop a JSON transcript file onto the import area
-2. **Edit Segments**: Click on a segment's text area to edit its content
-3. **Adjust Timing**: Edit the start/end time inputs to adjust segment timing
-4. **Manage Segments**: Use the toolbar to merge, split, or delete selected segments
-5. **Mark Completion**: Mark segments as done when finished editing
-6. **Navigate Parts**: Use the part selector to switch between different transcript parts
-
-## JSON Format
-
-Tahqiq expects transcript data in the following format:
-
-```json
-{
-    "contractVersion": "v1.0",
-    "createdAt": "2024-10-01T12:00:00Z",
-    "lastUpdatedAt": "2024-10-01T12:00:00Z",
-    "transcripts": [
-        {
-            "segments": [
-                {
-                    "start": 0,
-                    "end": 10,
-                    "text": "Arabic transcript text",
-                    "status": "done"
-                }
-            ],
-            "timestamp": "2024-10-01T12:00:00Z",
-            "volume": 1.0
-        }
-    ]
-}
-```
-
-## Development
-
-### Project Structure
-
-```
-tahqiq/
-├── src/
-│   ├── app/            # Next.js App Router
-│   ├── components/     # React components
-│   ├── lib/            # Utility functions
-│   └── stores/         # Zustand state management
-├── public/             # Static assets
-└── ...                 # Config files
-```
-
-### Key Components
-
-- `transcript.tsx`: Main transcript viewer component
-- `segment-item.tsx`: Individual transcript segment component
-- `useTranscriptStore.ts`: Zustand store for transcript state management
-- `translate/route.ts`: API route for Google Gemini translation
-
-### Testing
-
-Run tests using Vitest:
+Unit tests are implemented with `bun:test` and live next to the modules they cover (for example `src/lib/calculator.test.ts`).
 
 ```bash
 bun test
-# or
-npm run test
 ```
 
-## Deployment
+## Linting & Formatting
 
-The project is set up for seamless deployment on Vercel. Connect your GitHub repository to Vercel for automatic deployments.
+Biome manages both linting and formatting rules. Run the checker with:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fragaeeb%2Ftahqiq)
+```bash
+bun run lint
+```
 
-## License
+## Project Structure
 
-This project is licensed under the [MIT License](LICENSE).
+```
+src/
+├── app/                # Next.js routes (main explorer + settings)
+├── components/         # Shared UI primitives and prayer-time specific components
+├── hooks/              # Client-side hooks for settings, quotes, and explanations
+├── lib/                # Calculation utilities, explanation builders, and helpers
+└── components/ui/      # ShadCN & Magic UI based primitives
+```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch: `git checkout -b feature/amazing`
+3. Commit with descriptive messages
+4. Push the branch and open a Pull Request
+
+## License
+
+Licensed under the [MIT License](./LICENSE.MD).
