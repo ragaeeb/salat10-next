@@ -30,6 +30,7 @@ describe('calculator helpers', () => {
         expect(result.timings[0]?.event).toBe('fajr');
         expect(result.currentPrayer).toBe('dhuhr');
         expect(result.activeEvent).toBe('dhuhr');
+        expect(result.activeLabel).toBe('Dhuhr');
     });
 
     test('monthly calendar spans every day in month', () => {

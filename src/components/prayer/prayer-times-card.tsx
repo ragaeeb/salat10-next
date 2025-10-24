@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 export type PrayerTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
 
 export type PrayerTimesCardProps = {
+    activeLabel: string;
     activeEvent: string | null;
     addressLabel: string;
     dateLabel: string;
@@ -74,6 +75,7 @@ const PrayerTimeRow = ({
  * Displays the daily schedule with navigation and explanation triggers.
  */
 export function PrayerTimesCard({
+    activeLabel,
     activeEvent,
     addressLabel,
     dateLabel,
@@ -89,8 +91,6 @@ export function PrayerTimesCard({
     onToday,
     timings,
 }: PrayerTimesCardProps) {
-    const activeLabel = activeEvent ? (timings.find((t) => t.event === activeEvent)?.label ?? '—') : '—';
-
     return (
         <motion.section
             animate={{ opacity: 1, y: 0 }}
@@ -142,11 +142,11 @@ export function PrayerTimesCard({
                     </div>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <span className="max-w-[min(70vw,18rem)] cursor-help truncate font-semibold text-foreground/80 text-sm">
+                            <span className="inline-flex max-w-[min(60vw,14rem)] cursor-help truncate font-semibold text-foreground/80 text-sm sm:max-w-[18rem]">
                                 {addressLabel}
                             </span>
                         </TooltipTrigger>
-                        <TooltipContent className="max-w-xs space-y-1 break-words">
+                        <TooltipContent className="max-w-sm space-y-1 break-words text-left" sideOffset={8}>
                             <p className="font-semibold text-foreground">{addressLabel}</p>
                             <p className="text-muted-foreground text-xs">{locationDetail}</p>
                         </TooltipContent>

@@ -136,7 +136,7 @@ export default function PrayerTimesPage() {
                         <ThemeToggle />
                         <Button
                             asChild
-                            className="rounded-full border border-white/40 bg-white/20 text-foreground shadow-lg backdrop-blur transition hover:bg-white/40"
+                            className="rounded-full border border-white/60 bg-white/85 text-primary shadow-lg backdrop-blur-sm transition hover:bg-white"
                             size="icon"
                         >
                             <Link aria-label="Open settings" href="/settings">
@@ -156,6 +156,7 @@ export default function PrayerTimesPage() {
                     />
 
                     <PrayerTimesCard
+                        activeLabel={result.activeLabel ?? '—'}
                         activeEvent={result.activeEvent}
                         addressLabel={addressLabel}
                         dateLabel={result.date}
@@ -174,6 +175,7 @@ export default function PrayerTimesPage() {
                 </div>
 
                 <MultiStepLoader
+                    loading={explanationLoading}
                     open={showExplanation}
                     onClose={closeExplanation}
                     steps={explanationSteps}

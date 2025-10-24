@@ -21,9 +21,10 @@ export function ThemeToggle({ className }: { className?: string }) {
                 <AnimatedThemeToggler
                     aria-label={label}
                     className={cn(
-                        'border border-white/40 bg-white/20 text-foreground shadow-lg backdrop-blur transition hover:bg-white/40',
+                        'border border-white/60 bg-white/80 text-primary shadow-lg backdrop-blur-sm transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
                         className,
                     )}
+                    type="button"
                 />
             </TooltipTrigger>
             <TooltipContent>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</TooltipContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import Image from 'next/image';
 import { memo, useEffect, useState } from 'react';
@@ -346,10 +346,11 @@ export type MultiStepLoaderProps = {
     steps: ExplanationStep[];
     summary?: ExplanationSummary | null;
     open: boolean;
+    loading?: boolean;
     onClose?: () => void;
 };
 
-export const MultiStepLoader = ({ steps, summary, open, onClose }: MultiStepLoaderProps) => {
+export const MultiStepLoader = ({ steps, summary, open, loading = false, onClose }: MultiStepLoaderProps) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [showDetails, setShowDetails] = useState(true);
     const [activeTab, setActiveTab] = useState<'story' | 'math'>('story');
@@ -364,7 +365,7 @@ export const MultiStepLoader = ({ steps, summary, open, onClose }: MultiStepLoad
     }, [steps.length]);
 
     useEffect(() => {
-        if (open) {
+        if (open && steps.length > 0) {
             setCurrentStep(0);
             setShowDetails(true);
             setActiveTab('story');
@@ -373,7 +374,7 @@ export const MultiStepLoader = ({ steps, summary, open, onClose }: MultiStepLoad
     }, [open, steps.length]);
 
     useEffect(() => {
-        if (!open) {
+        if (!open || steps.length === 0) {
             return;
         }
         setVisibleCount(Math.min(steps.length, INITIAL_TIMELINE_STEPS));
@@ -433,6 +434,7 @@ export const MultiStepLoader = ({ steps, summary, open, onClose }: MultiStepLoad
     const safeIndex = hasSteps ? Math.min(currentStep, steps.length - 1) : 0;
     const activeStep = hasSteps ? steps[safeIndex] : undefined;
     const displayedStep = activeStep;
+    const shouldRender = open && (hasSteps || loading);
 
     const handleSelect = (index: number) => {
         setCurrentStep(index);
@@ -467,7 +469,7 @@ export const MultiStepLoader = ({ steps, summary, open, onClose }: MultiStepLoad
 
     return (
         <AnimatePresence mode="wait">
-            {open && hasSteps && activeStep && (
+            {shouldRender && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -477,7 +479,7 @@ export const MultiStepLoader = ({ steps, summary, open, onClose }: MultiStepLoad
                     <div className="flex flex-col gap-4 px-4 pt-4 md:px-8">
                         <div className="flex items-start gap-3">
                             <p className="flex-1 font-semibold text-primary/80 text-xs uppercase tracking-wide">
-                                Step {safeIndex + 1} of {steps.length}
+                                {hasSteps ? `Step ${safeIndex + 1} of ${steps.length}` : 'Preparing explanation'}
                             </p>
                             <div className="ml-auto flex items-center gap-2">
                                 <TabSwitcher
@@ -500,38 +502,51 @@ export const MultiStepLoader = ({ steps, summary, open, onClose }: MultiStepLoad
                         </div>
                     </div>
 
-                    <div className="flex flex-1 flex-col gap-6 overflow-hidden px-4 pt-4 pb-6 md:flex-row md:px-8 md:pt-6 md:pb-10">
-                        <div className="flex h-72 flex-none flex-col rounded-3xl border border-border/60 bg-card/80 p-4 shadow-inner md:h-full md:w-[38%]">
-                            <StepTimeline
-                                steps={steps}
-                                activeIndex={currentStep}
-                                onSelect={handleSelect}
-                                onLoadMore={handleLoadMore}
-                                visibleCount={visibleCount}
-                            />
-                        </div>
-                        <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-3xl border border-border/60 bg-card/90 p-4 shadow-xl">
-                            <div className="min-h-0 flex-1">
-                                {activeTab === 'story' ? (
-                                    displayedStep ? (
-                                        <StepDetail step={displayedStep} showDetails={showDetails} />
-                                    ) : null
-                                ) : summary ? (
-                                    <SummaryView summary={summary} />
-                                ) : null}
+                    {hasSteps && activeStep ? (
+                        <div className="flex flex-1 flex-col gap-6 overflow-hidden px-4 pt-4 pb-6 md:flex-row md:px-8 md:pt-6 md:pb-10">
+                            <div className="flex h-72 flex-none flex-col rounded-3xl border border-border/60 bg-card/80 p-4 shadow-inner md:h-full md:w-[38%]">
+                                <StepTimeline
+                                    steps={steps}
+                                    activeIndex={currentStep}
+                                    onSelect={handleSelect}
+                                    onLoadMore={handleLoadMore}
+                                    visibleCount={visibleCount}
+                                />
                             </div>
+                            <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-3xl border border-border/60 bg-card/90 p-4 shadow-xl">
+                                <div className="min-h-0 flex-1">
+                                    {activeTab === 'story' ? (
+                                        displayedStep ? (
+                                            <StepDetail step={displayedStep} showDetails={showDetails} />
+                                        ) : null
+                                    ) : summary ? (
+                                        <SummaryView summary={summary} />
+                                    ) : null}
+                                </div>
 
-                            <StepControls
-                                canGoBack={safeIndex > 0}
-                                canGoForward={safeIndex < steps.length - 1}
-                                onNext={handleNext}
-                                onPrevious={handlePrevious}
-                                onToggleDetails={toggleDetails}
-                                showDetails={showDetails}
-                                showDetailsButton={activeTab === 'story'}
-                            />
+                                <StepControls
+                                    canGoBack={safeIndex > 0}
+                                    canGoForward={safeIndex < steps.length - 1}
+                                    onNext={handleNext}
+                                    onPrevious={handlePrevious}
+                                    onToggleDetails={toggleDetails}
+                                    showDetails={showDetails}
+                                    showDetailsButton={activeTab === 'story'}
+                                />
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="flex flex-1 items-center justify-center px-4 pb-10">
+                            <div className="flex flex-col items-center gap-3 text-center">
+                                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                                <p className="font-semibold text-foreground">Building today’s explanation…</p>
+                                <p className="max-w-sm text-muted-foreground text-sm">
+                                    We are pulling in the narration, math trail, and illustrations for your chosen
+                                    settings.
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </motion.div>
             )}
         </AnimatePresence>

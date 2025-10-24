@@ -38,12 +38,13 @@ const formatAsObject = (
     timeZone: string,
     salatLabels: Record<string, string>,
 ) => {
+    const labelFor = (event: string) => salatLabels[event] ?? event;
     const timings: FormattedTiming[] = Object.entries(calculationResult)
         .sort(([, value], [, nextValue]) => value.getTime() - nextValue.getTime())
         .map(([event, t]) => ({
             event,
             isFard: isFard(event),
-            label: salatLabels[event] ?? event,
+            label: labelFor(event),
             time: formatTime(t, timeZone),
             value: t,
         }));
@@ -86,10 +87,16 @@ export const daily = (
     const activeEntry = [...result.timings].reverse().find((timing) => nowMs >= timing.value.getTime());
     const fallbackEntry = result.timings[0];
     const activeEvent = activeEntry?.event ?? fallbackEntry?.event ?? null;
+    const activeLabel = activeEvent
+        ? (result.timings.find((timing) => timing.event === activeEvent)?.label ??
+          salatLabels[activeEvent] ??
+          activeEvent)
+        : null;
 
     const base = {
         ...result,
         activeEvent,
+        activeLabel,
         currentPrayer: currentPrayer === 'none' ? null : currentPrayer,
         istijaba: false,
     };

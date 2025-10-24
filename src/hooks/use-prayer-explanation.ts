@@ -127,22 +127,31 @@ export const usePrayerExplanation = ({
         setExplanation(null);
 
         const build = async () => {
-            const { buildPrayerTimeExplanation } = await preloadExplanationModule();
-            if (cancelled) {
-                return;
-            }
-            const parameters = createParameters({ fajrAngle, ishaAngle, ishaInterval, method });
-            const story = buildPrayerTimeExplanation({
-                address,
-                coordinates: new Coordinates(coordinates.latitude, coordinates.longitude),
-                date,
-                parameters,
-                timeZone,
-            });
-            cacheRef.current.set(key, story);
-            if (!cancelled) {
-                setExplanation(story);
-                setLoading(false);
+            try {
+                const { buildPrayerTimeExplanation } = await preloadExplanationModule();
+                if (cancelled) {
+                    return;
+                }
+                const parameters = createParameters({ fajrAngle, ishaAngle, ishaInterval, method });
+                const story = buildPrayerTimeExplanation({
+                    address,
+                    coordinates: new Coordinates(coordinates.latitude, coordinates.longitude),
+                    date,
+                    parameters,
+                    timeZone,
+                });
+                cacheRef.current.set(key, story);
+                if (!cancelled) {
+                    setExplanation(story);
+                    setLoading(false);
+                }
+            } catch (error) {
+                console.error('Unable to build explanation', error);
+                if (!cancelled) {
+                    setLoading(false);
+                    setExplanation(null);
+                    setShowExplanation(false);
+                }
             }
         };
 
