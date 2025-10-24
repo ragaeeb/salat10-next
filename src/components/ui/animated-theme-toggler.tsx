@@ -38,19 +38,19 @@ export const AnimatedThemeToggler = forwardRef<HTMLButtonElement, AnimatedThemeT
                 });
             };
 
-            const startViewTransition = (
-                document as unknown as { startViewTransition?: (cb: () => void) => ViewTransition }
-            ).startViewTransition;
+            const doc = document as unknown as { startViewTransition?: (cb: () => void) => ViewTransition };
 
-            if (!buttonRef.current || !startViewTransition) {
+            if (!buttonRef.current || !doc.startViewTransition) {
                 runToggle();
                 return;
             }
 
-            const transition = startViewTransition(runToggle);
+            // Store rect before async operation to prevent "Illegal invocation" error
+            const { top, left, width, height } = buttonRef.current.getBoundingClientRect();
+
+            const transition = doc.startViewTransition(runToggle);
             await transition.ready;
 
-            const { top, left, width, height } = buttonRef.current.getBoundingClientRect();
             const x = left + width / 2;
             const y = top + height / 2;
             const maxRadius = Math.hypot(

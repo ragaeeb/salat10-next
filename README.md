@@ -1,6 +1,16 @@
-# Salat10 Next
+# Salat10
 
-Salat10 Next is an educational prayer time explorer built with Next.js 16 and Bun. It walks visitors through the complete chain of astronomical calculations used to determine the five daily prayers, pairs the math with plain-language narration, and surfaces prophetic narrations and seasonal safeguards along the way.
+Salat10 is an educational prayer time explorer built with Next.js 16 and Bun. It walks visitors through the complete chain of astronomical calculations used to determine the five daily prayers, pairs the math with plain-language narration, and surfaces prophetic narrations and seasonal safeguards along the way.
+
+[![wakatime](https://wakatime.com/badge/user/a0b906ce-b8e7-4463-8bce-383238df6d4b/project/c086c613-a649-484a-be35-fccd9c27d714.svg)](https://wakatime.com/badge/user/a0b906ce-b8e7-4463-8bce-383238df6d4b/project/c086c613-a649-484a-be35-fccd9c27d714)
+[![codecov](https://codecov.io/gh/ragaeeb/salat10-next/graph/badge.svg?token=4F7LER2188)](https://codecov.io/gh/ragaeeb/salat10-next)
+[![Vercel Deploy](https://deploy-badge.vercel.app/vercel/salaten)](https://salaten.vercel.app)
+[![typescript](https://badgen.net/badge/icon/typescript?icon=typescript&label&color=blue)](https://www.typescriptlang.org)
+[![Node.js CI](https://github.com/ragaeeb/salat10-next/actions/workflows/build.yml/badge.svg)](https://github.com/ragaeeb/salat10-next/actions/workflows/build.yml)
+![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white)
+![GitHub License](https://img.shields.io/github/license/ragaeeb/salat10-next)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 
 ## Features
 

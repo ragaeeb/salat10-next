@@ -43,8 +43,7 @@
         "build": "next build",
         "dev": "next dev --turbopack",
         "lint": "biome check .",
-        "start": "next start",
-        "test": "bun test"
+        "start": "next start"
     },
     "version": "1.0.0"
 }
