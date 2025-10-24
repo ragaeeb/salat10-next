@@ -42,17 +42,13 @@ const PrayerTimeRow = ({
     time: string;
 }) => {
     const labelContent = active ? (
-        <AuroraText className="font-semibold text-2xl md:text-3xl" colors={['#ffffff', '#bcd7ff', '#80b8ff']}>
-            {label}
-        </AuroraText>
+        <AuroraText className="font-semibold text-2xl md:text-3xl">{label}</AuroraText>
     ) : (
         <span className="font-semibold text-2xl md:text-3xl">{label}</span>
     );
 
     const timeContent = active ? (
-        <AuroraText className="font-semibold text-2xl md:text-3xl" colors={['#ffffff', '#f2f2ff', '#d6e6ff']}>
-            {time}
-        </AuroraText>
+        <AuroraText className="font-semibold text-2xl md:text-3xl">{time}</AuroraText>
     ) : (
         <span className="font-semibold text-2xl md:text-3xl">{time}</span>
     );
@@ -61,7 +57,7 @@ const PrayerTimeRow = ({
         <li
             className={cn(
                 'flex items-center justify-between rounded-2xl px-4 py-3 text-foreground transition-colors',
-                active ? 'bg-white/10 shadow-lg backdrop-blur' : 'bg-white/5',
+                active ? 'bg-white/10 shadow-lg ring-2 ring-primary/40 backdrop-blur dark:ring-white/40' : 'bg-white/5',
                 isFard ? 'font-semibold' : 'font-medium',
             )}
         >
@@ -181,7 +177,7 @@ export function PrayerTimesCard({
                         ) : (
                             <Play className="h-4 w-4" />
                         )}
-                        Explain today’s calculations
+                        Explain today's calculations
                     </Button>
                 </div>
 
