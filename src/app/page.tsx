@@ -89,19 +89,27 @@ export default function PrayerTimesPage() {
     // Prayer parallax hook
     const { sunX, sunY, skyColor, scrollYProgress, getPrayerLabel } = usePrayerParallax();
     const [currentPrayerLabel, setCurrentPrayerLabel] = useState('');
+    const [useRealTime, setUseRealTime] = useState(true);
+    const [realSunX, setRealSunX] = useState(50);
+    const [realSunY, setRealSunY] = useState(80);
+    const [moonOpacity, setMoonOpacity] = useState(0);
 
     useEffect(() => {
         const unsubscribe = scrollYProgress.on('change', (latest) => {
             setCurrentPrayerLabel(getPrayerLabel(latest));
+            // Switch to scroll mode when user scrolls
+            if (latest > 0.05) {
+                setUseRealTime(false);
+            }
+            // Update moon opacity based on scroll
+            if (latest > 0.9) {
+                setMoonOpacity((latest - 0.9) * 10);
+            } else {
+                setMoonOpacity(0);
+            }
         });
         return () => unsubscribe();
     }, [scrollYProgress, getPrayerLabel]);
-
-    useEffect(() => {
-        void loadExplanationModule().catch((error) => {
-            console.warn('Unable to preload explanations', error);
-        });
-    }, []);
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
@@ -152,6 +160,82 @@ export default function PrayerTimesPage() {
             timeZone,
         ],
     );
+
+    const result = useMemo(() => daily(salatLabels, calculationArgs, currentDate), [calculationArgs, currentDate]);
+
+    // Calculate real-time sun position based on actual prayer times
+    useEffect(() => {
+        if (!result.timings.length) {
+            return;
+        }
+
+        const now = currentDate.getTime();
+        const timings = result.timings;
+
+        // Find current prayer period
+        const fajr = timings.find((t) => t.event === 'fajr')?.value.getTime();
+        const sunrise = timings.find((t) => t.event === 'sunrise')?.value.getTime();
+        const dhuhr = timings.find((t) => t.event === 'dhuhr')?.value.getTime();
+        const asr = timings.find((t) => t.event === 'asr')?.value.getTime();
+        const maghrib = timings.find((t) => t.event === 'maghrib')?.value.getTime();
+        const isha = timings.find((t) => t.event === 'isha')?.value.getTime();
+
+        if (!fajr || !sunrise || !dhuhr || !maghrib || !isha) {
+            return;
+        }
+
+        let x = 50;
+        let y = 80;
+        let moonVis = 0;
+
+        if (now < fajr) {
+            // Before Fajr - night, sun below horizon
+            x = 85;
+            y = 95;
+            moonVis = 0.8;
+        } else if (now < sunrise) {
+            // Fajr to Sunrise - dawn twilight
+            const progress = (now - fajr) / (sunrise - fajr);
+            x = 85 - progress * 15;
+            y = 95 - progress * 15;
+        } else if (now < dhuhr) {
+            // Sunrise to Dhuhr - morning, sun rising
+            const progress = (now - sunrise) / (dhuhr - sunrise);
+            x = 70 - progress * 20;
+            y = 80 - progress * 60;
+        } else if (now < asr) {
+            // Dhuhr to Asr - afternoon, sun descending
+            const progress = (now - dhuhr) / ((asr || dhuhr + 3600000) - dhuhr);
+            x = 50 - progress * 20;
+            y = 20 + progress * 30;
+        } else if (now < maghrib) {
+            // Asr to Maghrib - late afternoon
+            const progress = (now - (asr || dhuhr)) / (maghrib - (asr || dhuhr));
+            x = 30 - progress * 15;
+            y = 50 + progress * 30;
+        } else if (now < isha) {
+            // Maghrib to Isha - dusk twilight
+            const progress = (now - maghrib) / (isha - maghrib);
+            x = 15 - progress * 5;
+            y = 80 + progress * 15;
+            moonVis = progress * 0.5;
+        } else {
+            // After Isha - night
+            x = 10;
+            y = 95;
+            moonVis = 0.8;
+        }
+
+        setRealSunX(x);
+        setRealSunY(y);
+        setMoonOpacity(moonVis);
+    }, [currentDate, result.timings]);
+
+    useEffect(() => {
+        void loadExplanationModule().catch((error) => {
+            console.warn('Unable to preload explanations', error);
+        });
+    }, []);
 
     useEffect(() => {
         if (showExplanation) {
@@ -229,7 +313,6 @@ export default function PrayerTimesPage() {
         setShowExplanation(false);
     }, []);
 
-    const result = useMemo(() => daily(salatLabels, calculationArgs, currentDate), [calculationArgs, currentDate]);
     const hijri = useMemo(() => writeIslamicDate(0, currentDate), [currentDate]);
 
     const handlePrevDay = () => {
@@ -278,18 +361,42 @@ export default function PrayerTimesPage() {
         <TooltipProvider>
             <div className="relative min-h-[300vh]">
                 {/* Parallax sky background */}
-                <motion.div className="-z-10 pointer-events-none fixed inset-0" style={{ backgroundColor: skyColor }} />
+                <motion.div
+                    className="-z-10 pointer-events-none fixed inset-0"
+                    style={{ backgroundColor: useRealTime ? 'rgba(135, 206, 235, 0.3)' : skyColor }}
+                />
 
                 {/* Sun */}
                 <motion.div
                     className="-z-10 pointer-events-none fixed h-20 w-20 rounded-full bg-yellow-400"
                     style={{
                         boxShadow: '0 0 60px 20px rgba(255, 215, 0, 0.4)',
-                        left: sunX,
-                        top: sunY,
+                        left: useRealTime ? `${realSunX}%` : sunX,
+                        top: useRealTime ? `${realSunY}%` : sunY,
                         x: '-50%',
                         y: '-50%',
                     }}
+                    animate={{ opacity: [0.9, 1, 0.9], scale: [1, 1.1, 1] }}
+                    transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity }}
+                />
+
+                {/* Moon */}
+                <motion.div
+                    className="-z-10 pointer-events-none fixed h-16 w-16 rounded-full bg-gray-200"
+                    style={{
+                        boxShadow: '0 0 40px 15px rgba(200, 200, 220, 0.3)',
+                        left: '20%',
+                        opacity: useRealTime
+                            ? moonOpacity
+                            : scrollYProgress.get() > 0.9
+                              ? (scrollYProgress.get() - 0.9) * 10
+                              : 0,
+                        top: '25%',
+                        x: '-50%',
+                        y: '-50%',
+                    }}
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
                 />
 
                 {/* Prayer time label */}
@@ -300,7 +407,7 @@ export default function PrayerTimesPage() {
                 </div>
 
                 {/* Original background gradient */}
-                <div className="-z-20 fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(10,46,120,0.6),_transparent_65%)]" />
+                <div className="-z-20 fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(135,206,235,0.4),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(10,46,120,0.6),_transparent_65%)]" />
 
                 {!showExplanation && (
                     <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">

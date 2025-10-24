@@ -22,6 +22,11 @@ export function usePrayerParallax() {
             'rgba(26, 26, 46, 0.3)', // Isha/Night
         ],
     );
+    const lightBlueSkyColor = useTransform(
+        scrollYProgress,
+        [0, 0.3, 0.7, 1],
+        ['#87CEEB', '#4A90E2', '#FF6B35', '#1a1a2e'],
+    );
 
     // Prayer time labels with opacity based on scroll position
     const getPrayerLabel = (progress: number) => {
@@ -46,5 +51,5 @@ export function usePrayerParallax() {
         return 'ʿIshāʾ';
     };
 
-    return { getPrayerLabel, scrollYProgress, skyColor, sunX, sunY };
+    return { getPrayerLabel, lightBlueSkyColor, scrollYProgress, skyColor: skyColor, sunX, sunY };
 }
