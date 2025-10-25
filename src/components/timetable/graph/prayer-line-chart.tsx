@@ -181,16 +181,32 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
     const finalMin = Number.isFinite(paddedMin) ? paddedMin : 0;
     const finalMax = paddedMax > finalMin ? paddedMax : finalMin + MINUTES_IN_DAY;
 
-    const data: AlignedData = [xValues, ...series.map((entry) => entry.values)];
+    const yOffset = Number.isFinite(finalMin) ? finalMin : 0;
+
+    const normalizedSeries = series.map((entry) => ({
+        ...entry,
+        values: entry.values.map((value) => {
+            if (value == null || Number.isNaN(value)) {
+                return value;
+            }
+            return value - yOffset;
+        }),
+    }));
+
+    const normalizedMax = Number.isFinite(finalMax) && Number.isFinite(finalMin) ? finalMax - finalMin : MINUTES_IN_DAY;
+    const safeMax = normalizedMax > 0 ? normalizedMax : MINUTES_IN_DAY;
+
+    const data: AlignedData = [xValues, ...normalizedSeries.map((entry) => entry.values)];
 
     const options: uPlot.Options = {
         width: 800,
-        height: 420,
-        legend: { show: true },
+        height: 480,
+        legend: { show: true, live: false },
+        padding: [32, 24, 16, 80],
         scales: {
             x: { time: true },
             y: {
-                range: [finalMin, finalMax],
+                range: () => [0, safeMax],
             },
         },
         axes: [
@@ -210,7 +226,7 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
                 scale: 'y',
                 stroke: 'rgba(148, 163, 184, 0.9)',
                 grid: { stroke: 'rgba(148, 163, 184, 0.15)' },
-                values: (_self, ticks) => ticks.map((tick) => formatMinutesLabel(tick)),
+                values: (_self, ticks) => ticks.map((tick) => formatMinutesLabel(tick + yOffset)),
             },
         ],
         cursor: {
@@ -218,7 +234,7 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
         },
         series: [
             {},
-            ...series.map((entry) => ({
+            ...normalizedSeries.map((entry) => ({
                 label: entry.label,
                 stroke: entry.color,
                 width: 2,
@@ -230,7 +246,8 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
                     if (value == null || !Number.isFinite(value)) {
                         return `${entry.label}: —`;
                     }
-                    const timeLabel = entry.timeLabels[idx];
+                    const actualMinutes = value + yOffset;
+                    const timeLabel = entry.timeLabels[idx] ?? formatMinutesLabel(actualMinutes);
                     return `${entry.label}: ${timeLabel ?? '—'}`;
                 },
             })),
@@ -259,7 +276,9 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
             chartRef.current = null;
         }
 
-        const opts: uPlot.Options = { ...chartConfig.options, width: containerRef.current.clientWidth };
+        const width = containerRef.current.clientWidth;
+        const height = containerRef.current.clientHeight || chartConfig.options.height || 480;
+        const opts: uPlot.Options = { ...chartConfig.options, width, height };
         const chart = new uPlot(opts, chartConfig.data, containerRef.current);
         chartRef.current = chart;
 
@@ -270,7 +289,9 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
                 if (!entry || !chartRef.current) {
                     return;
                 }
-                chartRef.current.setSize({ width: entry.contentRect.width, height: opts.height ?? 420 });
+                const nextWidth = entry.contentRect.width;
+                const nextHeight = entry.contentRect.height || opts.height || 480;
+                chartRef.current.setSize({ width: nextWidth, height: nextHeight });
             });
             observer.observe(containerRef.current);
         }
@@ -290,5 +311,5 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
         );
     }
 
-    return <div ref={containerRef} className="h-[420px] w-full" />;
+    return <div ref={containerRef} className="min-h-[480px] w-full md:min-h-[560px] lg:min-h-[640px]" />;
 }

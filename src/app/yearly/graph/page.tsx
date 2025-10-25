@@ -9,13 +9,11 @@ export const metadata: Metadata = {
 };
 
 export type YearlyGraphPageProps = {
-    searchParams?:
-        | Record<string, string | string[] | undefined>
-        | Promise<Record<string, string | string[] | undefined>>;
+    searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function YearlyGraphPage({ searchParams }: YearlyGraphPageProps) {
-    const resolvedParams = searchParams instanceof Promise ? await searchParams : searchParams;
+    const resolvedParams = (await searchParams) ?? undefined;
     const initialYear = resolveInitialYear(resolvedParams);
     return <YearlyGraphClient initialYear={initialYear} />;
 }
