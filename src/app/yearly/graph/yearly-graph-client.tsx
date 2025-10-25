@@ -46,7 +46,7 @@ export function YearlyGraphClient({ initialYear }: YearlyGraphClientProps) {
         return (
             <div className="space-y-6">
                 <div className="h-12 w-full animate-pulse rounded-md bg-muted/60" />
-                <div className="h-[60vh] min-h-[360px] max-h-[640px] w-full animate-pulse rounded-md bg-muted/40" />
+                <div className="h-[55vh] min-h-[320px] max-h-[520px] w-full animate-pulse rounded-md bg-muted/40" />
             </div>
         );
     }

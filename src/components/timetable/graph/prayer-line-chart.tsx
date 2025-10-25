@@ -2,7 +2,7 @@
 
 import 'uplot/dist/uPlot.min.css';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import uPlot, { type AlignedData } from 'uplot';
 
 import type { monthly, yearly } from '@/lib/calculator';
@@ -35,9 +35,21 @@ type ChartSeries = {
     color: string;
 };
 
+type PreparedChartData = {
+    xValues: number[];
+    series: ChartSeries[];
+    baseFajrMin: number | null;
+};
+
 type ChartConfig = {
     data: AlignedData;
     options: uPlot.Options;
+    metrics: {
+        selectedEvent: string;
+        paddedMin: number;
+        paddedMax: number;
+        scaleFactor: number;
+    };
 };
 
 const minutesSinceMidnight = (value: Date) => {
@@ -107,7 +119,7 @@ const TARGET_VISIBLE_RANGE_MINUTES = 600;
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
+const prepareChartData = (schedule: Schedule | null): PreparedChartData | null => {
     if (!schedule || !schedule.dates.length) {
         return null;
     }
@@ -116,6 +128,7 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
     if (!baseTiming) {
         return null;
     }
+
     const baseOffset = baseTiming.value.getTimezoneOffset();
 
     const xValues = schedule.dates.map((day) => {
@@ -163,57 +176,66 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
         }
     }
 
-    const lastThirdSeries =
-        series.find((entry) => entry.event === 'lastThirdOfTheNight') ?? series.find((entry) => entry.event === 'isha');
+    return { xValues, series, baseFajrMin: Number.isFinite(baseFajrMin ?? NaN) ? (baseFajrMin as number) : null };
+};
 
-    const yMinBase = typeof baseFajrMin === 'number' && Number.isFinite(baseFajrMin) ? baseFajrMin : null;
-    const yMaxCandidate = lastThirdSeries
-        ? reduceValues(lastThirdSeries.values, Math.max, Number.NEGATIVE_INFINITY)
-        : Number.NEGATIVE_INFINITY;
-    const fallbackMax = series.reduce((acc, entry) => {
-        const candidate = reduceValues(entry.values, Math.max, Number.NEGATIVE_INFINITY);
-        if (!Number.isFinite(candidate)) {
-            return acc;
-        }
-        return Math.max(acc, candidate);
-    }, Number.NEGATIVE_INFINITY);
+const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: string | null): ChartConfig | null => {
+    if (!prepared || !prepared.series.length) {
+        return null;
+    }
 
-    const baseMax = Number.isFinite(yMaxCandidate) ? yMaxCandidate : fallbackMax;
-    const effectiveMin = yMinBase ?? reduceValues(series[0]?.values ?? [], Math.min, 0);
-    const paddedMin = Number.isFinite(effectiveMin) ? effectiveMin - 20 : 0;
-    const paddedMax = Number.isFinite(baseMax) ? baseMax + 20 : paddedMin + MINUTES_IN_DAY;
-    const finalMin = Number.isFinite(paddedMin) ? paddedMin : 0;
-    const finalMax = paddedMax > finalMin ? paddedMax : finalMin + MINUTES_IN_DAY;
+    const activeSeries = selectedEvent
+        ? prepared.series.find((entry) => entry.event === selectedEvent)
+        : prepared.series[0];
 
-    const yOffset = Number.isFinite(finalMin) ? finalMin : 0;
+    if (!activeSeries) {
+        return null;
+    }
 
-    const rawRange = Number.isFinite(finalMax) && Number.isFinite(finalMin) ? finalMax - finalMin : MINUTES_IN_DAY;
+    const minVal = reduceValues(activeSeries.values, Math.min, Number.POSITIVE_INFINITY);
+    const maxVal = reduceValues(activeSeries.values, Math.max, Number.NEGATIVE_INFINITY);
+
+    let paddedMin = Number.isFinite(minVal) ? (minVal as number) - 10 : 0;
+    let paddedMax = Number.isFinite(maxVal) ? (maxVal as number) + 10 : paddedMin + 60;
+
+    if (Number.isFinite(prepared.baseFajrMin ?? NaN)) {
+        paddedMin = Math.min(paddedMin, (prepared.baseFajrMin as number) - 20);
+    }
+
+    if (!Number.isFinite(paddedMin)) {
+        paddedMin = 0;
+    }
+    if (!Number.isFinite(paddedMax)) {
+        paddedMax = paddedMin + 60;
+    }
+
+    if (paddedMax <= paddedMin) {
+        paddedMax = paddedMin + 30;
+    }
+
+    const yOffset = paddedMin;
+    const rawRange = paddedMax - paddedMin;
     const scaleFactor = rawRange > TARGET_VISIBLE_RANGE_MINUTES ? rawRange / TARGET_VISIBLE_RANGE_MINUTES : 1;
     const inverseScale = 1 / scaleFactor;
+    const safeMax = rawRange * inverseScale;
 
-    const normalizedSeries = series.map((entry) => ({
-        ...entry,
-        values: entry.values.map((value) => {
-            if (value == null || Number.isNaN(value)) {
-                return value;
-            }
-            return (value - yOffset) * inverseScale;
-        }),
-    }));
+    const normalizedValues = activeSeries.values.map((value) => {
+        if (value == null || Number.isNaN(value)) {
+            return value;
+        }
+        return (value - yOffset) * inverseScale;
+    });
 
-    const normalizedMax = rawRange * inverseScale;
-    const safeMax = normalizedMax > 0 ? normalizedMax : MINUTES_IN_DAY * inverseScale;
-
-    const data: AlignedData = [xValues, ...normalizedSeries.map((entry) => entry.values)];
+    const data: AlignedData = [prepared.xValues, normalizedValues];
 
     if (isDev) {
         // eslint-disable-next-line no-console -- debug helper requested by maintainers
-        console.log('[PrayerLineChart] series', series);
+        console.log('[PrayerLineChart] series', prepared.series);
         // eslint-disable-next-line no-console -- debug helper requested by maintainers
         console.log('[PrayerLineChart] metrics', {
-            baseFajrMin,
-            finalMin,
-            finalMax,
+            selectedEvent: activeSeries.event,
+            paddedMin,
+            paddedMax,
             rawRange,
             scaleFactor,
             safeMax,
@@ -225,7 +247,7 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
     const options: uPlot.Options = {
         width: 800,
         height: 480,
-        legend: { show: true, live: false },
+        legend: { show: false },
         padding: [32, 24, 16, 80],
         scales: {
             x: { time: true },
@@ -258,9 +280,9 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
         },
         series: [
             {},
-            ...normalizedSeries.map((entry) => ({
-                label: entry.label,
-                stroke: entry.color,
+            {
+                label: activeSeries.label,
+                stroke: activeSeries.color,
                 width: 2,
                 points: {
                     show: true,
@@ -268,17 +290,17 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
                 },
                 value: (_self, value, idx) => {
                     if (value == null || !Number.isFinite(value)) {
-                        return `${entry.label}: —`;
+                        return `${activeSeries.label}: —`;
                     }
                     const actualMinutes = value * scaleFactor + yOffset;
-                    const timeLabel = entry.timeLabels[idx] ?? formatMinutesLabel(actualMinutes);
-                    return `${entry.label}: ${timeLabel ?? '—'}`;
+                    const timeLabel = activeSeries.timeLabels[idx] ?? formatMinutesLabel(actualMinutes);
+                    return `${activeSeries.label}: ${timeLabel ?? '—'}`;
                 },
-            })),
+            },
         ],
     };
 
-    return { data, options };
+    return { data, options, metrics: { selectedEvent: activeSeries.event, paddedMin, paddedMax, scaleFactor } };
 };
 
 export type PrayerLineChartProps = {
@@ -286,9 +308,35 @@ export type PrayerLineChartProps = {
 };
 
 export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
-    const chartConfig = useMemo(() => buildChartConfig(schedule), [schedule]);
+    const prepared = useMemo(() => prepareChartData(schedule), [schedule]);
+    const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<uPlot | null>(null);
+    const selectId = useId();
+
+    useEffect(() => {
+        if (!prepared?.series.length) {
+            if (selectedEvent !== null) {
+                setSelectedEvent(null);
+            }
+            return;
+        }
+        if (!selectedEvent || !prepared.series.some((entry) => entry.event === selectedEvent)) {
+            setSelectedEvent(prepared.series[0].event);
+        }
+    }, [prepared, selectedEvent]);
+
+    const activeEvent = useMemo(() => {
+        if (!prepared?.series.length) {
+            return null;
+        }
+        if (selectedEvent && prepared.series.some((entry) => entry.event === selectedEvent)) {
+            return selectedEvent;
+        }
+        return prepared.series[0].event;
+    }, [prepared, selectedEvent]);
+
+    const chartConfig = useMemo(() => buildChartConfig(prepared, activeEvent), [prepared, activeEvent]);
 
     useEffect(() => {
         if (!chartConfig || !containerRef.current) {
@@ -327,7 +375,17 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
         };
     }, [chartConfig]);
 
-    if (!chartConfig) {
+    useEffect(() => {
+        if (!chartConfig) {
+            return;
+        }
+        if (isDev) {
+            // eslint-disable-next-line no-console -- debug helper requested by maintainers
+            console.log('[PrayerLineChart] activeMetrics', chartConfig.metrics);
+        }
+    }, [chartConfig]);
+
+    if (!prepared || !prepared.series.length || !activeEvent || !chartConfig) {
         return (
             <div className="rounded-lg border border-border/60 bg-background/60 p-6 text-center text-muted-foreground shadow">
                 No timings available for this selection.
@@ -335,5 +393,26 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
         );
     }
 
-    return <div ref={containerRef} className="h-[60vh] min-h-[360px] max-h-[640px] w-full" />;
+    return (
+        <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+                <label htmlFor={selectId} className="text-sm font-medium text-muted-foreground">
+                    Prayer / Event
+                </label>
+                <select
+                    id={selectId}
+                    value={activeEvent}
+                    onChange={(event) => setSelectedEvent(event.target.value)}
+                    className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                    {prepared.series.map((entry) => (
+                        <option key={entry.event} value={entry.event}>
+                            {entry.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+            <div ref={containerRef} className="h-[55vh] min-h-[320px] max-h-[520px] w-full" />
+        </div>
+    );
 }
