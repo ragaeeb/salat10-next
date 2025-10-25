@@ -9,10 +9,13 @@ export const metadata: Metadata = {
 };
 
 export type YearlyPageProps = {
-    searchParams?: Record<string, string | string[] | undefined>;
+    searchParams?:
+        | Record<string, string | string[] | undefined>
+        | Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default function YearlyPage({ searchParams }: YearlyPageProps) {
-    const initialYear = resolveInitialYear(searchParams);
+export default async function YearlyPage({ searchParams }: YearlyPageProps) {
+    const resolvedParams = searchParams instanceof Promise ? await searchParams : searchParams;
+    const initialYear = resolveInitialYear(resolvedParams);
     return <YearlyClient initialYear={initialYear} />;
 }

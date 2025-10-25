@@ -1,5 +1,5 @@
 export const salatLabels = {
-    asr: '\u02BF\u1E62r',
+    asr: '\u02BFAsr',
     dhuhr: 'Dhuhr',
     fajr: 'Fajr',
     isha: '\u02BFIsh\u0101\u02BE',

@@ -8,10 +8,15 @@ export const metadata: Metadata = {
     title: 'Monthly Prayer Timetable',
 };
 
-export type MonthlyPageProps = { searchParams?: Record<string, string | string[] | undefined> };
+export type MonthlyPageProps = {
+    searchParams?:
+        | Record<string, string | string[] | undefined>
+        | Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default function MonthlyPage({ searchParams }: MonthlyPageProps) {
-    const initial = resolveInitialMonthYear(searchParams);
+export default async function MonthlyPage({ searchParams }: MonthlyPageProps) {
+    const resolvedParams = searchParams instanceof Promise ? await searchParams : searchParams;
+    const initial = resolveInitialMonthYear(resolvedParams);
 
     return <MonthlyClient initialMonth={initial.month} initialYear={initial.year} />;
 }

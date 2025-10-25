@@ -3,7 +3,7 @@
 import 'uplot/dist/uPlot.min.css';
 
 import { useEffect, useMemo, useRef } from 'react';
-import type uPlot, { AlignedData } from 'uplot';
+import uPlot, { type AlignedData } from 'uplot';
 
 import type { monthly, yearly } from '@/lib/calculator';
 
@@ -38,7 +38,6 @@ type ChartSeries = {
 type ChartConfig = {
     data: AlignedData;
     options: uPlot.Options;
-    key: string;
 };
 
 const minutesSinceMidnight = (value: Date) => {
@@ -95,8 +94,13 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
     const baseOffset = baseTiming.value.getTimezoneOffset();
 
     const xValues = schedule.dates.map((day) => {
-        const reference = day.timings[0]?.value ?? new Date();
-        return reference.getTime();
+        const reference = day.timings[0]?.value;
+        if (!reference) {
+            return Number.NaN;
+        }
+        const midnight = new Date(reference);
+        midnight.setHours(0, 0, 0, 0);
+        return midnight.getTime() / 1000;
     });
 
     const order = buildSeriesOrder(schedule);
@@ -158,6 +162,14 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
             {
                 stroke: 'rgba(148, 163, 184, 0.9)',
                 grid: { stroke: 'rgba(148, 163, 184, 0.2)' },
+                values: (_self, ticks) =>
+                    ticks.map((tick) => {
+                        if (!Number.isFinite(tick)) {
+                            return '';
+                        }
+                        const date = new Date(tick * 1000);
+                        return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                    }),
             },
             {
                 scale: 'y',
@@ -175,6 +187,10 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
                 label: entry.label,
                 stroke: entry.color,
                 width: 2,
+                points: {
+                    show: true,
+                    size: 4,
+                },
                 value: (_self, value, idx) => {
                     if (value == null || !Number.isFinite(value)) {
                         return `${entry.label}: —`;
@@ -186,9 +202,7 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
         ],
     };
 
-    const key = `${order.join('|')}::${xValues[0]}::${xValues[xValues.length - 1]}`;
-
-    return { data, options, key };
+    return { data, options };
 };
 
 export type PrayerLineChartProps = {
@@ -214,21 +228,24 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
         const chart = new uPlot(opts, chartConfig.data, containerRef.current);
         chartRef.current = chart;
 
-        const observer = new ResizeObserver((entries) => {
-            const [entry] = entries;
-            if (!entry || !chartRef.current) {
-                return;
-            }
-            chartRef.current.setSize({ width: entry.contentRect.width, height: opts.height ?? 420 });
-        });
-        observer.observe(containerRef.current);
+        let observer: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== 'undefined') {
+            observer = new ResizeObserver((entries) => {
+                const [entry] = entries;
+                if (!entry || !chartRef.current) {
+                    return;
+                }
+                chartRef.current.setSize({ width: entry.contentRect.width, height: opts.height ?? 420 });
+            });
+            observer.observe(containerRef.current);
+        }
 
         return () => {
-            observer.disconnect();
+            observer?.disconnect();
             chart.destroy();
             chartRef.current = null;
         };
-    }, [chartConfig?.key]);
+    }, [chartConfig]);
 
     if (!chartConfig) {
         return (
