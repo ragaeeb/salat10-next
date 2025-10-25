@@ -1,9 +1,9 @@
 'use client';
 
-import { Settings2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Settings2Icon } from 'lucide-react';
 import { motion, useMotionTemplate, useMotionValue } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QUOTE_WATERMARK, QuoteCard } from '@/components/prayer/quote-card';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -33,48 +33,67 @@ export default function PrayerTimesPage() {
     const [realSunX, setRealSunX] = useState(50);
     const [realSunY, setRealSunY] = useState(80);
     const [moonOpacity, setMoonOpacity] = useState(0);
+    const lastScrollProgressRef = useRef(0);
 
-    // Motion values for dynamic sun color
+    // Motion values for dynamic sun color - ALWAYS CALLED
     const sunColorR = useMotionValue(255);
     const sunColorG = useMotionValue(215);
     const sunColorB = useMotionValue(0);
 
+    // Motion template - ALWAYS CALLED
+    const sunBackgroundColor = useMotionTemplate`rgb(${sunColorR}, ${sunColorG}, ${sunColorB})`;
+    const sunBoxShadow = useMotionTemplate`0 0 60px 20px rgba(${sunColorR}, ${sunColorG}, ${sunColorB}, 0.4)`;
+
     useEffect(() => {
         const initialInfo = getPrayerInfo(scrollYProgress.get());
         setCurrentPrayerInfo(initialInfo);
+        lastScrollProgressRef.current = scrollYProgress.get();
+
         const unsubscribe = scrollYProgress.on('change', (latest) => {
+            const previous = lastScrollProgressRef.current;
+            lastScrollProgressRef.current = latest;
+
             const nextInfo = getPrayerInfo(latest);
             setCurrentPrayerInfo(nextInfo);
-            console.log('[Scroll] Progress:', latest, 'Prayer:', nextInfo.event);
+            console.log('[Scroll] Progress:', latest, 'Previous:', previous, 'Prayer:', nextInfo.event);
 
-            // Switch to scroll mode when user scrolls
-            if (latest > 0.05) {
+            // Only switch to scroll mode if user is deliberately scrolling
+            // Ignore jumps from 0 to high values (hydration artifacts)
+            // Only activate scroll mode when scrolling from a low position gradually upward
+            const isDeliberateScroll = previous < 0.1 && latest > 0.05 && latest < 0.5;
+            const isContinuedScroll = previous > 0.05 && latest > 0.05;
+
+            if (isDeliberateScroll || isContinuedScroll) {
+                console.log('[Scroll] Switching to scroll mode');
                 setUseRealTime(false);
-            }
-            // Update moon opacity based on scroll
-            if (latest > 0.9) {
-                setMoonOpacity((latest - 0.9) * 10);
+
+                // Update moon opacity based on scroll
+                if (latest > 0.9) {
+                    setMoonOpacity((latest - 0.9) * 10);
+                } else {
+                    setMoonOpacity(0);
+                }
+
+                // Update sun color based on scroll progress and prayer period
+                const sunXValue = sunX.get();
+                const sunXPercent = typeof sunXValue === 'string' ? parseFloat(sunXValue.replace('%', '')) : sunXValue;
+
+                console.log('[Scroll] Sun X:', sunXPercent);
+
+                // Orange during Maghrib/Isha periods (progress > 0.8)
+                if (latest > 0.8) {
+                    console.log('[Scroll] Setting sun to ORANGE (Maghrib/Isha period)');
+                    sunColorR.set(255);
+                    sunColorG.set(140);
+                    sunColorB.set(0);
+                } else {
+                    console.log('[Scroll] Setting sun to YELLOW');
+                    sunColorR.set(255);
+                    sunColorG.set(215);
+                    sunColorB.set(0);
+                }
             } else {
-                setMoonOpacity(0);
-            }
-
-            // Update sun color based on scroll progress and prayer period
-            const sunXValue = sunX.get();
-            const sunXPercent = typeof sunXValue === 'string' ? parseFloat(sunXValue.replace('%', '')) : sunXValue;
-
-            console.log('[Scroll] Sun X:', sunXPercent);
-
-            // Orange during Maghrib/Isha periods (progress > 0.8)
-            if (latest > 0.8) {
-                console.log('[Scroll] Setting sun to ORANGE (Maghrib/Isha period)');
-                sunColorR.set(255);
-                sunColorG.set(140);
-                sunColorB.set(0);
-            } else {
-                console.log('[Scroll] Setting sun to YELLOW');
-                sunColorR.set(255);
-                sunColorG.set(215);
-                sunColorB.set(0);
+                console.log('[Scroll] Ignoring updates - in real-time mode or invalid scroll jump');
             }
         });
         return () => unsubscribe();
@@ -288,6 +307,7 @@ export default function PrayerTimesPage() {
         await copy(`"${sourceQuote.text}" - [${sourceQuote.citation}]${QUOTE_WATERMARK}`);
     };
 
+    // Early return AFTER all hooks have been called
     if (!hydrated) {
         return null;
     }
@@ -305,8 +325,8 @@ export default function PrayerTimesPage() {
                 <motion.div
                     className="-z-10 pointer-events-none fixed h-20 w-20 rounded-full"
                     style={{
-                        backgroundColor: useMotionTemplate`rgb(${sunColorR}, ${sunColorG}, ${sunColorB})`,
-                        boxShadow: useMotionTemplate`0 0 60px 20px rgba(${sunColorR}, ${sunColorG}, ${sunColorB}, 0.4)`,
+                        backgroundColor: sunBackgroundColor,
+                        boxShadow: sunBoxShadow,
                         left: useRealTime ? `${realSunX}%` : sunX,
                         top: useRealTime ? `${realSunY}%` : sunY,
                         x: '-50%',
@@ -314,6 +334,7 @@ export default function PrayerTimesPage() {
                     }}
                     animate={{ opacity: [0.9, 1, 0.9], scale: [1, 1.1, 1] }}
                     transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity }}
+                    key={useRealTime ? 'realtime' : 'scroll'}
                 />
 
                 {/* Moon */}
@@ -353,7 +374,7 @@ export default function PrayerTimesPage() {
                         size="icon"
                     >
                         <Link aria-label="Open settings" href="/settings">
-                            <Settings2 className="h-5 w-5" />
+                            <Settings2Icon className="h-5 w-5" />
                         </Link>
                     </Button>
                 </div>
