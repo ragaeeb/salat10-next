@@ -1,8 +1,9 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Loader2, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { AuroraText } from '@/components/magicui/aurora-text';
 import { Meteors } from '@/components/magicui/meteors';
 import { Button } from '@/components/ui/button';
@@ -16,13 +17,10 @@ export type PrayerTimesCardProps = {
     activeEvent: string | null;
     addressLabel: string;
     dateLabel: string;
-    explanationDisabled: boolean;
-    explanationLoading: boolean;
     hijriLabel: string;
     istijaba?: boolean;
     locationDetail: string;
     methodLabel: string;
-    onExplain: () => void;
     onNextDay: () => void;
     onPrevDay: () => void;
     onToday: () => void;
@@ -66,21 +64,55 @@ const PrayerTimeRow = ({
     );
 };
 
+const Countdown = ({ timings }: { timings: PrayerTiming[] }) => {
+    const [countdown, setCountdown] = useState('');
+
+    useEffect(() => {
+        const updateCountdown = () => {
+            const now = Date.now();
+            const nextPrayer = timings.find((t) => t.value.getTime() > now);
+
+            if (!nextPrayer) {
+                setCountdown('');
+                return;
+            }
+
+            const diff = nextPrayer.value.getTime() - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            setCountdown(`${hours}h ${minutes}m ${seconds}s until ${nextPrayer.label}`);
+        };
+
+        updateCountdown();
+        const interval = setInterval(updateCountdown, 1000);
+        return () => clearInterval(interval);
+    }, [timings]);
+
+    if (!countdown) {
+        return null;
+    }
+
+    return (
+        <div className="flex items-center justify-center rounded-2xl bg-white/5 px-4 py-3 text-foreground/70 text-sm">
+            <span className="font-medium">{countdown}</span>
+        </div>
+    );
+};
+
 /**
- * Displays the daily schedule with navigation and explanation triggers.
+ * Displays the daily schedule with navigation.
  */
 export function PrayerTimesCard({
     activeLabel,
     activeEvent,
     addressLabel,
     dateLabel,
-    explanationDisabled,
-    explanationLoading,
     hijriLabel,
     istijaba,
     locationDetail,
     methodLabel,
-    onExplain,
     onNextDay,
     onPrevDay,
     onToday,
@@ -160,39 +192,18 @@ export function PrayerTimesCard({
                     ))}
                 </ul>
 
-                <div className="flex flex-col gap-4 border-white/10 border-t pt-4 lg:flex-row lg:items-center lg:justify-between">
-                    <p className="text-foreground/70 text-sm">
-                        Need the full derivation? Walk through the astronomy, prophetic guidance, and safeguards step by
-                        step.
-                    </p>
-                    <Button
-                        disabled={explanationDisabled}
-                        onClick={onExplain}
-                        size="sm"
-                        className="group flex items-center gap-2"
-                    >
-                        {explanationLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <Play className="h-4 w-4" />
-                        )}
-                        Explain today's calculations
-                    </Button>
-                </div>
+                <Countdown timings={timings} />
 
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/5 px-4 py-3 text-foreground/70 text-xs">
-                    <span className="flex items-center gap-2">
-                        <strong className="font-semibold text-foreground">Active prayer:</strong>
-                        <span className="max-w-[12rem] truncate sm:max-w-none">{activeLabel}</span>
-                    </span>
-                    <span>
-                        <Link
-                            className="underline decoration-dotted underline-offset-4 hover:text-foreground"
-                            href="/settings"
-                        >
-                            Update calculation settings
-                        </Link>
-                    </span>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    <Button asChild size="sm" variant="outline" className="border-white/30">
+                        <Link href="/monthly">Monthly timetable</Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="border-white/30">
+                        <Link href="/yearly">Yearly timetable</Link>
+                    </Button>
+                    <Button asChild size="sm">
+                        <Link href="/explanations">Explain today's calculations</Link>
+                    </Button>
                 </div>
             </div>
         </motion.section>

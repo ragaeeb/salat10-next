@@ -1,11 +1,9 @@
 'use client';
 
-import { Coordinates } from 'adhan';
 import { Settings2 } from 'lucide-react';
-import { motion } from 'motion/react';
-import dynamic from 'next/dynamic';
+import { motion, useMotionTemplate, useMotionValue } from 'motion/react';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QUOTE_WATERMARK, QuoteCard } from '@/components/prayer/quote-card';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -15,49 +13,9 @@ import { useCopyFeedback } from '@/hooks/use-copy-feedback';
 import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
 import { usePrayerParallax } from '@/hooks/use-prayer-parallax';
 import { daily } from '@/lib/calculator';
-import type { PrayerTimeExplanation } from '@/lib/explanation/types';
 import { writeIslamicDate } from '@/lib/hijri';
-import { createParameters, methodLabelMap, useSettings } from '@/lib/settings';
 import { salatLabels } from '@/lib/salat-labels';
-
-const MultiStepLoader = dynamic(
-    () => import('@/components/aceternity/multi-step-loader').then((mod) => mod.MultiStepLoader),
-    { loading: () => null, ssr: false },
-);
-
-type ExplanationStatus = { data: PrayerTimeExplanation | null; loading: boolean; error: string | null };
-
-let explanationModulePromise: Promise<typeof import('@/lib/explanation')> | null = null;
-
-const loadExplanationModule = () => {
-    if (!explanationModulePromise) {
-        explanationModulePromise = import('@/lib/explanation');
-    }
-    return explanationModulePromise;
-};
-
-const buildExplanationKey = (options: {
-    address?: string | null;
-    date: Date;
-    fajrAngle: number;
-    ishaAngle: number;
-    ishaInterval: number;
-    latitude: number;
-    longitude: number;
-    method: string;
-    timeZone: string;
-}) =>
-    [
-        options.address ?? '',
-        options.latitude,
-        options.longitude,
-        options.date.toISOString(),
-        options.fajrAngle,
-        options.ishaAngle,
-        options.ishaInterval,
-        options.method,
-        options.timeZone,
-    ].join('|');
+import { methodLabelMap, useSettings } from '@/lib/settings';
 
 const formatCoordinate = (value: number, positiveLabel: string, negativeLabel: string) =>
     `${Math.abs(value).toFixed(4)}° ${value >= 0 ? positiveLabel : negativeLabel}`;
@@ -67,13 +25,6 @@ export default function PrayerTimesPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const { error: quoteError, loading: quoteLoading, quote } = useMotivationalQuote();
     const { copy, status: copyStatus } = useCopyFeedback();
-    const explanationCache = useRef<Map<string, PrayerTimeExplanation>>(new Map());
-    const [explanationState, setExplanationState] = useState<ExplanationStatus>({
-        data: null,
-        error: null,
-        loading: false,
-    });
-    const [showExplanation, setShowExplanation] = useState(false);
 
     // Prayer parallax hook
     const { sunX, sunY, skyColor, scrollYProgress, getPrayerInfo } = usePrayerParallax();
@@ -83,12 +34,19 @@ export default function PrayerTimesPage() {
     const [realSunY, setRealSunY] = useState(80);
     const [moonOpacity, setMoonOpacity] = useState(0);
 
+    // Motion values for dynamic sun color
+    const sunColorR = useMotionValue(255);
+    const sunColorG = useMotionValue(215);
+    const sunColorB = useMotionValue(0);
+
     useEffect(() => {
         const initialInfo = getPrayerInfo(scrollYProgress.get());
         setCurrentPrayerInfo(initialInfo);
         const unsubscribe = scrollYProgress.on('change', (latest) => {
             const nextInfo = getPrayerInfo(latest);
             setCurrentPrayerInfo(nextInfo);
+            console.log('[Scroll] Progress:', latest, 'Prayer:', nextInfo.event);
+
             // Switch to scroll mode when user scrolls
             if (latest > 0.05) {
                 setUseRealTime(false);
@@ -99,9 +57,28 @@ export default function PrayerTimesPage() {
             } else {
                 setMoonOpacity(0);
             }
+
+            // Update sun color based on scroll progress and prayer period
+            const sunXValue = sunX.get();
+            const sunXPercent = typeof sunXValue === 'string' ? parseFloat(sunXValue.replace('%', '')) : sunXValue;
+
+            console.log('[Scroll] Sun X:', sunXPercent);
+
+            // Orange during Maghrib/Isha periods (progress > 0.8)
+            if (latest > 0.8) {
+                console.log('[Scroll] Setting sun to ORANGE (Maghrib/Isha period)');
+                sunColorR.set(255);
+                sunColorG.set(140);
+                sunColorB.set(0);
+            } else {
+                console.log('[Scroll] Setting sun to YELLOW');
+                sunColorR.set(255);
+                sunColorG.set(215);
+                sunColorB.set(0);
+            }
         });
         return () => unsubscribe();
-    }, [scrollYProgress, getPrayerInfo]);
+    }, [scrollYProgress, getPrayerInfo, sunX, sunColorR, sunColorG, sunColorB]);
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
@@ -122,32 +99,6 @@ export default function PrayerTimesPage() {
             numeric.ishaInterval,
             settings.latitude,
             settings.longitude,
-            settings.method,
-            timeZone,
-        ],
-    );
-
-    const explanationKey = useMemo(
-        () =>
-            buildExplanationKey({
-                address: settings.address,
-                date: currentDate,
-                fajrAngle: calculationArgs.fajrAngle,
-                ishaAngle: calculationArgs.ishaAngle,
-                ishaInterval: calculationArgs.ishaInterval,
-                latitude: numeric.latitude,
-                longitude: numeric.longitude,
-                method: settings.method,
-                timeZone,
-            }),
-        [
-            calculationArgs.fajrAngle,
-            calculationArgs.ishaAngle,
-            calculationArgs.ishaInterval,
-            currentDate,
-            numeric.latitude,
-            numeric.longitude,
-            settings.address,
             settings.method,
             timeZone,
         ],
@@ -176,7 +127,6 @@ export default function PrayerTimesPage() {
         const now = currentDate.getTime();
         const timings = result.timings;
 
-        // Find current prayer period
         const fajr = timings.find((t) => t.event === 'fajr')?.value.getTime();
         const sunrise = timings.find((t) => t.event === 'sunrise')?.value.getTime();
         const dhuhr = timings.find((t) => t.event === 'dhuhr')?.value.getTime();
@@ -188,134 +138,121 @@ export default function PrayerTimesPage() {
             return;
         }
 
+        console.log('[Real-time] Now:', new Date(now).toLocaleTimeString());
+        console.log('[Real-time] Maghrib:', new Date(maghrib).toLocaleTimeString());
+        console.log('[Real-time] Isha:', new Date(isha).toLocaleTimeString());
+
         let x = 50;
         let y = 80;
         let moonVis = 0;
+        let isOrange = false;
 
         if (now < fajr) {
-            // Before Fajr - night, sun below horizon
             x = 85;
             y = 95;
             moonVis = 0.8;
+            console.log('[Real-time] Period: Before Fajr');
         } else if (now < sunrise) {
-            // Fajr to Sunrise - dawn twilight
             const progress = (now - fajr) / (sunrise - fajr);
             x = 85 - progress * 15;
             y = 95 - progress * 15;
+            console.log('[Real-time] Period: Fajr to Sunrise');
         } else if (now < dhuhr) {
-            // Sunrise to Dhuhr - morning, sun rising
             const progress = (now - sunrise) / (dhuhr - sunrise);
             x = 70 - progress * 20;
             y = 80 - progress * 60;
+            console.log('[Real-time] Period: Sunrise to Dhuhr');
         } else if (now < asr!) {
-            // Dhuhr to Asr - afternoon, sun descending
             const progress = (now - dhuhr) / ((asr || dhuhr + 3600000) - dhuhr);
             x = 50 - progress * 20;
             y = 20 + progress * 30;
+            console.log('[Real-time] Period: Dhuhr to Asr');
         } else if (now < maghrib) {
-            // Asr to Maghrib - late afternoon
             const progress = (now - (asr || dhuhr)) / (maghrib - (asr || dhuhr));
             x = 30 - progress * 15;
             y = 50 + progress * 30;
+            isOrange = true;
+            console.log('[Real-time] Period: Asr to Maghrib - ORANGE');
         } else if (now < isha) {
-            // Maghrib to Isha - dusk twilight
             const progress = (now - maghrib) / (isha - maghrib);
             x = 15 - progress * 5;
             y = 80 + progress * 15;
             moonVis = progress * 0.5;
+            isOrange = true;
+            console.log('[Real-time] Period: Maghrib to Isha - ORANGE');
         } else {
-            // After Isha - night
             x = 10;
             y = 95;
             moonVis = 0.8;
+            console.log('[Real-time] Period: After Isha');
         }
+
+        console.log('[Real-time] Sun position X:', x, 'Y:', y, 'Orange:', isOrange);
 
         setRealSunX(x);
         setRealSunY(y);
         setMoonOpacity(moonVis);
-    }, [currentDate, result.timings]);
 
-    useEffect(() => {
-        void loadExplanationModule().catch((error) => {
-            console.warn('Unable to preload explanations', error);
-        });
-    }, []);
-
-    useEffect(() => {
-        if (showExplanation) {
-            return;
+        // Update sun color based on prayer period
+        if (isOrange) {
+            console.log('[Real-time] Setting sun to ORANGE');
+            sunColorR.set(255);
+            sunColorG.set(140);
+            sunColorB.set(0);
+        } else {
+            console.log('[Real-time] Setting sun to YELLOW');
+            sunColorR.set(255);
+            sunColorG.set(215);
+            sunColorB.set(0);
         }
-        const cached = explanationCache.current.get(explanationKey) ?? null;
-        setExplanationState((prev) => {
-            if (prev.data === cached && !prev.loading && prev.error === null) {
-                return prev;
+    }, [currentDate, result.timings, sunColorR, sunColorG, sunColorB]);
+
+    // Reset to real-time mode and scroll position on mount/page visibility
+    useEffect(() => {
+        console.log('[Mount] Resetting scroll position and real-time mode');
+        // Force scroll to top
+        if (typeof window !== 'undefined') {
+            window.history.scrollRestoration = 'manual';
+            window.scrollTo({ behavior: 'instant', left: 0, top: 0 });
+            console.log('[Mount] Scroll position:', window.scrollY);
+        }
+        setUseRealTime(true);
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                console.log('[Visibility] Page visible, resetting');
+                setUseRealTime(true);
+                window.scrollTo({ behavior: 'instant', left: 0, top: 0 });
             }
-            return { data: cached, error: null, loading: false };
-        });
-    }, [explanationKey, showExplanation]);
+        };
 
-    const ensureExplanation = useCallback(async () => {
-        if (!hasValidCoordinates) {
-            return null;
-        }
-
-        const cached = explanationCache.current.get(explanationKey);
-        if (cached) {
-            setExplanationState({ data: cached, error: null, loading: false });
-            return cached;
-        }
-
-        setExplanationState({ data: null, error: null, loading: true });
-
-        try {
-            const { buildPrayerTimeExplanation } = await loadExplanationModule();
-            const parameters = createParameters({
-                fajrAngle: calculationArgs.fajrAngle,
-                ishaAngle: calculationArgs.ishaAngle,
-                ishaInterval: calculationArgs.ishaInterval,
-                method: settings.method,
-            });
-            const story = buildPrayerTimeExplanation({
-                address: settings.address,
-                coordinates: new Coordinates(numeric.latitude, numeric.longitude),
-                date: currentDate,
-                parameters,
-                timeZone,
-            });
-            explanationCache.current.set(explanationKey, story);
-            setExplanationState({ data: story, error: null, loading: false });
-            return story;
-        } catch (error) {
-            console.error('Unable to build explanation', error);
-            setExplanationState({ data: null, error: 'Unable to load explanation. Please try again.', loading: false });
-            setShowExplanation(false);
-            return null;
-        }
-    }, [
-        calculationArgs.fajrAngle,
-        calculationArgs.ishaAngle,
-        calculationArgs.ishaInterval,
-        currentDate,
-        explanationKey,
-        hasValidCoordinates,
-        numeric.latitude,
-        numeric.longitude,
-        settings.address,
-        settings.method,
-        timeZone,
-    ]);
-
-    const handleExplain = useCallback(() => {
-        if (!hasValidCoordinates) {
-            return;
-        }
-        setShowExplanation(true);
-        void ensureExplanation();
-    }, [ensureExplanation, hasValidCoordinates]);
-
-    const closeExplanation = useCallback(() => {
-        setShowExplanation(false);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (typeof window !== 'undefined') {
+                window.history.scrollRestoration = 'auto';
+            }
+        };
     }, []);
+
+    useEffect(() => {
+        const updateColors = () => {
+            const r = sunColorR.get();
+            const g = sunColorG.get();
+            const b = sunColorB.get();
+            console.log('[Color Update] RGB:', r, g, b);
+        };
+
+        const unsubR = sunColorR.on('change', updateColors);
+        const unsubG = sunColorG.on('change', updateColors);
+        const unsubB = sunColorB.on('change', updateColors);
+
+        return () => {
+            unsubR();
+            unsubG();
+            unsubB();
+        };
+    }, [sunColorR, sunColorG, sunColorB]);
 
     const hijri = useMemo(() => writeIslamicDate(0, currentDate), [currentDate]);
 
@@ -351,12 +288,6 @@ export default function PrayerTimesPage() {
         await copy(`"${sourceQuote.text}" - [${sourceQuote.citation}]${QUOTE_WATERMARK}`);
     };
 
-    const explanationLoading = explanationState.loading;
-    const explanationSteps = explanationState.data?.steps ?? [];
-    const explanationSummary = explanationState.data?.summary ?? null;
-
-    const explanationDisabled = !hasValidCoordinates || explanationLoading;
-
     if (!hydrated) {
         return null;
     }
@@ -372,9 +303,10 @@ export default function PrayerTimesPage() {
 
                 {/* Sun */}
                 <motion.div
-                    className="-z-10 pointer-events-none fixed h-20 w-20 rounded-full bg-yellow-400"
+                    className="-z-10 pointer-events-none fixed h-20 w-20 rounded-full"
                     style={{
-                        boxShadow: '0 0 60px 20px rgba(255, 215, 0, 0.4)',
+                        backgroundColor: useMotionTemplate`rgb(${sunColorR}, ${sunColorG}, ${sunColorB})`,
+                        boxShadow: useMotionTemplate`0 0 60px 20px rgba(${sunColorR}, ${sunColorG}, ${sunColorB}, 0.4)`,
                         left: useRealTime ? `${realSunX}%` : sunX,
                         top: useRealTime ? `${realSunY}%` : sunY,
                         x: '-50%',
@@ -413,34 +345,18 @@ export default function PrayerTimesPage() {
                 {/* Original background gradient */}
                 <div className="-z-20 fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(135,206,235,0.4),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(10,46,120,0.6),_transparent_65%)]" />
 
-                {!showExplanation && (
-                    <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
-                        <ThemeToggle />
-                        <Button
-                            asChild
-                            className="h-9 rounded-full border border-primary/30 bg-primary px-4 text-sm text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
-                            size="sm"
-                        >
-                            <Link href="/monthly">Monthly timetable</Link>
-                        </Button>
-                        <Button
-                            asChild
-                            className="h-9 rounded-full border border-primary/30 bg-primary px-4 text-sm text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
-                            size="sm"
-                        >
-                            <Link href="/yearly">Yearly timetable</Link>
-                        </Button>
-                        <Button
-                            asChild
-                            className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
-                            size="icon"
-                        >
-                            <Link aria-label="Open settings" href="/settings">
-                                <Settings2 className="h-5 w-5" />
-                            </Link>
-                        </Button>
-                    </div>
-                )}
+                <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
+                    <ThemeToggle />
+                    <Button
+                        asChild
+                        className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
+                        size="icon"
+                    >
+                        <Link aria-label="Open settings" href="/settings">
+                            <Settings2 className="h-5 w-5" />
+                        </Link>
+                    </Button>
+                </div>
 
                 <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pt-24 pb-16 sm:px-6 lg:px-8">
                     <QuoteCard
@@ -456,27 +372,16 @@ export default function PrayerTimesPage() {
                         activeEvent={result.activeEvent}
                         addressLabel={addressLabel}
                         dateLabel={result.date}
-                        explanationDisabled={explanationDisabled}
-                        explanationLoading={explanationLoading}
                         hijriLabel={hijriLabel}
                         istijaba={result.istijaba}
                         locationDetail={locationDetail}
                         methodLabel={methodLabel}
-                        onExplain={handleExplain}
                         onNextDay={handleNextDay}
                         onPrevDay={handlePrevDay}
                         onToday={handleToday}
                         timings={result.timings}
                     />
                 </div>
-
-                <MultiStepLoader
-                    loading={explanationLoading}
-                    open={showExplanation}
-                    onClose={closeExplanation}
-                    steps={explanationSteps}
-                    summary={explanationSummary}
-                />
             </div>
         </TooltipProvider>
     );
