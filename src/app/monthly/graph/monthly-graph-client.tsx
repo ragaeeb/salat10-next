@@ -59,7 +59,7 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
         return (
             <div className="space-y-6">
                 <div className="h-12 w-full animate-pulse rounded-md bg-muted/60" />
-                <div className="min-h-[480px] w-full animate-pulse rounded-md bg-muted/40 md:min-h-[560px] lg:min-h-[640px]" />
+                <div className="h-[60vh] min-h-[360px] max-h-[640px] w-full animate-pulse rounded-md bg-muted/40" />
             </div>
         );
     }

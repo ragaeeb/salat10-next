@@ -103,6 +103,10 @@ const reduceValues = (
     return used ? acc : initial;
 };
 
+const TARGET_VISIBLE_RANGE_MINUTES = 600;
+
+const isDev = process.env.NODE_ENV !== 'production';
+
 const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
     if (!schedule || !schedule.dates.length) {
         return null;
@@ -183,20 +187,40 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
 
     const yOffset = Number.isFinite(finalMin) ? finalMin : 0;
 
+    const rawRange = Number.isFinite(finalMax) && Number.isFinite(finalMin) ? finalMax - finalMin : MINUTES_IN_DAY;
+    const scaleFactor = rawRange > TARGET_VISIBLE_RANGE_MINUTES ? rawRange / TARGET_VISIBLE_RANGE_MINUTES : 1;
+    const inverseScale = 1 / scaleFactor;
+
     const normalizedSeries = series.map((entry) => ({
         ...entry,
         values: entry.values.map((value) => {
             if (value == null || Number.isNaN(value)) {
                 return value;
             }
-            return value - yOffset;
+            return (value - yOffset) * inverseScale;
         }),
     }));
 
-    const normalizedMax = Number.isFinite(finalMax) && Number.isFinite(finalMin) ? finalMax - finalMin : MINUTES_IN_DAY;
-    const safeMax = normalizedMax > 0 ? normalizedMax : MINUTES_IN_DAY;
+    const normalizedMax = rawRange * inverseScale;
+    const safeMax = normalizedMax > 0 ? normalizedMax : MINUTES_IN_DAY * inverseScale;
 
     const data: AlignedData = [xValues, ...normalizedSeries.map((entry) => entry.values)];
+
+    if (isDev) {
+        // eslint-disable-next-line no-console -- debug helper requested by maintainers
+        console.log('[PrayerLineChart] series', series);
+        // eslint-disable-next-line no-console -- debug helper requested by maintainers
+        console.log('[PrayerLineChart] metrics', {
+            baseFajrMin,
+            finalMin,
+            finalMax,
+            rawRange,
+            scaleFactor,
+            safeMax,
+        });
+        // eslint-disable-next-line no-console -- debug helper requested by maintainers
+        console.log('[PrayerLineChart] data', data);
+    }
 
     const options: uPlot.Options = {
         width: 800,
@@ -226,7 +250,7 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
                 scale: 'y',
                 stroke: 'rgba(148, 163, 184, 0.9)',
                 grid: { stroke: 'rgba(148, 163, 184, 0.15)' },
-                values: (_self, ticks) => ticks.map((tick) => formatMinutesLabel(tick + yOffset)),
+                values: (_self, ticks) => ticks.map((tick) => formatMinutesLabel(tick * scaleFactor + yOffset)),
             },
         ],
         cursor: {
@@ -246,7 +270,7 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
                     if (value == null || !Number.isFinite(value)) {
                         return `${entry.label}: —`;
                     }
-                    const actualMinutes = value + yOffset;
+                    const actualMinutes = value * scaleFactor + yOffset;
                     const timeLabel = entry.timeLabels[idx] ?? formatMinutesLabel(actualMinutes);
                     return `${entry.label}: ${timeLabel ?? '—'}`;
                 },
@@ -311,5 +335,5 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
         );
     }
 
-    return <div ref={containerRef} className="min-h-[480px] w-full md:min-h-[560px] lg:min-h-[640px]" />;
+    return <div ref={containerRef} className="h-[60vh] min-h-[360px] max-h-[640px] w-full" />;
 }
