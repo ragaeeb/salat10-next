@@ -18,6 +18,7 @@ import { daily } from '@/lib/calculator';
 import type { PrayerTimeExplanation } from '@/lib/explanation/types';
 import { writeIslamicDate } from '@/lib/hijri';
 import { createParameters, methodLabelMap, useSettings } from '@/lib/settings';
+import { salatLabels } from '@/lib/salat-labels';
 
 const MultiStepLoader = dynamic(
     () => import('@/components/aceternity/multi-step-loader').then((mod) => mod.MultiStepLoader),
@@ -57,18 +58,6 @@ const buildExplanationKey = (options: {
         options.method,
         options.timeZone,
     ].join('|');
-
-const salatLabels = {
-    asr: 'ʿAṣr',
-    dhuhr: 'Dhuhr',
-    fajr: 'Fajr',
-    isha: 'ʿIshāʾ',
-    lastThirdOfTheNight: 'Last 1/3 Night Begins',
-    maghrib: 'Maġrib',
-    middleOfTheNight: '1/2 Night Begins',
-    sunrise: 'Sunrise',
-    tarawih: 'Tarawīḥ',
-} as const;
 
 const formatCoordinate = (value: number, positiveLabel: string, negativeLabel: string) =>
     `${Math.abs(value).toFixed(4)}° ${value >= 0 ? positiveLabel : negativeLabel}`;
