@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Settings2Icon } from 'lucide-react';
+import { Settings2 } from 'lucide-react';
 import { motion, useMotionTemplate, useMotionValue } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -33,6 +33,7 @@ export default function PrayerTimesPage() {
     const [realSunX, setRealSunX] = useState(50);
     const [realSunY, setRealSunY] = useState(80);
     const [moonOpacity, setMoonOpacity] = useState(0);
+    const [crescentProgress, setCrescentProgress] = useState(0); // 0 = full circle, 1 = thin crescent
     const lastScrollProgressRef = useRef(0);
 
     // Motion values for dynamic sun color - ALWAYS CALLED
@@ -67,11 +68,18 @@ export default function PrayerTimesPage() {
                 console.log('[Scroll] Switching to scroll mode');
                 setUseRealTime(false);
 
-                // Update moon opacity based on scroll
+                // Update moon opacity and crescent based on scroll
                 if (latest > 0.9) {
                     setMoonOpacity((latest - 0.9) * 10);
+                    // From Maghrib (0.9) to Isha (1.0), transform to crescent
+                    setCrescentProgress((latest - 0.9) * 10);
+                } else if (latest > 0.8) {
+                    // Between Asr (0.8) and Maghrib (0.9), show as full moon
+                    setMoonOpacity(1);
+                    setCrescentProgress(0);
                 } else {
                     setMoonOpacity(0);
+                    setCrescentProgress(0);
                 }
 
                 // Update sun color based on scroll progress and prayer period
@@ -80,17 +88,24 @@ export default function PrayerTimesPage() {
 
                 console.log('[Scroll] Sun X:', sunXPercent);
 
-                // Orange during Maghrib/Isha periods (progress > 0.8)
+                // White (moon) after Maghrib (progress > 0.8), orange before
                 if (latest > 0.8) {
-                    console.log('[Scroll] Setting sun to ORANGE (Maghrib/Isha period)');
-                    sunColorR.set(255);
-                    sunColorG.set(140);
-                    sunColorB.set(0);
+                    console.log('[Scroll] Setting celestial body to WHITE (Moon after Maghrib)');
+                    sunColorR.set(240);
+                    sunColorG.set(240);
+                    sunColorB.set(255);
                 } else {
-                    console.log('[Scroll] Setting sun to YELLOW');
-                    sunColorR.set(255);
-                    sunColorG.set(215);
-                    sunColorB.set(0);
+                    console.log('[Scroll] Setting sun to YELLOW/ORANGE');
+                    // Orange closer to sunset
+                    if (latest > 0.7) {
+                        sunColorR.set(255);
+                        sunColorG.set(140);
+                        sunColorB.set(0);
+                    } else {
+                        sunColorR.set(255);
+                        sunColorG.set(215);
+                        sunColorB.set(0);
+                    }
                 }
             } else {
                 console.log('[Scroll] Ignoring updates - in real-time mode or invalid scroll jump');
@@ -164,13 +179,17 @@ export default function PrayerTimesPage() {
         let x = 50;
         let y = 80;
         let moonVis = 0;
+        let crescent = 0;
         let isOrange = false;
+        let isMoon = false;
 
         if (now < fajr) {
             x = 85;
             y = 95;
-            moonVis = 0.8;
-            console.log('[Real-time] Period: Before Fajr');
+            moonVis = 1;
+            crescent = 0.7; // Crescent moon before dawn
+            isMoon = true;
+            console.log('[Real-time] Period: Before Fajr - MOON');
         } else if (now < sunrise) {
             const progress = (now - fajr) / (sunrise - fajr);
             x = 85 - progress * 15;
@@ -193,27 +212,37 @@ export default function PrayerTimesPage() {
             isOrange = true;
             console.log('[Real-time] Period: Asr to Maghrib - ORANGE');
         } else if (now < isha) {
+            // From Maghrib to Isha: white moon becoming crescent
             const progress = (now - maghrib) / (isha - maghrib);
             x = 15 - progress * 5;
             y = 80 + progress * 15;
-            moonVis = progress * 0.5;
-            isOrange = true;
-            console.log('[Real-time] Period: Maghrib to Isha - ORANGE');
+            moonVis = 1;
+            crescent = progress; // Gradually form crescent
+            isMoon = true;
+            console.log('[Real-time] Period: Maghrib to Isha - MOON (crescent forming)');
         } else {
             x = 10;
             y = 95;
-            moonVis = 0.8;
-            console.log('[Real-time] Period: After Isha');
+            moonVis = 1;
+            crescent = 0.7; // Crescent moon at night
+            isMoon = true;
+            console.log('[Real-time] Period: After Isha - MOON');
         }
 
-        console.log('[Real-time] Sun position X:', x, 'Y:', y, 'Orange:', isOrange);
+        console.log('[Real-time] Celestial body position X:', x, 'Y:', y, 'Orange:', isOrange, 'Moon:', isMoon);
 
         setRealSunX(x);
         setRealSunY(y);
         setMoonOpacity(moonVis);
+        setCrescentProgress(crescent);
 
-        // Update sun color based on prayer period
-        if (isOrange) {
+        // Update sun/moon color based on prayer period
+        if (isMoon) {
+            console.log('[Real-time] Setting to WHITE MOON');
+            sunColorR.set(240);
+            sunColorG.set(240);
+            sunColorB.set(255);
+        } else if (isOrange) {
             console.log('[Real-time] Setting sun to ORANGE');
             sunColorR.set(255);
             sunColorG.set(140);
@@ -321,40 +350,33 @@ export default function PrayerTimesPage() {
                     style={{ backgroundColor: useRealTime ? 'rgba(135, 206, 235, 0.3)' : skyColor }}
                 />
 
-                {/* Sun */}
+                {/* Sun/Moon - transitions from sun to moon at Maghrib */}
                 <motion.div
-                    className="-z-10 pointer-events-none fixed h-20 w-20 rounded-full"
+                    className="-z-10 pointer-events-none fixed h-20 w-20"
                     style={{
-                        backgroundColor: sunBackgroundColor,
-                        boxShadow: sunBoxShadow,
                         left: useRealTime ? `${realSunX}%` : sunX,
                         top: useRealTime ? `${realSunY}%` : sunY,
                         x: '-50%',
                         y: '-50%',
                     }}
-                    animate={{ opacity: [0.9, 1, 0.9], scale: [1, 1.1, 1] }}
+                    animate={{ opacity: moonOpacity > 0 ? moonOpacity : [0.9, 1, 0.9], scale: [1, 1.1, 1] }}
                     transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity }}
                     key={useRealTime ? 'realtime' : 'scroll'}
-                />
-
-                {/* Moon */}
-                <motion.div
-                    className="-z-10 pointer-events-none fixed h-16 w-16 rounded-full bg-gray-200"
-                    style={{
-                        boxShadow: '0 0 40px 15px rgba(200, 200, 220, 0.3)',
-                        left: '20%',
-                        opacity: useRealTime
-                            ? moonOpacity
-                            : scrollYProgress.get() > 0.9
-                              ? (scrollYProgress.get() - 0.9) * 10
-                              : 0,
-                        top: '25%',
-                        x: '-50%',
-                        y: '-50%',
-                    }}
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
-                />
+                >
+                    <div
+                        className="h-full w-full rounded-full"
+                        style={{
+                            backgroundColor:
+                                crescentProgress > 0.05
+                                    ? 'transparent'
+                                    : `rgb(${sunColorR.get()}, ${sunColorG.get()}, ${sunColorB.get()})`,
+                            boxShadow:
+                                crescentProgress > 0.05
+                                    ? `${15 + crescentProgress * 25}px 0 0 ${4 - crescentProgress * 2}px rgb(${sunColorR.get()}, ${sunColorG.get()}, ${sunColorB.get()}), 0 0 60px 20px rgba(${sunColorR.get()}, ${sunColorG.get()}, ${sunColorB.get()}, 0.4)`
+                                    : `0 0 60px 20px rgba(${sunColorR.get()}, ${sunColorG.get()}, ${sunColorB.get()}, 0.4)`,
+                        }}
+                    />
+                </motion.div>
 
                 {/* Prayer time label */}
                 <div className="-translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none fixed top-1/2 left-1/2">
@@ -374,7 +396,7 @@ export default function PrayerTimesPage() {
                         size="icon"
                     >
                         <Link aria-label="Open settings" href="/settings">
-                            <Settings2Icon className="h-5 w-5" />
+                            <Settings2 className="h-5 w-5" />
                         </Link>
                     </Button>
                 </div>
