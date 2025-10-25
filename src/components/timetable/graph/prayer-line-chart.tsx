@@ -100,7 +100,8 @@ const findTiming = (timings: TimingEntry[], event: string) => timings.find((timi
 const getColorFor = (event: string, index: number, theme: ThemeName) => {
     const palette = theme === 'dark' ? DARK_SERIES_COLORS : LIGHT_SERIES_COLORS;
     const fallbacks = theme === 'dark' ? DARK_FALLBACK_COLORS : LIGHT_FALLBACK_COLORS;
-    return palette[event] ?? fallbacks[index % fallbacks.length];
+    const fallbackColor = fallbacks[index % fallbacks.length] ?? fallbacks[0] ?? '#2563eb';
+    return palette[event] ?? fallbackColor;
 };
 
 const buildSeriesOrder = (schedule: Schedule) => {
@@ -272,7 +273,6 @@ const buildChartConfig = (
         height: 480,
         legend: { show: false },
         padding: [32, 24, 32, 80],
-        background: 'transparent',
         scales: {
             x: { time: true },
             y: {
@@ -362,7 +362,7 @@ export function PrayerLineChart({
     const [internalSelectedEvent, setInternalSelectedEvent] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<uPlot | null>(null);
-    const containerClassName = cn('relative h-full min-h-[320px] w-full', className);
+    const containerClassName = cn('relative h-full min-h-[320px] w-full bg-transparent', className);
 
     const isControlled = selectedEventProp !== null && selectedEventProp !== undefined;
 
@@ -407,7 +407,7 @@ export function PrayerLineChart({
         if (resolved && prepared.series.some((entry) => entry.event === resolved)) {
             return resolved;
         }
-        return prepared.series[0].event;
+        return prepared.series[0]?.event ?? null;
     }, [prepared, selectedEventProp, internalSelectedEvent, isControlled]);
 
     const chartConfig = useMemo(() => buildChartConfig(prepared, activeEvent, theme), [prepared, activeEvent, theme]);
@@ -453,7 +453,12 @@ export function PrayerLineChart({
                     const xValue = xSeries[index];
                     const yValue = ySeries[index];
 
-                    if (!Number.isFinite(xValue) || yValue == null || !Number.isFinite(yValue)) {
+                    if (typeof xValue !== 'number' || !Number.isFinite(xValue)) {
+                        tooltip.style.display = 'none';
+                        return;
+                    }
+
+                    if (typeof yValue !== 'number' || !Number.isFinite(yValue)) {
                         tooltip.style.display = 'none';
                         return;
                     }

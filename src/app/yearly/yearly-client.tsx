@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PeriodNavigator } from '@/components/timetable/period-navigator';
 import { PrayerTimetableTable } from '@/components/timetable/prayer-timetable-table';
+import { Button } from '@/components/ui/button';
 import { yearly } from '@/lib/calculator';
 import { salatLabels } from '@/lib/salat-labels';
 import { useCalculationConfig } from '@/hooks/use-calculation-config';
@@ -42,6 +44,12 @@ export function YearlyClient({ initialYear }: YearlyClientProps) {
         [router, searchParams, year],
     );
 
+    const graphHref = useMemo(() => {
+        const params = new URLSearchParams();
+        params.set('year', year.toString());
+        return `/yearly/graph?${params.toString()}`;
+    }, [year]);
+
     if (!hydrated) {
         return (
             <div className="space-y-6">
@@ -53,7 +61,17 @@ export function YearlyClient({ initialYear }: YearlyClientProps) {
 
     return (
         <div className="space-y-6">
-            <PeriodNavigator label={`Year ${schedule?.label ?? year}`} onNavigate={handleNavigate} />
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <PeriodNavigator label={`Year ${schedule?.label ?? year}`} onNavigate={handleNavigate} />
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button asChild size="sm" variant="outline">
+                        <Link href="/">Home</Link>
+                    </Button>
+                    <Button asChild size="sm">
+                        <Link href={graphHref}>View yearly graph</Link>
+                    </Button>
+                </div>
+            </div>
             <PrayerTimetableTable schedule={schedule} timeZone={config.timeZone} />
         </div>
     );

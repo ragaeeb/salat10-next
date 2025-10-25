@@ -418,6 +418,20 @@ export default function PrayerTimesPage() {
                         <ThemeToggle />
                         <Button
                             asChild
+                            className="h-9 rounded-full border border-primary/30 bg-primary px-4 text-sm text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
+                            size="sm"
+                        >
+                            <Link href="/monthly">Monthly timetable</Link>
+                        </Button>
+                        <Button
+                            asChild
+                            className="h-9 rounded-full border border-primary/30 bg-primary px-4 text-sm text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
+                            size="sm"
+                        >
+                            <Link href="/yearly">Yearly timetable</Link>
+                        </Button>
+                        <Button
+                            asChild
                             className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
                             size="icon"
                         >

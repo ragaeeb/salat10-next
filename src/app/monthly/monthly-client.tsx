@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PeriodNavigator } from '@/components/timetable/period-navigator';
 import { PrayerTimetableTable } from '@/components/timetable/prayer-timetable-table';
+import { Button } from '@/components/ui/button';
 import { monthly } from '@/lib/calculator';
 import { salatLabels } from '@/lib/salat-labels';
 import { useCalculationConfig } from '@/hooks/use-calculation-config';
@@ -55,6 +57,13 @@ export function MonthlyClient({ initialMonth, initialYear }: MonthlyClientProps)
         [month, router, searchParams, year],
     );
 
+    const graphHref = useMemo(() => {
+        const params = new URLSearchParams();
+        params.set('month', month.toString());
+        params.set('year', year.toString());
+        return `/monthly/graph?${params.toString()}`;
+    }, [month, year]);
+
     if (!hydrated) {
         return (
             <div className="space-y-6">
@@ -66,7 +75,17 @@ export function MonthlyClient({ initialMonth, initialYear }: MonthlyClientProps)
 
     return (
         <div className="space-y-6">
-            <PeriodNavigator label={schedule?.label ?? ''} onNavigate={handleNavigate} />
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <PeriodNavigator label={schedule?.label ?? ''} onNavigate={handleNavigate} />
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button asChild size="sm" variant="outline">
+                        <Link href="/">Home</Link>
+                    </Button>
+                    <Button asChild size="sm">
+                        <Link href={graphHref}>View monthly graph</Link>
+                    </Button>
+                </div>
+            </div>
             <PrayerTimetableTable schedule={schedule} timeZone={config.timeZone} />
         </div>
     );

@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useId, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PeriodNavigator } from '@/components/timetable/period-navigator';
 import { PrayerLineChart } from '@/components/timetable/graph/prayer-line-chart';
+import { Button } from '@/components/ui/button';
 import { monthly } from '@/lib/calculator';
 import { salatLabels } from '@/lib/salat-labels';
 import { useCalculationConfig } from '@/hooks/use-calculation-config';
@@ -59,6 +61,13 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
         },
         [month, router, searchParams, year],
     );
+
+    const timetableHref = useMemo(() => {
+        const params = new URLSearchParams();
+        params.set('month', month.toString());
+        params.set('year', year.toString());
+        return `/monthly?${params.toString()}`;
+    }, [month, year]);
 
     const handleOptionsChange = useCallback(
         (options: { event: string; label: string }[], _defaultEvent: string | null) => {
@@ -133,9 +142,9 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
         );
     }
 
-    const addon =
+    const eventSelect =
         eventOptions.length > 0 ? (
-            <div className="flex items-center gap-2">
+            <>
                 <label className="sr-only" htmlFor={selectId}>
                     Select prayer or event
                 </label>
@@ -151,8 +160,17 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
                         </option>
                     ))}
                 </select>
-            </div>
+            </>
         ) : null;
+
+    const addon = (
+        <div className="flex flex-wrap items-center gap-2">
+            <Button asChild size="sm" variant="outline">
+                <Link href={timetableHref}>Monthly timetable</Link>
+            </Button>
+            {eventSelect}
+        </div>
+    );
 
     return (
         <div className="grid min-h-[70vh] grid-rows-[auto,1fr] gap-6">
@@ -160,7 +178,7 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
             <PrayerLineChart
                 schedule={schedule}
                 className="h-full min-h-[360px] w-full"
-                selectedEvent={selectedEvent ?? undefined}
+                selectedEvent={selectedEvent ?? null}
                 onSelectedEventChange={handleEventChange}
                 onOptionsChange={handleOptionsChange}
             />
