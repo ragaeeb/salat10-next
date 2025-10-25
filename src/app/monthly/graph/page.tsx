@@ -9,11 +9,14 @@ export const metadata: Metadata = {
 };
 
 export type MonthlyGraphPageProps = {
-    searchParams?: Record<string, string | string[] | undefined>;
+    searchParams?:
+        | Record<string, string | string[] | undefined>
+        | Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default function MonthlyGraphPage({ searchParams }: MonthlyGraphPageProps) {
-    const initial = resolveInitialMonthYear(searchParams);
+export default async function MonthlyGraphPage({ searchParams }: MonthlyGraphPageProps) {
+    const resolvedParams = searchParams instanceof Promise ? await searchParams : searchParams;
+    const initial = resolveInitialMonthYear(resolvedParams);
 
     return <MonthlyGraphClient initialMonth={initial.month} initialYear={initial.year} />;
 }

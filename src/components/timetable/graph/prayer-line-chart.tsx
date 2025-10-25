@@ -82,6 +82,27 @@ const buildSeriesOrder = (schedule: Schedule) => {
     return baseOrder;
 };
 
+const reduceValues = (
+    values: (number | null)[],
+    reducer: (acc: number, value: number) => number,
+    initial: number,
+) => {
+    let acc = initial;
+    let used = false;
+    for (const value of values) {
+        if (value == null || Number.isNaN(value)) {
+            continue;
+        }
+        if (!used) {
+            acc = value;
+            used = true;
+            continue;
+        }
+        acc = reducer(acc, value);
+    }
+    return used ? acc : initial;
+};
+
 const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
     if (!schedule || !schedule.dates.length) {
         return null;
@@ -124,29 +145,43 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
         return { event, label, values, timeLabels, color: getColorFor(event, index) };
     });
 
-    const data: AlignedData = [xValues, ...series.map((entry) => entry.values)];
-
     const fajrSeries = series.find((entry) => entry.event === 'fajr');
+    const baseFajrMin = fajrSeries ? reduceValues(fajrSeries.values, Math.min, Number.POSITIVE_INFINITY) : null;
+
+    if (typeof baseFajrMin === 'number' && Number.isFinite(baseFajrMin)) {
+        for (const entry of series) {
+            entry.values = entry.values.map((value) => {
+                if (value == null || Number.isNaN(value)) {
+                    return value;
+                }
+                return value < baseFajrMin ? value + MINUTES_IN_DAY : value;
+            });
+        }
+    }
+
     const lastThirdSeries =
         series.find((entry) => entry.event === 'lastThirdOfTheNight') ?? series.find((entry) => entry.event === 'isha');
 
-    const valuesFor = (entry: ChartSeries | undefined, reducer: (acc: number, value: number) => number, initial: number) => {
-        if (!entry) {
-            return initial;
+    const yMinBase = typeof baseFajrMin === 'number' && Number.isFinite(baseFajrMin) ? baseFajrMin : null;
+    const yMaxCandidate = lastThirdSeries
+        ? reduceValues(lastThirdSeries.values, Math.max, Number.NEGATIVE_INFINITY)
+        : Number.NEGATIVE_INFINITY;
+    const fallbackMax = series.reduce((acc, entry) => {
+        const candidate = reduceValues(entry.values, Math.max, Number.NEGATIVE_INFINITY);
+        if (!Number.isFinite(candidate)) {
+            return acc;
         }
-        return entry.values.reduce((acc, value) => {
-            if (value == null || Number.isNaN(value)) {
-                return acc;
-            }
-            return reducer(acc, value);
-        }, initial);
-    };
+        return Math.max(acc, candidate);
+    }, Number.NEGATIVE_INFINITY);
 
-    const yMin = valuesFor(fajrSeries, (acc, value) => Math.min(acc, value), Number.POSITIVE_INFINITY);
-    const yMax = valuesFor(lastThirdSeries, (acc, value) => Math.max(acc, value), Number.NEGATIVE_INFINITY);
+    const baseMax = Number.isFinite(yMaxCandidate) ? yMaxCandidate : fallbackMax;
+    const effectiveMin = yMinBase ?? reduceValues(series[0]?.values ?? [], Math.min, 0);
+    const paddedMin = Number.isFinite(effectiveMin) ? effectiveMin - 20 : 0;
+    const paddedMax = Number.isFinite(baseMax) ? baseMax + 20 : paddedMin + MINUTES_IN_DAY;
+    const finalMin = Number.isFinite(paddedMin) ? paddedMin : 0;
+    const finalMax = paddedMax > finalMin ? paddedMax : finalMin + MINUTES_IN_DAY;
 
-    const paddedMin = Number.isFinite(yMin) ? yMin - 20 : 0;
-    const paddedMax = Number.isFinite(yMax) ? yMax + 20 : 24 * 60;
+    const data: AlignedData = [xValues, ...series.map((entry) => entry.values)];
 
     const options: uPlot.Options = {
         width: 800,
@@ -155,7 +190,7 @@ const buildChartConfig = (schedule: Schedule | null): ChartConfig | null => {
         scales: {
             x: { time: true },
             y: {
-                range: [paddedMin, paddedMax],
+                range: [finalMin, finalMax],
             },
         },
         axes: [
