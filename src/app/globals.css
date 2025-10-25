@@ -113,6 +113,9 @@
     --sidebar-accent-foreground: #0b6d8c;
     --sidebar-border: #a9d4e4;
     --sidebar-ring: #0f88b3;
+    --tooltip-bg: #0f88b3;
+    --tooltip-foreground: #ffffff;
+    --tooltip-ring: rgba(15, 136, 179, 0.35);
 }
 
 .dark {
@@ -147,6 +150,9 @@
     --sidebar-accent-foreground: #e6f4f9;
     --sidebar-border: #0a5a7b;
     --sidebar-ring: #ffffff;
+    --tooltip-bg: #0c6f92;
+    --tooltip-foreground: #e6f4f9;
+    --tooltip-ring: rgba(230, 244, 249, 0.25);
 }
 
 @layer base {

@@ -18,6 +18,7 @@ import { daily } from '@/lib/calculator';
 import type { PrayerTimeExplanation } from '@/lib/explanation/types';
 import { writeIslamicDate } from '@/lib/hijri';
 import { createParameters, methodLabelMap, useSettings } from '@/lib/settings';
+import { salatLabels } from '@/lib/salat-labels';
 
 const MultiStepLoader = dynamic(
     () => import('@/components/aceternity/multi-step-loader').then((mod) => mod.MultiStepLoader),
@@ -58,18 +59,6 @@ const buildExplanationKey = (options: {
         options.timeZone,
     ].join('|');
 
-const salatLabels = {
-    asr: 'ʿAṣr',
-    dhuhr: 'Dhuhr',
-    fajr: 'Fajr',
-    isha: 'ʿIshāʾ',
-    lastThirdOfTheNight: 'Last 1/3 Night Begins',
-    maghrib: 'Maġrib',
-    middleOfTheNight: '1/2 Night Begins',
-    sunrise: 'Sunrise',
-    tarawih: 'Tarawīḥ',
-} as const;
-
 const formatCoordinate = (value: number, positiveLabel: string, negativeLabel: string) =>
     `${Math.abs(value).toFixed(4)}° ${value >= 0 ? positiveLabel : negativeLabel}`;
 
@@ -87,16 +76,19 @@ export default function PrayerTimesPage() {
     const [showExplanation, setShowExplanation] = useState(false);
 
     // Prayer parallax hook
-    const { sunX, sunY, skyColor, scrollYProgress, getPrayerLabel } = usePrayerParallax();
-    const [currentPrayerLabel, setCurrentPrayerLabel] = useState('');
+    const { sunX, sunY, skyColor, scrollYProgress, getPrayerInfo } = usePrayerParallax();
+    const [currentPrayerInfo, setCurrentPrayerInfo] = useState(() => getPrayerInfo(0));
     const [useRealTime, setUseRealTime] = useState(true);
     const [realSunX, setRealSunX] = useState(50);
     const [realSunY, setRealSunY] = useState(80);
     const [moonOpacity, setMoonOpacity] = useState(0);
 
     useEffect(() => {
+        const initialInfo = getPrayerInfo(scrollYProgress.get());
+        setCurrentPrayerInfo(initialInfo);
         const unsubscribe = scrollYProgress.on('change', (latest) => {
-            setCurrentPrayerLabel(getPrayerLabel(latest));
+            const nextInfo = getPrayerInfo(latest);
+            setCurrentPrayerInfo(nextInfo);
             // Switch to scroll mode when user scrolls
             if (latest > 0.05) {
                 setUseRealTime(false);
@@ -109,7 +101,7 @@ export default function PrayerTimesPage() {
             }
         });
         return () => unsubscribe();
-    }, [scrollYProgress, getPrayerLabel]);
+    }, [scrollYProgress, getPrayerInfo]);
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
@@ -162,6 +154,18 @@ export default function PrayerTimesPage() {
     );
 
     const result = useMemo(() => daily(salatLabels, calculationArgs, currentDate), [calculationArgs, currentDate]);
+
+    const currentPrayerTime = useMemo(() => {
+        if (!currentPrayerInfo?.event) {
+            return '';
+        }
+        const match = result.timings.find((timing) => timing.event === currentPrayerInfo.event);
+        return match?.time ?? '';
+    }, [currentPrayerInfo, result]);
+
+    const activePrayerDisplay = currentPrayerTime
+        ? `${currentPrayerInfo.label}: ${currentPrayerTime}`
+        : currentPrayerInfo.label;
 
     // Calculate real-time sun position based on actual prayer times
     useEffect(() => {
@@ -402,7 +406,7 @@ export default function PrayerTimesPage() {
                 {/* Prayer time label */}
                 <div className="-translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none fixed top-1/2 left-1/2">
                     <p className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50">
-                        {currentPrayerLabel}
+                        {activePrayerDisplay}
                     </p>
                 </div>
 
@@ -412,6 +416,20 @@ export default function PrayerTimesPage() {
                 {!showExplanation && (
                     <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
                         <ThemeToggle />
+                        <Button
+                            asChild
+                            className="h-9 rounded-full border border-primary/30 bg-primary px-4 text-sm text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
+                            size="sm"
+                        >
+                            <Link href="/monthly">Monthly timetable</Link>
+                        </Button>
+                        <Button
+                            asChild
+                            className="h-9 rounded-full border border-primary/30 bg-primary px-4 text-sm text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
+                            size="sm"
+                        >
+                            <Link href="/yearly">Yearly timetable</Link>
+                        </Button>
                         <Button
                             asChild
                             className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"

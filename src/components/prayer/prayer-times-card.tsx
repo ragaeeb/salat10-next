@@ -142,8 +142,8 @@ export function PrayerTimesCard({
                             </span>
                         </TooltipTrigger>
                         <TooltipContent className="max-w-sm space-y-1 break-words text-left" sideOffset={8}>
-                            <p className="font-semibold text-foreground">{addressLabel}</p>
-                            <p className="text-muted-foreground text-xs">{locationDetail}</p>
+                            <p className="font-semibold">{addressLabel}</p>
+                            <p className="text-xs opacity-80">{locationDetail}</p>
                         </TooltipContent>
                     </Tooltip>
                 </div>
