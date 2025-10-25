@@ -44,11 +44,15 @@ type PreparedChartData = {
 type ChartConfig = {
     data: AlignedData;
     options: uPlot.Options;
+    activeSeries: ChartSeries;
     metrics: {
         selectedEvent: string;
         paddedMin: number;
         paddedMax: number;
         scaleFactor: number;
+        rawRange: number;
+        padding: number;
+        yOffset: number;
     };
 };
 
@@ -195,18 +199,20 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
     const minVal = reduceValues(activeSeries.values, Math.min, Number.POSITIVE_INFINITY);
     const maxVal = reduceValues(activeSeries.values, Math.max, Number.NEGATIVE_INFINITY);
 
-    let paddedMin = Number.isFinite(minVal) ? (minVal as number) - 10 : 0;
-    let paddedMax = Number.isFinite(maxVal) ? (maxVal as number) + 10 : paddedMin + 60;
-
-    if (Number.isFinite(prepared.baseFajrMin ?? NaN)) {
-        paddedMin = Math.min(paddedMin, (prepared.baseFajrMin as number) - 20);
+    if (!Number.isFinite(minVal) || !Number.isFinite(maxVal)) {
+        return null;
     }
 
-    if (!Number.isFinite(paddedMin)) {
+    const concreteMin = minVal as number;
+    const concreteMax = maxVal as number;
+    const rawSpan = Math.max(concreteMax - concreteMin, 0);
+    const padding = Math.max(5, rawSpan * 0.15);
+
+    let paddedMin = concreteMin - padding;
+    let paddedMax = concreteMax + padding;
+
+    if (paddedMin < 0) {
         paddedMin = 0;
-    }
-    if (!Number.isFinite(paddedMax)) {
-        paddedMax = paddedMin + 60;
     }
 
     if (paddedMax <= paddedMin) {
@@ -239,6 +245,8 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
             rawRange,
             scaleFactor,
             safeMax,
+            padding,
+            yOffset,
         });
         // eslint-disable-next-line no-console -- debug helper requested by maintainers
         console.log('[PrayerLineChart] data', data);
@@ -300,7 +308,20 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
         ],
     };
 
-    return { data, options, metrics: { selectedEvent: activeSeries.event, paddedMin, paddedMax, scaleFactor } };
+    return {
+        data,
+        options,
+        activeSeries,
+        metrics: {
+            selectedEvent: activeSeries.event,
+            paddedMin,
+            paddedMax,
+            scaleFactor,
+            rawRange,
+            padding,
+            yOffset,
+        },
+    };
 };
 
 export type PrayerLineChartProps = {
@@ -339,7 +360,8 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
     const chartConfig = useMemo(() => buildChartConfig(prepared, activeEvent), [prepared, activeEvent]);
 
     useEffect(() => {
-        if (!chartConfig || !containerRef.current) {
+        const container = containerRef.current;
+        if (!chartConfig || !container) {
             return;
         }
 
@@ -348,11 +370,67 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
             chartRef.current = null;
         }
 
-        const width = containerRef.current.clientWidth;
-        const height = containerRef.current.clientHeight || chartConfig.options.height || 480;
-        const opts: uPlot.Options = { ...chartConfig.options, width, height };
-        const chart = new uPlot(opts, chartConfig.data, containerRef.current);
+        const tooltip = document.createElement('div');
+        tooltip.className =
+            'pointer-events-none absolute z-10 whitespace-nowrap rounded-md border border-border/70 bg-background/95 px-2 py-1 text-xs font-medium text-foreground shadow';
+        tooltip.style.display = 'none';
+        container.appendChild(tooltip);
+
+        const tooltipPlugin: uPlot.Plugin = {
+            hooks: {
+                setCursor: (chart) => {
+                    const index = chart.cursor.idx;
+                    if (index == null || index < 0) {
+                        tooltip.style.display = 'none';
+                        return;
+                    }
+
+                    const xSeries = chartConfig.data[0] as number[];
+                    const ySeries = chartConfig.data[1] as (number | null)[];
+                    const xValue = xSeries[index];
+                    const yValue = ySeries[index];
+
+                    if (!Number.isFinite(xValue) || yValue == null || !Number.isFinite(yValue)) {
+                        tooltip.style.display = 'none';
+                        return;
+                    }
+
+                    const left = chart.valToPos(xValue, 'x', true);
+                    const top = chart.valToPos(yValue, 'y', true);
+
+                    const actualMinutes = yValue * chartConfig.metrics.scaleFactor + chartConfig.metrics.yOffset;
+                    const timeLabel =
+                        chartConfig.activeSeries.timeLabels[index] ?? formatMinutesLabel(actualMinutes);
+                    const dateLabel = new Date(xValue * 1000).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                    });
+
+                    tooltip.textContent = `${dateLabel} • ${chartConfig.activeSeries.label}: ${timeLabel ?? '—'}`;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = `${left}px`;
+                    tooltip.style.top = `${top}px`;
+                    tooltip.style.transform = 'translate(-50%, -120%)';
+                },
+            },
+        };
+
+        const width = container.clientWidth;
+        const height = container.clientHeight || chartConfig.options.height || 480;
+        const basePlugins = chartConfig.options.plugins ?? [];
+        const opts: uPlot.Options = {
+            ...chartConfig.options,
+            width,
+            height,
+            plugins: [...basePlugins, tooltipPlugin],
+        };
+        const chart = new uPlot(opts, chartConfig.data, container);
         chartRef.current = chart;
+
+        const handleMouseLeave = () => {
+            tooltip.style.display = 'none';
+        };
+        chart.root.addEventListener('mouseleave', handleMouseLeave);
 
         let observer: ResizeObserver | null = null;
         if (typeof ResizeObserver !== 'undefined') {
@@ -365,11 +443,13 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
                 const nextHeight = entry.contentRect.height || opts.height || 480;
                 chartRef.current.setSize({ width: nextWidth, height: nextHeight });
             });
-            observer.observe(containerRef.current);
+            observer.observe(container);
         }
 
         return () => {
             observer?.disconnect();
+            chart.root.removeEventListener('mouseleave', handleMouseLeave);
+            tooltip.remove();
             chart.destroy();
             chartRef.current = null;
         };
@@ -412,7 +492,7 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
                     ))}
                 </select>
             </div>
-            <div ref={containerRef} className="h-[55vh] min-h-[320px] max-h-[520px] w-full" />
+            <div ref={containerRef} className="relative h-[55vh] min-h-[320px] max-h-[520px] w-full" />
         </div>
     );
 }
