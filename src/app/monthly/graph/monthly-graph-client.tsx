@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useId, useState } from 'react';
+import { useCallback, useEffect, useMemo, useId, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PeriodNavigator } from '@/components/timetable/period-navigator';
@@ -22,10 +22,12 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
     const { config, hydrated } = useCalculationConfig();
     const selectId = useId();
     const [eventOptions, setEventOptions] = useState<{ event: string; label: string }[]>([]);
-    const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+    const [selectedEvent, setSelectedEvent] = useState<string | null>(() => searchParams.get('event'));
+    const pendingEventRef = useRef<string | null>(null);
 
     const monthParam = clampMonth(parseInteger(searchParams.get('month')) ?? initialMonth);
     const yearParam = parseInteger(searchParams.get('year')) ?? initialYear;
+    const eventParam = searchParams.get('event');
 
     const month = monthParam ?? initialMonth;
     const year = yearParam ?? initialYear;
@@ -59,27 +61,74 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
     );
 
     const handleOptionsChange = useCallback(
-        (options: { event: string; label: string }[], defaultEvent: string | null) => {
+        (options: { event: string; label: string }[], _defaultEvent: string | null) => {
             setEventOptions(options);
-            setSelectedEvent((previous) => {
-                if (previous && options.some((option) => option.event === previous)) {
-                    return previous;
-                }
-                return defaultEvent ?? null;
-            });
         },
         [],
     );
 
-    const handleEventChange = useCallback((event: string) => {
-        setSelectedEvent(event);
-    }, []);
+    const handleEventChange = useCallback(
+        (event: string) => {
+            pendingEventRef.current = event;
+            setSelectedEvent(event);
+            const current = searchParams.get('event');
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('event', event);
+            if (current !== event) {
+                router.replace(`/monthly/graph?${params.toString()}`, { scroll: false });
+            }
+        },
+        [router, searchParams],
+    );
+
+    useEffect(() => {
+        if (!eventOptions.length) {
+            if (selectedEvent !== null) {
+                setSelectedEvent(null);
+            }
+            if (eventParam) {
+                const params = new URLSearchParams(searchParams.toString());
+                params.delete('event');
+                router.replace(`/monthly/graph?${params.toString()}`, { scroll: false });
+            }
+            return;
+        }
+
+        if (eventParam && eventOptions.some((option) => option.event === eventParam)) {
+            if (pendingEventRef.current && pendingEventRef.current !== eventParam) {
+                return;
+            }
+            pendingEventRef.current = null;
+            setSelectedEvent((previous) => (previous === eventParam ? previous : eventParam));
+            return;
+        }
+
+        if (pendingEventRef.current) {
+            return;
+        }
+
+        const fallback = eventOptions[0]?.event ?? null;
+        if (!fallback) {
+            setSelectedEvent(null);
+            return;
+        }
+
+        if (fallback !== selectedEvent) {
+            pendingEventRef.current = fallback;
+            setSelectedEvent(fallback);
+        }
+        if (eventParam !== fallback) {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('event', fallback);
+            router.replace(`/monthly/graph?${params.toString()}`, { scroll: false });
+        }
+    }, [eventOptions, eventParam, router, searchParams, selectedEvent]);
 
     if (!hydrated) {
         return (
             <div className="space-y-6">
                 <div className="h-12 w-full animate-pulse rounded-md bg-muted/60" />
-                <div className="h-[60vh] min-h-[320px] w-full animate-pulse rounded-md bg-muted/40" />
+                <div className="h-[62vh] min-h-[360px] w-full animate-pulse rounded-md bg-muted/40" />
             </div>
         );
     }
@@ -108,15 +157,13 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
     return (
         <div className="space-y-6">
             <PeriodNavigator label={schedule?.label ?? ''} onNavigate={handleNavigate} addon={addon} />
-            <div className="flex h-[60vh] min-h-[320px] w-full">
-                <PrayerLineChart
-                    schedule={schedule}
-                    className="h-full w-full"
-                    selectedEvent={selectedEvent ?? undefined}
-                    onSelectedEventChange={handleEventChange}
-                    onOptionsChange={handleOptionsChange}
-                />
-            </div>
+            <PrayerLineChart
+                schedule={schedule}
+                className="h-[62vh] min-h-[360px] w-full"
+                selectedEvent={selectedEvent ?? undefined}
+                onSelectedEventChange={handleEventChange}
+                onOptionsChange={handleOptionsChange}
+            />
         </div>
     );
 }

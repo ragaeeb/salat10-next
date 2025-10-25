@@ -5,12 +5,13 @@ import 'uplot/dist/uPlot.min.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import uPlot, { type AlignedData } from 'uplot';
 
+import { useThemeMode } from '@/components/theme-provider';
 import type { monthly, yearly } from '@/lib/calculator';
 import { cn } from '@/lib/utils';
 
 const MINUTES_IN_DAY = 24 * 60;
 
-const SERIES_COLORS: Record<string, string> = {
+const LIGHT_SERIES_COLORS: Record<string, string> = {
     fajr: '#2563eb',
     sunrise: '#f59e0b',
     dhuhr: '#0ea5e9',
@@ -22,7 +23,22 @@ const SERIES_COLORS: Record<string, string> = {
     tarawih: '#f472b6',
 };
 
-const FALLBACK_COLORS = ['#2563eb', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#06b6d4', '#f97316', '#a855f7'];
+const DARK_SERIES_COLORS: Record<string, string> = {
+    fajr: '#60a5fa',
+    sunrise: '#fbbf24',
+    dhuhr: '#38bdf8',
+    asr: '#34d399',
+    maghrib: '#fb923c',
+    isha: '#c084fc',
+    middleOfTheNight: '#4ade80',
+    lastThirdOfTheNight: '#f87171',
+    tarawih: '#fb7185',
+};
+
+const LIGHT_FALLBACK_COLORS = ['#2563eb', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#06b6d4', '#f97316', '#a855f7'];
+const DARK_FALLBACK_COLORS = ['#60a5fa', '#fbbf24', '#34d399', '#a78bfa', '#f472b6', '#38bdf8', '#fb923c', '#f87171'];
+
+type ThemeName = 'light' | 'dark';
 
 type Schedule = ReturnType<typeof monthly> | ReturnType<typeof yearly>;
 
@@ -54,10 +70,8 @@ type ChartConfig = {
         selectedEvent: string;
         paddedMin: number;
         paddedMax: number;
-        scaleFactor: number;
         rawRange: number;
         padding: number;
-        yOffset: number;
     };
 };
 
@@ -83,7 +97,11 @@ const formatMinutesLabel = (value: number) => {
 
 const findTiming = (timings: TimingEntry[], event: string) => timings.find((timing) => timing.event === event);
 
-const getColorFor = (event: string, index: number) => SERIES_COLORS[event] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+const getColorFor = (event: string, index: number, theme: ThemeName) => {
+    const palette = theme === 'dark' ? DARK_SERIES_COLORS : LIGHT_SERIES_COLORS;
+    const fallbacks = theme === 'dark' ? DARK_FALLBACK_COLORS : LIGHT_FALLBACK_COLORS;
+    return palette[event] ?? fallbacks[index % fallbacks.length];
+};
 
 const buildSeriesOrder = (schedule: Schedule) => {
     const firstWithTimings = schedule.dates.find((day) => day.timings.length);
@@ -124,11 +142,9 @@ const reduceValues = (
     return used ? acc : initial;
 };
 
-const TARGET_VISIBLE_RANGE_MINUTES = 600;
-
 const isDev = process.env.NODE_ENV !== 'production';
 
-const prepareChartData = (schedule: Schedule | null): PreparedChartData | null => {
+const prepareChartData = (schedule: Schedule | null, theme: ThemeName): PreparedChartData | null => {
     if (!schedule || !schedule.dates.length) {
         return null;
     }
@@ -168,7 +184,7 @@ const prepareChartData = (schedule: Schedule | null): PreparedChartData | null =
             values.push(normalized);
             timeLabels.push(timing.time);
         }
-        return { event, label, values, timeLabels, color: getColorFor(event, index) };
+        return { event, label, values, timeLabels, color: getColorFor(event, index, theme) };
     });
 
     const fajrSeries = series.find((entry) => entry.event === 'fajr');
@@ -188,7 +204,11 @@ const prepareChartData = (schedule: Schedule | null): PreparedChartData | null =
     return { xValues, series, baseFajrMin: Number.isFinite(baseFajrMin ?? NaN) ? (baseFajrMin as number) : null };
 };
 
-const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: string | null): ChartConfig | null => {
+const buildChartConfig = (
+    prepared: PreparedChartData | null,
+    selectedEvent: string | null,
+    theme: ThemeName,
+): ChartConfig | null => {
     if (!prepared || !prepared.series.length) {
         return null;
     }
@@ -224,20 +244,10 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
         paddedMax = paddedMin + 30;
     }
 
-    const yOffset = paddedMin;
     const rawRange = paddedMax - paddedMin;
-    const scaleFactor = rawRange > TARGET_VISIBLE_RANGE_MINUTES ? rawRange / TARGET_VISIBLE_RANGE_MINUTES : 1;
-    const inverseScale = 1 / scaleFactor;
-    const safeMax = rawRange * inverseScale;
 
-    const normalizedValues = activeSeries.values.map((value) => {
-        if (value == null || Number.isNaN(value)) {
-            return value;
-        }
-        return (value - yOffset) * inverseScale;
-    });
-
-    const data: AlignedData = [prepared.xValues, normalizedValues];
+    const yValues = activeSeries.values.map((value) => (value == null || Number.isNaN(value) ? Number.NaN : value));
+    const data: AlignedData = [prepared.xValues, yValues];
 
     if (isDev) {
         // eslint-disable-next-line no-console -- debug helper requested by maintainers
@@ -248,30 +258,32 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
             paddedMin,
             paddedMax,
             rawRange,
-            scaleFactor,
-            safeMax,
             padding,
-            yOffset,
         });
         // eslint-disable-next-line no-console -- debug helper requested by maintainers
         console.log('[PrayerLineChart] data', data);
     }
 
+    const axisColor = theme === 'dark' ? 'rgba(226, 232, 240, 0.88)' : 'rgba(100, 116, 139, 0.9)';
+    const gridColor = theme === 'dark' ? 'rgba(226, 232, 240, 0.15)' : 'rgba(148, 163, 184, 0.2)';
+
     const options: uPlot.Options = {
         width: 800,
         height: 480,
         legend: { show: false },
-        padding: [32, 24, 16, 80],
+        padding: [32, 24, 32, 80],
+        background: 'transparent',
         scales: {
             x: { time: true },
             y: {
-                range: () => [0, safeMax],
+                range: () => [paddedMin, paddedMax],
             },
         },
         axes: [
             {
-                stroke: 'rgba(148, 163, 184, 0.9)',
-                grid: { stroke: 'rgba(148, 163, 184, 0.2)' },
+                stroke: axisColor,
+                grid: { stroke: gridColor },
+                font: `12px 'Inter', sans-serif`,
                 values: (_self, ticks) =>
                     ticks.map((tick) => {
                         if (!Number.isFinite(tick)) {
@@ -283,9 +295,10 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
             },
             {
                 scale: 'y',
-                stroke: 'rgba(148, 163, 184, 0.9)',
-                grid: { stroke: 'rgba(148, 163, 184, 0.15)' },
-                values: (_self, ticks) => ticks.map((tick) => formatMinutesLabel(tick * scaleFactor + yOffset)),
+                stroke: axisColor,
+                grid: { stroke: gridColor },
+                font: `12px 'Inter', sans-serif`,
+                values: (_self, ticks) => ticks.map((tick) => formatMinutesLabel(tick as number)),
             },
         ],
         cursor: {
@@ -299,13 +312,15 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
                 width: 2,
                 points: {
                     show: true,
-                    size: 4,
+                    size: 5,
+                    fill: theme === 'dark' ? '#0f172a' : '#ffffff',
+                    stroke: activeSeries.color,
                 },
                 value: (_self, value, idx) => {
                     if (value == null || !Number.isFinite(value)) {
                         return `${activeSeries.label}: —`;
                     }
-                    const actualMinutes = value * scaleFactor + yOffset;
+                    const actualMinutes = value as number;
                     const timeLabel = activeSeries.timeLabels[idx] ?? formatMinutesLabel(actualMinutes);
                     return `${activeSeries.label}: ${timeLabel ?? '—'}`;
                 },
@@ -321,10 +336,8 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
             selectedEvent: activeSeries.event,
             paddedMin,
             paddedMax,
-            scaleFactor,
             rawRange,
             padding,
-            yOffset,
         },
     };
 };
@@ -344,11 +357,12 @@ export function PrayerLineChart({
     onSelectedEventChange,
     onOptionsChange,
 }: PrayerLineChartProps) {
-    const prepared = useMemo(() => prepareChartData(schedule), [schedule]);
+    const { theme } = useThemeMode();
+    const prepared = useMemo(() => prepareChartData(schedule, theme), [schedule, theme]);
     const [internalSelectedEvent, setInternalSelectedEvent] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<uPlot | null>(null);
-    const containerClassName = cn('relative h-full min-h-[320px] w-full', className);
+    const outerClassName = cn('relative h-full min-h-[320px] w-full', className);
 
     const isControlled = selectedEventProp !== null && selectedEventProp !== undefined;
 
@@ -373,7 +387,7 @@ export function PrayerLineChart({
         if (!isControlled) {
             setInternalSelectedEvent(defaultEvent);
         }
-        if (defaultEvent && selectedEventProp !== defaultEvent) {
+        if (!isControlled && defaultEvent && selectedEventProp !== defaultEvent) {
             onSelectedEventChange?.(defaultEvent);
         }
     }, [
@@ -396,7 +410,7 @@ export function PrayerLineChart({
         return prepared.series[0].event;
     }, [prepared, selectedEventProp, internalSelectedEvent, isControlled]);
 
-    const chartConfig = useMemo(() => buildChartConfig(prepared, activeEvent), [prepared, activeEvent]);
+    const chartConfig = useMemo(() => buildChartConfig(prepared, activeEvent, theme), [prepared, activeEvent, theme]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -411,7 +425,7 @@ export function PrayerLineChart({
 
         const tooltip = document.createElement('div');
         tooltip.className =
-            'pointer-events-none absolute z-10 whitespace-nowrap rounded-md border border-border/70 bg-background/95 px-2 py-1 text-xs font-medium text-foreground shadow';
+            'pointer-events-none absolute z-10 whitespace-nowrap rounded-md border border-border/70 bg-[var(--tooltip-bg)] px-2 py-1 text-xs font-medium text-[var(--tooltip-foreground)] shadow';
         tooltip.style.display = 'none';
         container.appendChild(tooltip);
 
@@ -434,10 +448,14 @@ export function PrayerLineChart({
                         return;
                     }
 
-                    const plotLeft = chart.bbox.left + chart.valToPos(xValue, 'x', true);
-                    const plotTop = chart.bbox.top + chart.valToPos(yValue, 'y', true);
+                    const overlayRect = chart.over.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    const plotX = chart.valToPos(xValue, 'x', true);
+                    const plotY = chart.valToPos(yValue, 'y', true);
+                    const plotLeft = overlayRect.left - containerRect.left + plotX;
+                    const plotTop = overlayRect.top - containerRect.top + plotY;
 
-                    const actualMinutes = yValue * chartConfig.metrics.scaleFactor + chartConfig.metrics.yOffset;
+                    const actualMinutes = yValue as number;
                     const timeLabel =
                         chartConfig.activeSeries.timeLabels[index] ?? formatMinutesLabel(actualMinutes);
                     const dateLabel = new Date(xValue * 1000).toLocaleDateString('en-US', {
@@ -447,8 +465,6 @@ export function PrayerLineChart({
 
                     tooltip.textContent = `${dateLabel} • ${chartConfig.activeSeries.label}: ${timeLabel ?? '—'}`;
                     tooltip.style.display = 'block';
-                    tooltip.style.transform = 'none';
-
                     const tooltipWidth = tooltip.offsetWidth;
                     const tooltipHeight = tooltip.offsetHeight;
                     const padding = 12;
@@ -528,5 +544,9 @@ export function PrayerLineChart({
         );
     }
 
-    return <div ref={containerRef} className={containerClassName} />;
+    return (
+        <div className={outerClassName}>
+            <div ref={containerRef} className="absolute inset-0" />
+        </div>
+    );
 }
