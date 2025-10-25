@@ -76,16 +76,19 @@ export default function PrayerTimesPage() {
     const [showExplanation, setShowExplanation] = useState(false);
 
     // Prayer parallax hook
-    const { sunX, sunY, skyColor, scrollYProgress, getPrayerLabel } = usePrayerParallax();
-    const [currentPrayerLabel, setCurrentPrayerLabel] = useState('');
+    const { sunX, sunY, skyColor, scrollYProgress, getPrayerInfo } = usePrayerParallax();
+    const [currentPrayerInfo, setCurrentPrayerInfo] = useState(() => getPrayerInfo(0));
     const [useRealTime, setUseRealTime] = useState(true);
     const [realSunX, setRealSunX] = useState(50);
     const [realSunY, setRealSunY] = useState(80);
     const [moonOpacity, setMoonOpacity] = useState(0);
 
     useEffect(() => {
+        const initialInfo = getPrayerInfo(scrollYProgress.get());
+        setCurrentPrayerInfo(initialInfo);
         const unsubscribe = scrollYProgress.on('change', (latest) => {
-            setCurrentPrayerLabel(getPrayerLabel(latest));
+            const nextInfo = getPrayerInfo(latest);
+            setCurrentPrayerInfo(nextInfo);
             // Switch to scroll mode when user scrolls
             if (latest > 0.05) {
                 setUseRealTime(false);
@@ -98,7 +101,7 @@ export default function PrayerTimesPage() {
             }
         });
         return () => unsubscribe();
-    }, [scrollYProgress, getPrayerLabel]);
+    }, [scrollYProgress, getPrayerInfo]);
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
@@ -151,6 +154,18 @@ export default function PrayerTimesPage() {
     );
 
     const result = useMemo(() => daily(salatLabels, calculationArgs, currentDate), [calculationArgs, currentDate]);
+
+    const currentPrayerTime = useMemo(() => {
+        if (!currentPrayerInfo?.event) {
+            return '';
+        }
+        const match = result.timings.find((timing) => timing.event === currentPrayerInfo.event);
+        return match?.time ?? '';
+    }, [currentPrayerInfo, result]);
+
+    const activePrayerDisplay = currentPrayerTime
+        ? `${currentPrayerInfo.label}: ${currentPrayerTime}`
+        : currentPrayerInfo.label;
 
     // Calculate real-time sun position based on actual prayer times
     useEffect(() => {
@@ -391,7 +406,7 @@ export default function PrayerTimesPage() {
                 {/* Prayer time label */}
                 <div className="-translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none fixed top-1/2 left-1/2">
                     <p className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50">
-                        {currentPrayerLabel}
+                        {activePrayerDisplay}
                     </p>
                 </div>
 

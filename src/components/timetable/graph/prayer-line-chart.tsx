@@ -2,10 +2,11 @@
 
 import 'uplot/dist/uPlot.min.css';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import uPlot, { type AlignedData } from 'uplot';
 
 import type { monthly, yearly } from '@/lib/calculator';
+import { cn } from '@/lib/utils';
 
 const MINUTES_IN_DAY = 24 * 60;
 
@@ -40,6 +41,10 @@ type PreparedChartData = {
     series: ChartSeries[];
     baseFajrMin: number | null;
 };
+
+type ChartSelectorOption = { event: string; label: string };
+
+type OptionsChangeHandler = (options: ChartSelectorOption[], defaultEvent: string | null) => void;
 
 type ChartConfig = {
     data: AlignedData;
@@ -326,36 +331,70 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
 
 export type PrayerLineChartProps = {
     schedule: Schedule | null;
+    className?: string;
+    selectedEvent?: string | null;
+    onSelectedEventChange?: (event: string) => void;
+    onOptionsChange?: OptionsChangeHandler;
 };
 
-export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
+export function PrayerLineChart({
+    schedule,
+    className,
+    selectedEvent: selectedEventProp = null,
+    onSelectedEventChange,
+    onOptionsChange,
+}: PrayerLineChartProps) {
     const prepared = useMemo(() => prepareChartData(schedule), [schedule]);
-    const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+    const [internalSelectedEvent, setInternalSelectedEvent] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<uPlot | null>(null);
-    const selectId = useId();
+    const containerClassName = cn('relative h-full min-h-[320px] w-full', className);
+
+    const isControlled = selectedEventProp !== null && selectedEventProp !== undefined;
 
     useEffect(() => {
         if (!prepared?.series.length) {
-            if (selectedEvent !== null) {
-                setSelectedEvent(null);
+            onOptionsChange?.([], null);
+            if (!isControlled && internalSelectedEvent !== null) {
+                setInternalSelectedEvent(null);
             }
             return;
         }
-        if (!selectedEvent || !prepared.series.some((entry) => entry.event === selectedEvent)) {
-            setSelectedEvent(prepared.series[0].event);
+
+        const options = prepared.series.map<ChartSelectorOption>((entry) => ({ event: entry.event, label: entry.label }));
+        const defaultEvent = options[0]?.event ?? null;
+        onOptionsChange?.(options, defaultEvent);
+
+        const currentSelection = (isControlled ? selectedEventProp : internalSelectedEvent) ?? null;
+        if (currentSelection && options.some((option) => option.event === currentSelection)) {
+            return;
         }
-    }, [prepared, selectedEvent]);
+
+        if (!isControlled) {
+            setInternalSelectedEvent(defaultEvent);
+        }
+        if (defaultEvent && selectedEventProp !== defaultEvent) {
+            onSelectedEventChange?.(defaultEvent);
+        }
+    }, [
+        prepared,
+        isControlled,
+        internalSelectedEvent,
+        selectedEventProp,
+        onOptionsChange,
+        onSelectedEventChange,
+    ]);
 
     const activeEvent = useMemo(() => {
         if (!prepared?.series.length) {
             return null;
         }
-        if (selectedEvent && prepared.series.some((entry) => entry.event === selectedEvent)) {
-            return selectedEvent;
+        const resolved = (isControlled ? selectedEventProp : internalSelectedEvent) ?? null;
+        if (resolved && prepared.series.some((entry) => entry.event === resolved)) {
+            return resolved;
         }
         return prepared.series[0].event;
-    }, [prepared, selectedEvent]);
+    }, [prepared, selectedEventProp, internalSelectedEvent, isControlled]);
 
     const chartConfig = useMemo(() => buildChartConfig(prepared, activeEvent), [prepared, activeEvent]);
 
@@ -395,8 +434,8 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
                         return;
                     }
 
-                    const left = chart.valToPos(xValue, 'x', true);
-                    const top = chart.valToPos(yValue, 'y', true);
+                    const plotLeft = chart.bbox.left + chart.valToPos(xValue, 'x', true);
+                    const plotTop = chart.bbox.top + chart.valToPos(yValue, 'y', true);
 
                     const actualMinutes = yValue * chartConfig.metrics.scaleFactor + chartConfig.metrics.yOffset;
                     const timeLabel =
@@ -408,9 +447,25 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
 
                     tooltip.textContent = `${dateLabel} • ${chartConfig.activeSeries.label}: ${timeLabel ?? '—'}`;
                     tooltip.style.display = 'block';
-                    tooltip.style.left = `${left}px`;
-                    tooltip.style.top = `${top}px`;
-                    tooltip.style.transform = 'translate(-50%, -120%)';
+                    tooltip.style.transform = 'none';
+
+                    const tooltipWidth = tooltip.offsetWidth;
+                    const tooltipHeight = tooltip.offsetHeight;
+                    const padding = 12;
+                    const containerWidth = container.clientWidth;
+                    const containerHeight = container.clientHeight || tooltipHeight;
+
+                    const clampedLeft = Math.min(
+                        Math.max(plotLeft - tooltipWidth / 2, padding),
+                        containerWidth - tooltipWidth - padding,
+                    );
+                    const clampedTop = Math.min(
+                        Math.max(plotTop - tooltipHeight - padding, padding),
+                        containerHeight - tooltipHeight - padding,
+                    );
+
+                    tooltip.style.left = `${clampedLeft}px`;
+                    tooltip.style.top = `${clampedTop}px`;
                 },
             },
         };
@@ -473,26 +528,5 @@ export function PrayerLineChart({ schedule }: PrayerLineChartProps) {
         );
     }
 
-    return (
-        <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-                <label htmlFor={selectId} className="text-sm font-medium text-muted-foreground">
-                    Prayer / Event
-                </label>
-                <select
-                    id={selectId}
-                    value={activeEvent}
-                    onChange={(event) => setSelectedEvent(event.target.value)}
-                    className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                    {prepared.series.map((entry) => (
-                        <option key={entry.event} value={entry.event}>
-                            {entry.label}
-                        </option>
-                    ))}
-                </select>
-            </div>
-            <div ref={containerRef} className="relative h-[55vh] min-h-[320px] max-h-[520px] w-full" />
-        </div>
-    );
+    return <div ref={containerRef} className={containerClassName} />;
 }
