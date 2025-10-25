@@ -126,9 +126,9 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
 
     if (!hydrated) {
         return (
-            <div className="space-y-6">
+            <div className="grid min-h-[70vh] grid-rows-[auto,1fr] gap-6">
                 <div className="h-12 w-full animate-pulse rounded-md bg-muted/60" />
-                <div className="h-[62vh] min-h-[360px] w-full animate-pulse rounded-md bg-muted/40" />
+                <div className="h-full min-h-[360px] w-full animate-pulse rounded-md bg-muted/40" />
             </div>
         );
     }
@@ -155,11 +155,11 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
         ) : null;
 
     return (
-        <div className="space-y-6">
+        <div className="grid min-h-[70vh] grid-rows-[auto,1fr] gap-6">
             <PeriodNavigator label={schedule?.label ?? ''} onNavigate={handleNavigate} addon={addon} />
             <PrayerLineChart
                 schedule={schedule}
-                className="h-[62vh] min-h-[360px] w-full"
+                className="h-full min-h-[360px] w-full"
                 selectedEvent={selectedEvent ?? undefined}
                 onSelectedEventChange={handleEventChange}
                 onOptionsChange={handleOptionsChange}

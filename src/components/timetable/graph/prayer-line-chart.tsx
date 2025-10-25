@@ -362,7 +362,7 @@ export function PrayerLineChart({
     const [internalSelectedEvent, setInternalSelectedEvent] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<uPlot | null>(null);
-    const outerClassName = cn('relative h-full min-h-[320px] w-full', className);
+    const containerClassName = cn('relative h-full min-h-[320px] w-full', className);
 
     const isControlled = selectedEventProp !== null && selectedEventProp !== undefined;
 
@@ -414,13 +414,23 @@ export function PrayerLineChart({
 
     useEffect(() => {
         const container = containerRef.current;
-        if (!chartConfig || !container) {
+        if (!container) {
+            return;
+        }
+
+        if (!chartConfig) {
+            if (chartRef.current) {
+                chartRef.current.destroy();
+                chartRef.current = null;
+            }
+            container.replaceChildren();
             return;
         }
 
         if (chartRef.current) {
             chartRef.current.destroy();
             chartRef.current = null;
+            container.replaceChildren();
         }
 
         const tooltip = document.createElement('div');
@@ -468,8 +478,8 @@ export function PrayerLineChart({
                     const tooltipWidth = tooltip.offsetWidth;
                     const tooltipHeight = tooltip.offsetHeight;
                     const padding = 12;
-                    const containerWidth = container.clientWidth;
-                    const containerHeight = container.clientHeight || tooltipHeight;
+                    const containerWidth = container.clientWidth || containerRect.width;
+                    const containerHeight = container.clientHeight || containerRect.height || tooltipHeight;
 
                     const clampedLeft = Math.min(
                         Math.max(plotLeft - tooltipWidth / 2, padding),
@@ -486,8 +496,9 @@ export function PrayerLineChart({
             },
         };
 
-        const width = container.clientWidth;
-        const height = container.clientHeight || chartConfig.options.height || 480;
+        const rect = container.getBoundingClientRect();
+        const width = Math.max(Math.floor(rect.width || container.clientWidth), 0) || chartConfig.options.width || 800;
+        const height = Math.max(Math.floor(rect.height || container.clientHeight), 0) || chartConfig.options.height || 480;
         const basePlugins = chartConfig.options.plugins ?? [];
         const opts: uPlot.Options = {
             ...chartConfig.options,
@@ -511,7 +522,7 @@ export function PrayerLineChart({
                     return;
                 }
                 const nextWidth = entry.contentRect.width;
-                const nextHeight = entry.contentRect.height || opts.height || 480;
+                const nextHeight = entry.contentRect.height || opts.height || height;
                 chartRef.current.setSize({ width: nextWidth, height: nextHeight });
             });
             observer.observe(container);
@@ -544,9 +555,5 @@ export function PrayerLineChart({
         );
     }
 
-    return (
-        <div className={outerClassName}>
-            <div ref={containerRef} className="absolute inset-0" />
-        </div>
-    );
+    return <div ref={containerRef} className={containerClassName} />;
 }
