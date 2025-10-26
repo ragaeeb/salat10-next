@@ -27,7 +27,7 @@ export default function PrayerTimesPage() {
     const { error: quoteError, loading: quoteLoading, quote } = useMotivationalQuote();
     const { copy, status: copyStatus } = useCopyFeedback();
 
-    const { scrollYProgress } = usePrayerParallax();
+    const { scrollYProgress, skyColor } = usePrayerParallax();
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
@@ -113,10 +113,10 @@ export default function PrayerTimesPage() {
     return (
         <TooltipProvider>
             <div className="relative min-h-[300vh]">
-                {/* Parallax sky background */}
+                {/* Parallax sky background with dynamic gradient */}
                 <motion.div
                     className="-z-10 pointer-events-none fixed inset-0"
-                    style={{ backgroundColor: useRealTime ? 'rgba(135, 206, 235, 0.3)' : 'rgba(135, 206, 235, 0.3)' }}
+                    style={{ background: useRealTime ? 'rgba(135, 206, 235, 0.3)' : skyColor }}
                 />
 
                 {/* Sun */}

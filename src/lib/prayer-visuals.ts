@@ -56,27 +56,35 @@ export function calculateScrollBasedVisuals(progress: number): SunMoonState {
     let moonOpacity = 0;
     let sunColor = { b: 0, g: 215, r: 255 }; // Yellow
 
+    // Before sunrise (0-0.2): sun is hidden, moon visible
+    if (progress < 0.2) {
+        sunOpacity = 0;
+        moonOpacity = 0.8;
+    }
+    // Sunrise transition (0.2-0.25): sun fades in, moon fades out
+    else if (progress >= 0.2 && progress < 0.25) {
+        const fadeProgress = (progress - 0.2) / 0.05;
+        sunOpacity = fadeProgress;
+        moonOpacity = 0.8 * (1 - fadeProgress);
+    }
     // Smooth yellow to orange transition (0.7-0.8)
-    if (progress >= 0.7 && progress < 0.8 && sunOpacity > 0) {
+    else if (progress >= 0.7 && progress < 0.8) {
         const orangeProgress = (progress - 0.7) / 0.1;
-        // Linear interpolation from yellow (255, 215, 0) to orange (255, 140, 0)
         sunColor = {
             b: 0,
             g: Math.round(215 - orangeProgress * 75), // 215 → 140
             r: 255,
         };
-    } else if (progress >= 0.8 && sunOpacity > 0) {
-        // Full orange after 0.8
+    } else if (progress >= 0.8 && progress < 0.9) {
         sunColor = { b: 0, g: 140, r: 255 };
     }
 
-    // Maghrib transition (0.75-0.85): fade sun out, fade moon in
-    if (progress > 0.75 && progress < 0.85) {
-        const fadeProgress = (progress - 0.75) / 0.1;
+    // Maghrib transition (0.85-0.9): fade sun out, fade moon in
+    if (progress >= 0.85 && progress < 0.9) {
+        const fadeProgress = (progress - 0.85) / 0.05;
         sunOpacity = 1 - fadeProgress;
         moonOpacity = fadeProgress * 0.8;
-    } else if (progress >= 0.85) {
-        // After Maghrib: sun hidden, moon visible
+    } else if (progress >= 0.9) {
         sunOpacity = 0;
         moonOpacity = 0.8;
     }
