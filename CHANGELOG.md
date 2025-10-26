@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/ragaeeb/salat10-next/compare/v1.0.0...v1.1.0) (2025-10-26)
+
+
+### Features
+
+* **dark:** Move explanations to its own page, use only dark mode, better visual animations on scroll ([#4](https://github.com/ragaeeb/salat10-next/issues/4)) ([70cea84](https://github.com/ragaeeb/salat10-next/commit/70cea84f4651a622656914f720edccff70f5ff35))
+
 # 1.0.0 (2025-10-24)
 
 
