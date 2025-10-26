@@ -21,7 +21,7 @@ export const metadata: Metadata = { description: 'Salat10', title: 'Salat10' };
  */
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
-        <html lang="en" className="dark">
+        <html lang="en">
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
                 <div className="flex min-h-screen flex-col">
                     <main className="flex-1">{children}</main>

@@ -57,7 +57,7 @@ const PrayerTimeRow = ({
         <li
             className={cn(
                 'flex items-center justify-between rounded-2xl px-4 py-3 text-foreground transition-colors',
-                active ? 'bg-white/10 shadow-lg ring-2 ring-primary/40 backdrop-blur dark:ring-white/40' : 'bg-white/5',
+                active ? 'bg-white/10 shadow-lg ring-2 ring-primary/40 backdrop-blur' : 'bg-white/5',
                 isFard ? 'font-semibold' : 'font-medium',
             )}
         >
