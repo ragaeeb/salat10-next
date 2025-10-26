@@ -120,6 +120,20 @@ export default function PrayerTimesPage() {
         await copy(`"${sourceQuote.text}" - [${sourceQuote.citation}]${QUOTE_WATERMARK}`);
     };
 
+    // Debug logging
+    console.log('[Page] Render state:', {
+        moonOpacity,
+        moonX,
+        moonY,
+        sunColorB: sunColorB.get(),
+        sunColorG: sunColorG.get(),
+        sunColorR: sunColorR.get(),
+        sunOpacity,
+        sunX,
+        sunY,
+        useRealTime,
+    });
+
     if (!hydrated) {
         return null;
     }
@@ -127,76 +141,18 @@ export default function PrayerTimesPage() {
     return (
         <div className="relative min-h-[300vh]">
             <DebugLogger />
-            {/* Parallax sky background with solid color */}
+
+            {/* Base gradient - always visible */}
+            <div className="-z-50 fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(135,206,235,0.4),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(10,46,120,0.6),_transparent_65%)]" />
+
+            {/* Sky color - only in scroll mode */}
+            {!useRealTime && (
+                <motion.div className="-z-40 pointer-events-none fixed inset-0" style={{ backgroundColor: skyColor }} />
+            )}
+
+            {/* Sun - always rendered */}
             <motion.div
-                className="-z-30 pointer-events-none fixed inset-0"
-                style={{ backgroundColor: useRealTime ? 'rgba(135, 206, 235, 0.3)' : skyColor }}
-            />
-
-            {/* Shooting Stars and Stars Background - visible during night periods */}
-            {!useRealTime && (
-                <motion.div className="-z-20 pointer-events-none fixed inset-0" style={{ opacity: starsOpacity }}>
-                    <ShootingStars
-                        starColor="#9E00FF"
-                        trailColor="#2EB9DF"
-                        minSpeed={10}
-                        maxSpeed={30}
-                        minDelay={1200}
-                        maxDelay={4200}
-                        starWidth={20}
-                        starHeight={2}
-                    />
-                    <StarsBackground
-                        starDensity={0.0002}
-                        allStarsTwinkle={true}
-                        twinkleProbability={0.7}
-                        minTwinkleSpeed={0.5}
-                        maxTwinkleSpeed={1}
-                    />
-                </motion.div>
-            )}
-
-            {/* Last Third of Night - Light pillars shooting upward */}
-            {!useRealTime && (
-                <motion.div
-                    className="-z-10 pointer-events-none fixed inset-0 overflow-hidden"
-                    style={{ opacity: lightRaysOpacity }}
-                >
-                    {/* Base horizon glow */}
-                    <div
-                        className="absolute inset-0"
-                        style={{
-                            background:
-                                'radial-gradient(ellipse 120% 40% at 50% 100%, rgba(100, 140, 255, 0.25) 0%, rgba(80, 120, 200, 0.15) 25%, rgba(60, 90, 150, 0.08) 45%, transparent 70%)',
-                        }}
-                    />
-                    {/* Vertical light pillars - subtle beams */}
-                    {/* Subtle shimmer overlay */}
-                    <div
-                        className="absolute inset-0"
-                        style={{
-                            background:
-                                'radial-gradient(circle at 30% 95%, rgba(140, 180, 255, 0.06) 0%, transparent 25%), radial-gradient(circle at 70% 95%, rgba(120, 160, 240, 0.05) 0%, transparent 25%)',
-                        }}
-                    />
-                </motion.div>
-            )}
-
-            {/* Fajr horizon gradient overlay */}
-            {!useRealTime && (
-                <motion.div
-                    className="-z-10 pointer-events-none fixed inset-0"
-                    style={{
-                        background:
-                            'linear-gradient(to top, rgba(255, 200, 80, 0.95) 0%, rgba(255, 180, 90, 0.85) 12%, rgba(255, 160, 100, 0.75) 22%, rgba(240, 160, 120, 0.6) 32%, rgba(180, 150, 140, 0.45) 45%, rgba(120, 130, 160, 0.3) 60%, transparent 78%)',
-                        opacity: fajrGradientOpacity,
-                    }}
-                />
-            )}
-
-            {/* Sun */}
-            <motion.div
-                className="-z-10 pointer-events-none fixed h-20 w-20 rounded-full"
+                className="-z-30 pointer-events-none fixed h-20 w-20 rounded-full"
                 style={{
                     backgroundColor: sunBackgroundColor,
                     boxShadow: sunBoxShadow,
@@ -210,9 +166,9 @@ export default function PrayerTimesPage() {
                 transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity }}
             />
 
-            {/* Moon */}
+            {/* Moon - always rendered */}
             <motion.div
-                className="-z-10 pointer-events-none fixed h-16 w-16 rounded-full bg-gray-200"
+                className="-z-30 pointer-events-none fixed h-16 w-16 rounded-full bg-gray-200"
                 style={{
                     boxShadow: '0 0 40px 15px rgba(200, 200, 220, 0.3)',
                     left: `${moonX}%`,
@@ -225,20 +181,68 @@ export default function PrayerTimesPage() {
                 transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
             />
 
-            {/* Prayer time label */}
+            {/* Scroll mode overlays */}
             {!useRealTime && (
-                <div className="-translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none fixed top-1/2 left-1/2">
-                    <ShinyText
-                        key={activePrayerDisplay}
-                        className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50"
-                    >
-                        {activePrayerDisplay}
-                    </ShinyText>
-                </div>
-            )}
+                <>
+                    <motion.div className="-z-20 pointer-events-none fixed inset-0" style={{ opacity: starsOpacity }}>
+                        <ShootingStars
+                            starColor="#9E00FF"
+                            trailColor="#2EB9DF"
+                            minSpeed={10}
+                            maxSpeed={30}
+                            minDelay={1200}
+                            maxDelay={4200}
+                            starWidth={20}
+                            starHeight={2}
+                        />
+                        <StarsBackground
+                            starDensity={0.0002}
+                            allStarsTwinkle={true}
+                            twinkleProbability={0.7}
+                            minTwinkleSpeed={0.5}
+                            maxTwinkleSpeed={1}
+                        />
+                    </motion.div>
 
-            {/* Original background gradient */}
-            <div className="-z-20 fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(135,206,235,0.4),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(10,46,120,0.6),_transparent_65%)]" />
+                    <motion.div
+                        className="-z-15 pointer-events-none fixed inset-0 overflow-hidden"
+                        style={{ opacity: lightRaysOpacity }}
+                    >
+                        <div
+                            className="absolute inset-0"
+                            style={{
+                                background:
+                                    'radial-gradient(ellipse 120% 40% at 50% 100%, rgba(100, 140, 255, 0.25) 0%, rgba(80, 120, 200, 0.15) 25%, rgba(60, 90, 150, 0.08) 45%, transparent 70%)',
+                            }}
+                        />
+                        <div
+                            className="absolute inset-0"
+                            style={{
+                                background:
+                                    'radial-gradient(circle at 30% 95%, rgba(140, 180, 255, 0.06) 0%, transparent 25%), radial-gradient(circle at 70% 95%, rgba(120, 160, 240, 0.05) 0%, transparent 25%)',
+                            }}
+                        />
+                    </motion.div>
+
+                    <motion.div
+                        className="-z-15 pointer-events-none fixed inset-0"
+                        style={{
+                            background:
+                                'linear-gradient(to top, rgba(255, 200, 80, 0.95) 0%, rgba(255, 180, 90, 0.85) 12%, rgba(255, 160, 100, 0.75) 22%, rgba(240, 160, 120, 0.6) 32%, rgba(180, 150, 140, 0.45) 45%, rgba(120, 130, 160, 0.3) 60%, transparent 78%)',
+                            opacity: fajrGradientOpacity,
+                        }}
+                    />
+
+                    <div className="-translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none fixed top-1/2 left-1/2">
+                        <ShinyText
+                            key={activePrayerDisplay}
+                            className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50"
+                        >
+                            {activePrayerDisplay}
+                        </ShinyText>
+                    </div>
+                </>
+            )}
 
             <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
                 <Button

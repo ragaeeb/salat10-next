@@ -1,6 +1,6 @@
 'use client';
 
-import { Download } from 'lucide-react';
+import { Download, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 
@@ -9,7 +9,6 @@ const originalConsoleLog = console.log;
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
 
-// Hijack console methods
 if (typeof window !== 'undefined') {
     const captureLog = (level: string, originalFn: typeof console.log) => {
         return (...args: any[]) => {
@@ -43,6 +42,27 @@ export default function DebugLogger() {
         return () => clearInterval(interval);
     }, []);
 
+    const shareLogs = async () => {
+        const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+        const file = new File([blob], `debug-logs-${Date.now()}.json`, { type: 'application/json' });
+
+        // Check if Web Share API is available AND supports files
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+            try {
+                await navigator.share({ files: [file], title: 'Debug Logs' });
+                return;
+            } catch (err: any) {
+                // User cancelled or share failed
+                if (err.name !== 'AbortError') {
+                    console.error('Share failed:', err);
+                }
+            }
+        }
+
+        // Fallback to download
+        downloadLogs();
+    };
+
     const downloadLogs = () => {
         const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -56,13 +76,13 @@ export default function DebugLogger() {
     };
 
     return (
-        <div className="fixed bottom-4 left-4 z-50">
+        <div className="fixed bottom-4 left-4 z-50 flex gap-2">
             <Button
-                onClick={downloadLogs}
+                onClick={shareLogs}
                 className="flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-white shadow-lg hover:bg-red-600"
             >
-                <Download className="h-4 w-4" />
-                Logs ({logCount})
+                <Share2 className="h-4 w-4" />
+                Share Logs ({logCount})
             </Button>
         </div>
     );

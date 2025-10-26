@@ -21,6 +21,7 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
         getPrayerInfoFromScroll(scrollYProgress.get()),
     );
     const hasScrolledRef = useRef(false);
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Log useRealTime state changes
     useEffect(() => {
@@ -37,43 +38,58 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
 
     // Motion values for sun color
     const sunColorR = useMotionValue(255);
-    const sunColorG = useMotionValue(215);
+    const sunColorG = useMotionValue(255);
     const sunColorB = useMotionValue(0);
 
     const lastScrollProgressRef = useRef(0);
+    const scrollVelocityRef = useRef(0);
 
     // Handle scroll-based updates
     useEffect(() => {
-        const initialInfo = getPrayerInfoFromScroll(scrollYProgress.get());
+        const initialInfo = getPrayerInfoFromScroll(Math.max(0, scrollYProgress.get()));
         setCurrentPrayerInfo(initialInfo);
-        lastScrollProgressRef.current = scrollYProgress.get();
+        lastScrollProgressRef.current = Math.max(0, scrollYProgress.get());
         console.log('[Prayer Visuals] Initial scroll progress:', scrollYProgress.get());
 
         const unsubscribe = scrollYProgress.on('change', (latest) => {
+            // Clamp to valid range and ignore negative values (iOS Safari quirk)
+            const clampedLatest = Math.max(0, Math.min(1, latest));
             const previous = lastScrollProgressRef.current;
-            lastScrollProgressRef.current = latest;
 
-            const nextInfo = getPrayerInfoFromScroll(latest);
+            // Calculate velocity
+            const velocity = Math.abs(clampedLatest - previous);
+            scrollVelocityRef.current = velocity;
+
+            lastScrollProgressRef.current = clampedLatest;
+
+            const nextInfo = getPrayerInfoFromScroll(clampedLatest);
             setCurrentPrayerInfo(nextInfo);
 
-            // Only switch to scroll mode if user is deliberately scrolling
-            const isDeliberateScroll = previous < 0.1 && latest > 0.05 && latest < 0.5;
-            const isContinuedScroll = previous > 0.05 && latest > 0.05;
+            // Clear any existing timeout
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+
+            // More robust scroll detection:
+            // 1. Must have meaningful progress (> 0.15 to account for Safari UI changes)
+            // 2. Must have meaningful velocity (> 0.02 to filter out UI adjustments)
+            // 3. Must not be at the very end (< 0.98 to allow reaching bottom)
+            const isDeliberateScroll = clampedLatest > 0.15 && velocity > 0.02 && clampedLatest < 0.98;
 
             console.log('[Prayer Visuals] Scroll change:', {
-                isContinuedScroll,
+                clampedLatest,
                 isDeliberateScroll,
                 latest,
                 previous,
-                willSwitchToScrollMode: isDeliberateScroll || isContinuedScroll,
+                velocity,
             });
 
-            if (isDeliberateScroll || isContinuedScroll) {
+            if (isDeliberateScroll) {
                 console.log('[Prayer Visuals] Switching to scroll mode');
                 setUseRealTime(false);
                 hasScrolledRef.current = true;
 
-                const visuals = calculateScrollBasedVisuals(latest);
+                const visuals = calculateScrollBasedVisuals(clampedLatest);
                 setSunX(visuals.sunX);
                 setSunY(visuals.sunY);
                 setSunOpacity(visuals.sunOpacity);
@@ -83,10 +99,22 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
                 sunColorR.set(visuals.sunColor.r);
                 sunColorG.set(visuals.sunColor.g);
                 sunColorB.set(visuals.sunColor.b);
+            } else if (clampedLatest <= 0.05) {
+                // User scrolled back to top - switch back to real-time
+                scrollTimeoutRef.current = setTimeout(() => {
+                    console.log('[Prayer Visuals] Scrolled to top - switching back to real-time mode');
+                    setUseRealTime(true);
+                    hasScrolledRef.current = false;
+                }, 300); // Small delay to avoid flickering
             }
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+        };
     }, [scrollYProgress, sunColorR, sunColorG, sunColorB]);
 
     // Handle real-time updates based on actual prayer times
@@ -143,10 +171,15 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
             console.log('[Prayer Visuals] Current scroll position:', currentScrollY);
 
             window.history.scrollRestoration = 'manual';
-            window.scrollTo({ behavior: 'instant', left: 0, top: 0 });
-            console.log('[Prayer Visuals] Scrolled to top on mount');
+
+            // Use a small delay to ensure DOM is ready (especially on iOS)
+            setTimeout(() => {
+                window.scrollTo({ behavior: 'instant', left: 0, top: 0 });
+                console.log('[Prayer Visuals] Scrolled to top on mount');
+            }, 0);
         }
         setUseRealTime(true);
+        hasScrolledRef.current = false;
 
         const handleVisibilityChange = () => {
             console.log('[Prayer Visuals] Visibility changed:', {
@@ -173,6 +206,9 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
         return () => {
             console.log('[Prayer Visuals] Cleanup - removing listeners');
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
             if (typeof window !== 'undefined') {
                 window.history.scrollRestoration = 'auto';
             }
