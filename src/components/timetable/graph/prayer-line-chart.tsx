@@ -11,18 +11,18 @@ import { cn } from '@/lib/utils';
 const MINUTES_IN_DAY = 24 * 60;
 
 const SERIES_COLORS: Record<string, string> = {
-    asr: '#34d399',
-    dhuhr: '#38bdf8',
+    asr: '#22c55e',
+    dhuhr: '#3b82f6',
     fajr: '#60a5fa',
-    isha: '#c084fc',
-    lastThirdOfTheNight: '#f87171',
-    maghrib: '#fb923c',
-    middleOfTheNight: '#4ade80',
-    sunrise: '#fbbf24',
-    tarawih: '#fb7185',
+    isha: '#a855f7',
+    lastThirdOfTheNight: '#ef4444',
+    maghrib: '#f97316',
+    middleOfTheNight: '#10b981',
+    sunrise: '#eab308',
+    tarawih: '#ec4899',
 };
 
-const FALLBACK_COLORS = ['#60a5fa', '#fbbf24', '#34d399', '#a78bfa', '#f472b6', '#38bdf8', '#fb923c', '#f87171'];
+const FALLBACK_COLORS = ['#60a5fa', '#eab308', '#22c55e', '#a855f7', '#ec4899', '#3b82f6', '#f97316', '#ef4444'];
 
 type Schedule = ReturnType<typeof monthly> | ReturnType<typeof yearly>;
 
@@ -227,8 +227,9 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
         console.log('[PrayerLineChart] data', data);
     }
 
-    const axisColor = 'rgba(226, 232, 240, 0.88)';
-    const gridColor = 'rgba(226, 232, 240, 0.15)';
+    const axisColor = '#1e293b';
+    const gridColor = 'rgba(30, 41, 59, 0.15)';
+    const backgroundColor = '#ffffff';
 
     const options: uPlot.Options = {
         axes: [
@@ -262,7 +263,7 @@ const buildChartConfig = (prepared: PreparedChartData | null, selectedEvent: str
             {},
             {
                 label: activeSeries.label,
-                points: { fill: '#0f172a', show: true, size: 5, stroke: activeSeries.color },
+                points: { fill: backgroundColor, show: true, size: 5, stroke: activeSeries.color },
                 stroke: activeSeries.color,
                 value: (_self, value, idx) => {
                     if (value == null || !Number.isFinite(value)) {
@@ -305,7 +306,7 @@ export function PrayerLineChart({
     const [internalSelectedEvent, setInternalSelectedEvent] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<uPlot | null>(null);
-    const containerClassName = cn('relative h-full min-h-[320px] w-full bg-transparent', className);
+    const containerClassName = cn('relative h-full w-full rounded-lg bg-white', className);
 
     const isControlled = selectedEventProp !== null && selectedEventProp !== undefined;
 
@@ -374,7 +375,7 @@ export function PrayerLineChart({
 
         const tooltip = document.createElement('div');
         tooltip.className =
-            'pointer-events-none absolute z-10 whitespace-nowrap rounded-md border border-border/70 bg-[var(--tooltip-bg)] px-2 py-1 text-xs font-medium text-[var(--tooltip-foreground)] shadow';
+            'pointer-events-none absolute z-10 whitespace-nowrap rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-900 shadow-lg';
         tooltip.style.display = 'none';
         container.appendChild(tooltip);
 

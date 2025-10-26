@@ -3,11 +3,14 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AuroraText } from '@/components/magicui/aurora-text';
 import { Meteors } from '@/components/magicui/meteors';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useCalculationConfig } from '@/hooks/use-calculation-config';
+import { daily } from '@/lib/calculator';
+import { salatLabels } from '@/lib/salat-labels';
 import { cn } from '@/lib/utils';
 
 export type PrayerTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
@@ -64,20 +67,28 @@ const PrayerTimeRow = ({
     );
 };
 
-const Countdown = ({ timings }: { timings: PrayerTiming[] }) => {
+const Countdown = () => {
     const [countdown, setCountdown] = useState('');
+    const { config, hydrated } = useCalculationConfig();
 
     useEffect(() => {
+        if (!hydrated) {
+            return;
+        }
+
         const updateCountdown = () => {
-            const now = Date.now();
-            const nextPrayer = timings.find((t) => t.value.getTime() > now);
+            const now = new Date();
+
+            // Calculate today's prayer times (always use current date, not the viewed date)
+            const result = daily(salatLabels, config, now);
+            const nextPrayer = result.timings.find((t) => t.value.getTime() > now.getTime());
 
             if (!nextPrayer) {
                 setCountdown('');
                 return;
             }
 
-            const diff = nextPrayer.value.getTime() - now;
+            const diff = nextPrayer.value.getTime() - now.getTime();
             const hours = Math.floor(diff / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((diff % (1000 * 60)) / 1000);
@@ -88,7 +99,7 @@ const Countdown = ({ timings }: { timings: PrayerTiming[] }) => {
         updateCountdown();
         const interval = setInterval(updateCountdown, 1000);
         return () => clearInterval(interval);
-    }, [timings]);
+    }, [hydrated, config]);
 
     if (!countdown) {
         return null;
@@ -101,9 +112,12 @@ const Countdown = ({ timings }: { timings: PrayerTiming[] }) => {
     );
 };
 
-/**
- * Displays the daily schedule with navigation.
- */
+// Helper function to calculate daily timings (simplified version)
+const calculateDailyTimings = (config: any, date: Date) => {
+    // This is a placeholder - in real implementation, this would use the actual Adhan library
+    // For now, return empty to avoid errors
+    return { timings: [] };
+};
 export function PrayerTimesCard({
     activeLabel,
     activeEvent,
@@ -169,7 +183,7 @@ export function PrayerTimesCard({
                     </div>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <span className="inline-flex max-w-[min(60vw,14rem)] cursor-help truncate font-semibold text-foreground/80 text-sm sm:max-w-[18rem]">
+                            <span className="block max-w-[min(60vw,14rem)] cursor-help overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-foreground/80 text-sm sm:max-w-[18rem]">
                                 {addressLabel}
                             </span>
                         </TooltipTrigger>
@@ -192,7 +206,7 @@ export function PrayerTimesCard({
                     ))}
                 </ul>
 
-                <Countdown timings={timings} />
+                <Countdown />
 
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <Button asChild size="sm" variant="outline" className="border-white/30">
