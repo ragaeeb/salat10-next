@@ -5,8 +5,6 @@ import { motion } from 'motion/react';
 import Image from 'next/image';
 import { useMemo, useRef } from 'react';
 
-import { useThemeMode } from '@/components/theme-provider';
-
 interface MapProps {
     dots?: Array<{
         start: { lat: number; lng: number; label?: string };
@@ -17,15 +15,13 @@ interface MapProps {
 
 export default function WorldMap({ dots = [], lineColor }: MapProps) {
     const svgRef = useRef<SVGSVGElement>(null);
-    const { theme } = useThemeMode();
 
-    const arcColor = lineColor ?? (theme === 'dark' ? '#ffffff' : '#0f88b3');
-    const dotColor = theme === 'dark' ? '#ffffff66' : '#0f88b366';
+    const arcColor = lineColor ?? '#ffffff';
 
     const svgMap = useMemo(() => {
         const map = new DottedMap({ grid: 'diagonal', height: 100 });
-        return map.getSVG({ backgroundColor: 'transparent', color: dotColor, radius: 0.22, shape: 'circle' });
-    }, [dotColor]);
+        return map.getSVG({ backgroundColor: 'transparent', color: '#ffffff66', radius: 0.22, shape: 'circle' });
+    }, []);
 
     const projectPoint = (lat: number, lng: number) => {
         const x = (lng + 180) * (800 / 360);

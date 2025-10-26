@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QUOTE_WATERMARK, QuoteCard } from '@/components/prayer/quote-card';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useCopyFeedback } from '@/hooks/use-copy-feedback';
@@ -161,7 +160,6 @@ export default function PrayerTimesPage() {
                 <div className="-z-20 fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(135,206,235,0.4),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(10,46,120,0.6),_transparent_65%)]" />
 
                 <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
-                    <ThemeToggle />
                     <Button
                         asChild
                         className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
