@@ -1,9 +1,9 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Settings2Icon } from 'lucide-react';
-import { motion, useMotionTemplate, useMotionValue } from 'motion/react';
+import { Settings2Icon } from 'lucide-react';
+import { motion, useMotionTemplate } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QUOTE_WATERMARK, QuoteCard } from '@/components/prayer/quote-card';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -12,6 +12,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useCopyFeedback } from '@/hooks/use-copy-feedback';
 import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
 import { usePrayerParallax } from '@/hooks/use-prayer-parallax';
+import { usePrayerVisuals } from '@/hooks/use-prayer-visuals';
 import { daily } from '@/lib/calculator';
 import { writeIslamicDate } from '@/lib/hijri';
 import { salatLabels } from '@/lib/salat-labels';
@@ -26,87 +27,7 @@ export default function PrayerTimesPage() {
     const { error: quoteError, loading: quoteLoading, quote } = useMotivationalQuote();
     const { copy, status: copyStatus } = useCopyFeedback();
 
-    // Prayer parallax hook
-    const { sunX, sunY, skyColor, scrollYProgress, getPrayerInfo } = usePrayerParallax();
-    const [currentPrayerInfo, setCurrentPrayerInfo] = useState(() => getPrayerInfo(0));
-    const [useRealTime, setUseRealTime] = useState(true);
-    const [realSunX, setRealSunX] = useState(50);
-    const [realSunY, setRealSunY] = useState(80);
-    const [sunOpacity, setSunOpacity] = useState(1);
-    const [moonOpacity, setMoonOpacity] = useState(0);
-    const lastScrollProgressRef = useRef(0);
-
-    // Motion values for dynamic sun color - ALWAYS CALLED
-    const sunColorR = useMotionValue(255);
-    const sunColorG = useMotionValue(215);
-    const sunColorB = useMotionValue(0);
-
-    // Motion template - ALWAYS CALLED
-    const sunBackgroundColor = useMotionTemplate`rgb(${sunColorR}, ${sunColorG}, ${sunColorB})`;
-    const sunBoxShadow = useMotionTemplate`0 0 60px 20px rgba(${sunColorR}, ${sunColorG}, ${sunColorB}, 0.4)`;
-
-    useEffect(() => {
-        const initialInfo = getPrayerInfo(scrollYProgress.get());
-        setCurrentPrayerInfo(initialInfo);
-        lastScrollProgressRef.current = scrollYProgress.get();
-
-        const unsubscribe = scrollYProgress.on('change', (latest) => {
-            const previous = lastScrollProgressRef.current;
-            lastScrollProgressRef.current = latest;
-
-            const nextInfo = getPrayerInfo(latest);
-            setCurrentPrayerInfo(nextInfo);
-            console.log('[Scroll] Progress:', latest, 'Previous:', previous, 'Prayer:', nextInfo.event);
-
-            // Only switch to scroll mode if user is deliberately scrolling
-            // Ignore jumps from 0 to high values (hydration artifacts)
-            // Only activate scroll mode when scrolling from a low position gradually upward
-            const isDeliberateScroll = previous < 0.1 && latest > 0.05 && latest < 0.5;
-            const isContinuedScroll = previous > 0.05 && latest > 0.05;
-
-            if (isDeliberateScroll || isContinuedScroll) {
-                console.log('[Scroll] Switching to scroll mode');
-                setUseRealTime(false);
-
-                // Fade out sun and fade in moon approaching and during Maghrib (progress 0.75-0.85)
-                if (latest > 0.75 && latest < 0.85) {
-                    // Approaching Maghrib - fade out sun, fade in moon
-                    const fadeProgress = (latest - 0.75) / 0.1;
-                    setSunOpacity(1 - fadeProgress);
-                    setMoonOpacity(fadeProgress * 0.8);
-                    console.log('[Scroll] Maghrib fade - Sun:', 1 - fadeProgress, 'Moon:', fadeProgress * 0.8);
-                } else if (latest >= 0.85) {
-                    // Maghrib onwards - sun completely hidden, moon visible
-                    setSunOpacity(0);
-                    setMoonOpacity(0.8);
-                    console.log('[Scroll] Maghrib/Isha - Sun hidden, Moon visible');
-                } else {
-                    // Before Maghrib approach - sun visible, no moon
-                    setSunOpacity(1);
-                    setMoonOpacity(0);
-                }
-
-                // Update sun color based on scroll progress
-                console.log('[Scroll] Sun X:', sunX.get());
-
-                // Orange during late Asr/approaching Maghrib (progress > 0.7)
-                if (latest > 0.7) {
-                    console.log('[Scroll] Setting sun to ORANGE (approaching Maghrib)');
-                    sunColorR.set(255);
-                    sunColorG.set(140);
-                    sunColorB.set(0);
-                } else {
-                    console.log('[Scroll] Setting sun to YELLOW');
-                    sunColorR.set(255);
-                    sunColorG.set(215);
-                    sunColorB.set(0);
-                }
-            } else {
-                console.log('[Scroll] Ignoring updates - in real-time mode or invalid scroll jump');
-            }
-        });
-        return () => unsubscribe();
-    }, [scrollYProgress, getPrayerInfo, sunX, sunColorR, sunColorG, sunColorB]);
+    const { scrollYProgress } = usePrayerParallax();
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
@@ -134,6 +55,12 @@ export default function PrayerTimesPage() {
 
     const result = useMemo(() => daily(salatLabels, calculationArgs, currentDate), [calculationArgs, currentDate]);
 
+    const { currentPrayerInfo, sunX, sunY, sunOpacity, moonOpacity, sunColorR, sunColorG, sunColorB, useRealTime } =
+        usePrayerVisuals({ currentDate, scrollYProgress, timings: result.timings });
+
+    const sunBackgroundColor = useMotionTemplate`rgb(${sunColorR}, ${sunColorG}, ${sunColorB})`;
+    const sunBoxShadow = useMotionTemplate`0 0 60px 20px rgba(${sunColorR}, ${sunColorG}, ${sunColorB}, 0.4)`;
+
     const currentPrayerTime = useMemo(() => {
         if (!currentPrayerInfo?.event) {
             return '';
@@ -145,158 +72,6 @@ export default function PrayerTimesPage() {
     const activePrayerDisplay = currentPrayerTime
         ? `${currentPrayerInfo.label}: ${currentPrayerTime}`
         : currentPrayerInfo.label;
-
-    // Calculate real-time sun position based on actual prayer times
-    useEffect(() => {
-        if (!result.timings.length) {
-            return;
-        }
-
-        const now = currentDate.getTime();
-        const timings = result.timings;
-
-        const fajr = timings.find((t) => t.event === 'fajr')?.value.getTime();
-        const sunrise = timings.find((t) => t.event === 'sunrise')?.value.getTime();
-        const dhuhr = timings.find((t) => t.event === 'dhuhr')?.value.getTime();
-        const asr = timings.find((t) => t.event === 'asr')?.value.getTime();
-        const maghrib = timings.find((t) => t.event === 'maghrib')?.value.getTime();
-        const isha = timings.find((t) => t.event === 'isha')?.value.getTime();
-
-        if (!fajr || !sunrise || !dhuhr || !maghrib || !isha) {
-            return;
-        }
-
-        console.log('[Real-time] Now:', new Date(now).toLocaleTimeString());
-        console.log('[Real-time] Maghrib:', new Date(maghrib).toLocaleTimeString());
-        console.log('[Real-time] Isha:', new Date(isha).toLocaleTimeString());
-
-        let x = 50;
-        let y = 80;
-        let sunVis = 1;
-        let moonVis = 0;
-        let isOrange = false;
-
-        if (now < fajr) {
-            x = 85;
-            y = 95;
-            sunVis = 0;
-            moonVis = 0.8;
-            console.log('[Real-time] Period: Before Fajr');
-        } else if (now < sunrise) {
-            const progress = (now - fajr) / (sunrise - fajr);
-            x = 85 - progress * 15;
-            y = 95 - progress * 15;
-            console.log('[Real-time] Period: Fajr to Sunrise');
-        } else if (now < dhuhr) {
-            const progress = (now - sunrise) / (dhuhr - sunrise);
-            x = 70 - progress * 20;
-            y = 80 - progress * 60;
-            console.log('[Real-time] Period: Sunrise to Dhuhr');
-        } else if (now < asr!) {
-            const progress = (now - dhuhr) / ((asr || dhuhr + 3600000) - dhuhr);
-            x = 50 - progress * 20;
-            y = 20 + progress * 30;
-            console.log('[Real-time] Period: Dhuhr to Asr');
-        } else if (now < maghrib) {
-            const progress = (now - (asr || dhuhr)) / (maghrib - (asr || dhuhr));
-            x = 30 - progress * 15;
-            y = 50 + progress * 30;
-
-            // Turn orange in last 20% before Maghrib
-            const orangeStartTime = maghrib - (maghrib - (asr || dhuhr)) * 0.2;
-            isOrange = now > orangeStartTime;
-
-            // Fade out sun in last 10% before Maghrib
-            const fadeStartTime = maghrib - (maghrib - (asr || dhuhr)) * 0.1;
-            if (now > fadeStartTime) {
-                const fadeProgress = (now - fadeStartTime) / (maghrib - fadeStartTime);
-                sunVis = 1 - fadeProgress;
-                moonVis = fadeProgress * 0.5;
-                console.log('[Real-time] Fading sun out, fading moon in:', fadeProgress);
-            }
-
-            console.log('[Real-time] Period: Asr to Maghrib - Orange:', isOrange);
-        } else if (now < isha) {
-            x = 15;
-            y = 95;
-            sunVis = 0;
-            moonVis = 0.8;
-            console.log('[Real-time] Period: Maghrib to Isha - Moon visible');
-        } else {
-            x = 10;
-            y = 95;
-            sunVis = 0;
-            moonVis = 0.8;
-            console.log('[Real-time] Period: After Isha - Moon visible');
-        }
-
-        console.log('[Real-time] Sun position X:', x, 'Y:', y, 'Opacity:', sunVis, 'Orange:', isOrange);
-
-        setRealSunX(x);
-        setRealSunY(y);
-        setSunOpacity(sunVis);
-        setMoonOpacity(moonVis);
-
-        // Update sun color based on prayer period
-        if (isOrange) {
-            console.log('[Real-time] Setting sun to ORANGE');
-            sunColorR.set(255);
-            sunColorG.set(140);
-            sunColorB.set(0);
-        } else if (sunVis > 0) {
-            console.log('[Real-time] Setting sun to YELLOW');
-            sunColorR.set(255);
-            sunColorG.set(215);
-            sunColorB.set(0);
-        }
-    }, [currentDate, result.timings, sunColorR, sunColorG, sunColorB]);
-
-    // Reset to real-time mode and scroll position on mount/page visibility
-    useEffect(() => {
-        console.log('[Mount] Resetting scroll position and real-time mode');
-        // Force scroll to top
-        if (typeof window !== 'undefined') {
-            window.history.scrollRestoration = 'manual';
-            window.scrollTo({ behavior: 'instant', left: 0, top: 0 });
-            console.log('[Mount] Scroll position:', window.scrollY);
-        }
-        setUseRealTime(true);
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                console.log('[Visibility] Page visible, resetting');
-                setUseRealTime(true);
-                window.scrollTo({ behavior: 'instant', left: 0, top: 0 });
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            if (typeof window !== 'undefined') {
-                window.history.scrollRestoration = 'auto';
-            }
-        };
-    }, []);
-
-    useEffect(() => {
-        const updateColors = () => {
-            const r = sunColorR.get();
-            const g = sunColorG.get();
-            const b = sunColorB.get();
-            console.log('[Color Update] RGB:', r, g, b);
-        };
-
-        const unsubR = sunColorR.on('change', updateColors);
-        const unsubG = sunColorG.on('change', updateColors);
-        const unsubB = sunColorB.on('change', updateColors);
-
-        return () => {
-            unsubR();
-            unsubG();
-            unsubB();
-        };
-    }, [sunColorR, sunColorG, sunColorB]);
 
     const hijri = useMemo(() => writeIslamicDate(0, currentDate), [currentDate]);
 
@@ -324,7 +99,6 @@ export default function PrayerTimesPage() {
         : 'Add valid latitude and longitude in settings';
 
     const methodLabel = methodLabelMap[settings.method] ?? settings.method;
-
     const hijriLabel = `${hijri.day}, ${hijri.date} ${hijri.month} ${hijri.year} AH`;
 
     const onCopyQuote = async () => {
@@ -332,7 +106,6 @@ export default function PrayerTimesPage() {
         await copy(`"${sourceQuote.text}" - [${sourceQuote.citation}]${QUOTE_WATERMARK}`);
     };
 
-    // Early return AFTER all hooks have been called
     if (!hydrated) {
         return null;
     }
@@ -343,7 +116,7 @@ export default function PrayerTimesPage() {
                 {/* Parallax sky background */}
                 <motion.div
                     className="-z-10 pointer-events-none fixed inset-0"
-                    style={{ backgroundColor: useRealTime ? 'rgba(135, 206, 235, 0.3)' : skyColor }}
+                    style={{ backgroundColor: useRealTime ? 'rgba(135, 206, 235, 0.3)' : 'rgba(135, 206, 235, 0.3)' }}
                 />
 
                 {/* Sun */}
@@ -352,15 +125,14 @@ export default function PrayerTimesPage() {
                     style={{
                         backgroundColor: sunBackgroundColor,
                         boxShadow: sunBoxShadow,
-                        left: useRealTime ? `${realSunX}%` : sunX,
+                        left: `${sunX}%`,
                         opacity: sunOpacity,
-                        top: useRealTime ? `${realSunY}%` : sunY,
+                        top: `${sunY}%`,
                         x: '-50%',
                         y: '-50%',
                     }}
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity }}
-                    key={useRealTime ? 'realtime' : 'scroll'}
                 />
 
                 {/* Moon */}
