@@ -4,6 +4,7 @@ import { Settings2Icon } from 'lucide-react';
 import { motion, useMotionTemplate } from 'motion/react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { ShinyText } from '@/components/magicui/shiny-text';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QUOTE_WATERMARK, QuoteCard } from '@/components/prayer/quote-card';
 import { Button } from '@/components/ui/button';
@@ -151,9 +152,9 @@ export default function PrayerTimesPage() {
 
                 {/* Prayer time label */}
                 <div className="-translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none fixed top-1/2 left-1/2">
-                    <p className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50">
+                    <ShinyText className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50">
                         {activePrayerDisplay}
-                    </p>
+                    </ShinyText>
                 </div>
 
                 {/* Original background gradient */}
