@@ -27,7 +27,7 @@ export default function PrayerTimesPage() {
     const { error: quoteError, loading: quoteLoading, quote } = useMotivationalQuote();
     const { copy, status: copyStatus } = useCopyFeedback();
 
-    const { scrollYProgress, skyColor } = usePrayerParallax();
+    const { scrollYProgress, skyColor, fajrGradientOpacity } = usePrayerParallax();
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
@@ -113,11 +113,23 @@ export default function PrayerTimesPage() {
     return (
         <TooltipProvider>
             <div className="relative min-h-[300vh]">
-                {/* Parallax sky background with dynamic gradient */}
+                {/* Parallax sky background with solid color */}
                 <motion.div
                     className="-z-10 pointer-events-none fixed inset-0"
-                    style={{ background: useRealTime ? 'rgba(135, 206, 235, 0.3)' : skyColor }}
+                    style={{ backgroundColor: useRealTime ? 'rgba(135, 206, 235, 0.3)' : skyColor }}
                 />
+
+                {/* Fajr horizon gradient overlay */}
+                {!useRealTime && (
+                    <motion.div
+                        className="-z-10 pointer-events-none fixed inset-0"
+                        style={{
+                            background:
+                                'linear-gradient(to top, rgba(255, 200, 80, 0.95) 0%, rgba(255, 180, 90, 0.85) 12%, rgba(255, 160, 100, 0.75) 22%, rgba(240, 160, 120, 0.6) 32%, rgba(180, 150, 140, 0.45) 45%, rgba(120, 130, 160, 0.3) 60%, transparent 78%)',
+                            opacity: fajrGradientOpacity,
+                        }}
+                    />
+                )}
 
                 {/* Sun */}
                 <motion.div
