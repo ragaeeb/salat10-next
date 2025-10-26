@@ -1,4 +1,4 @@
-import { type MotionValue, useMotionValue } from 'motion/react';
+import { type MotionValue, useMotionValue, useSpring } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import type { PrayerTiming } from '@/components/prayer/prayer-times-card';
 import {
@@ -21,6 +21,11 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
         getPrayerInfoFromScroll(scrollYProgress.get()),
     );
     const hasScrolledRef = useRef(false);
+    const useRealTimeRef = useRef(true);
+
+    useEffect(() => {
+        useRealTimeRef.current = useRealTime;
+    }, [useRealTime]);
 
     // Log useRealTime state changes
     useEffect(() => {
@@ -43,22 +48,34 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
     const lastScrollProgressRef = useRef(0);
 
     // Handle scroll-based updates
+    const progressSpring = useSpring(scrollYProgress, { damping: 24, mass: 0.9, stiffness: 140 });
+
     useEffect(() => {
         const initialInfo = getPrayerInfoFromScroll(scrollYProgress.get());
         setCurrentPrayerInfo(initialInfo);
         lastScrollProgressRef.current = scrollYProgress.get();
         console.log('[Prayer Visuals] Initial scroll progress:', scrollYProgress.get());
 
-        const unsubscribe = scrollYProgress.on('change', (latest) => {
+        const unsubscribe = progressSpring.on('change', (rawLatest) => {
+            const latest = Math.min(1, Math.max(0, rawLatest));
             const previous = lastScrollProgressRef.current;
             lastScrollProgressRef.current = latest;
+            const delta = Math.abs(latest - previous);
 
             const nextInfo = getPrayerInfoFromScroll(latest);
             setCurrentPrayerInfo(nextInfo);
 
             // Only switch to scroll mode if user is deliberately scrolling
-            const isDeliberateScroll = previous < 0.1 && latest > 0.05 && latest < 0.5;
-            const isContinuedScroll = previous > 0.05 && latest > 0.05;
+            const SCROLL_ACTIVATION_THRESHOLD = 0.32;
+            const SCROLL_RETURN_THRESHOLD = 0.18;
+            const MIN_SCROLL_DELTA = 0.006;
+
+            const passesActivation = latest >= SCROLL_ACTIVATION_THRESHOLD;
+            const shouldReturnToRealTime = latest <= SCROLL_RETURN_THRESHOLD;
+            const deltaIsMeaningful = delta > MIN_SCROLL_DELTA;
+
+            const isDeliberateScroll = previous < SCROLL_ACTIVATION_THRESHOLD && passesActivation && deltaIsMeaningful;
+            const isContinuedScroll = hasScrolledRef.current && passesActivation && deltaIsMeaningful;
 
             console.log('[Prayer Visuals] Scroll change:', {
                 isContinuedScroll,
@@ -68,11 +85,34 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
                 willSwitchToScrollMode: isDeliberateScroll || isContinuedScroll,
             });
 
-            if (isDeliberateScroll || isContinuedScroll) {
+            if (!useRealTimeRef.current && shouldReturnToRealTime && deltaIsMeaningful) {
+                console.log('[Prayer Visuals] Returning to real-time mode');
+                setUseRealTime(true);
+                useRealTimeRef.current = true;
+                hasScrolledRef.current = false;
+                return;
+            }
+
+            if ((isDeliberateScroll || isContinuedScroll) && useRealTimeRef.current) {
                 console.log('[Prayer Visuals] Switching to scroll mode');
                 setUseRealTime(false);
+                useRealTimeRef.current = false;
                 hasScrolledRef.current = true;
 
+                const visuals = calculateScrollBasedVisuals(latest);
+                setSunX(visuals.sunX);
+                setSunY(visuals.sunY);
+                setSunOpacity(visuals.sunOpacity);
+                setMoonOpacity(visuals.moonOpacity);
+                setMoonX(visuals.moonX);
+                setMoonY(visuals.moonY);
+                sunColorR.set(visuals.sunColor.r);
+                sunColorG.set(visuals.sunColor.g);
+                sunColorB.set(visuals.sunColor.b);
+                return;
+            }
+
+            if (!useRealTimeRef.current && deltaIsMeaningful) {
                 const visuals = calculateScrollBasedVisuals(latest);
                 setSunX(visuals.sunX);
                 setSunY(visuals.sunY);
@@ -87,7 +127,7 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
         });
 
         return () => unsubscribe();
-    }, [scrollYProgress, sunColorR, sunColorG, sunColorB]);
+    }, [progressSpring, scrollYProgress, sunColorR, sunColorG, sunColorB]);
 
     // Handle real-time updates based on actual prayer times
     useEffect(() => {

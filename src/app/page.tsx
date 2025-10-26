@@ -217,42 +217,49 @@ export default function PrayerTimesPage() {
             {/* Sun */}
             <motion.div
                 aria-hidden
-                className="pointer-events-none fixed z-40 h-20 w-20 rounded-full"
-                style={{
-                    backgroundColor: sunBackgroundColor,
-                    boxShadow: sunBoxShadow,
-                    left: `${sunX}%`,
-                    opacity: sunOpacity,
-                    top: `${sunY}%`,
-                    x: '-50%',
-                    y: '-50%',
+                animate={{ left: `${sunX}%`, opacity: sunOpacity, top: `${sunY}%` }}
+                className="pointer-events-none fixed z-40 h-20 w-20"
+                style={{ x: '-50%', y: '-50%' }}
+                transition={{
+                    left: { damping: 24, stiffness: 140, type: 'spring' },
+                    opacity: { duration: 0.45, ease: 'easeOut' },
+                    top: { damping: 24, stiffness: 140, type: 'spring' },
                 }}
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity }}
-            />
+            >
+                <motion.div
+                    animate={{ scale: [1, 1.06, 1] }}
+                    className="h-full w-full rounded-full"
+                    style={{ backgroundColor: sunBackgroundColor, boxShadow: sunBoxShadow }}
+                    transition={{ duration: 3.2, ease: 'easeInOut', repeat: Infinity }}
+                />
+            </motion.div>
 
             {/* Moon */}
             <motion.div
                 aria-hidden
-                className="pointer-events-none fixed z-40 h-16 w-16 rounded-full bg-gray-200"
-                style={{
-                    boxShadow: '0 0 40px 15px rgba(200, 200, 220, 0.3)',
-                    left: `${moonX}%`,
-                    opacity: moonOpacity,
-                    top: `${moonY}%`,
-                    x: '-50%',
-                    y: '-50%',
+                animate={{ left: `${moonX}%`, opacity: moonOpacity, top: `${moonY}%` }}
+                className="pointer-events-none fixed z-40 h-16 w-16"
+                style={{ x: '-50%', y: '-50%' }}
+                transition={{
+                    left: { damping: 28, stiffness: 160, type: 'spring' },
+                    opacity: { duration: 0.45, ease: 'easeOut' },
+                    top: { damping: 28, stiffness: 160, type: 'spring' },
                 }}
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
-            />
+            >
+                <motion.div
+                    animate={{ scale: [1, 1.04, 1] }}
+                    className="h-full w-full rounded-full"
+                    style={{ backgroundColor: '#f2f4ff', boxShadow: '0 0 40px 15px rgba(200, 200, 220, 0.35)' }}
+                    transition={{ duration: 4.4, ease: 'easeInOut', repeat: Infinity }}
+                />
+            </motion.div>
 
             {/* Prayer time label */}
             {!useRealTime && (
-                <div className="-translate-x-1/2 -translate-y-1/2 pointer-events-none fixed top-1/2 left-1/2 z-30">
+                <div className="-translate-x-1/2 -translate-y-1/2 pointer-events-none fixed top-1/2 left-1/2 z-30 w-full max-w-4xl px-6">
                     <ShinyText
                         key={activePrayerDisplay}
-                        className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50"
+                        className="block text-balance text-center font-bold text-[clamp(2.25rem,8vw,4.5rem)] text-foreground/60 leading-tight drop-shadow-sm"
                     >
                         {activePrayerDisplay}
                     </ShinyText>

@@ -1,6 +1,6 @@
 'use client';
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface ShootingStar {
@@ -55,6 +55,11 @@ export const ShootingStars: React.FC<ShootingStarsProps> = ({
 }) => {
     const [star, setStar] = useState<ShootingStar | null>(null);
     const svgRef = useRef<SVGSVGElement>(null);
+    const gradientId = useId();
+    const gradientRef = useMemo(
+        () => `shooting-star-gradient-${gradientId.replace(/[^a-zA-Z0-9-_]/g, '')}`,
+        [gradientId],
+    );
 
     useEffect(() => {
         const createStar = () => {
@@ -103,7 +108,14 @@ export const ShootingStars: React.FC<ShootingStarsProps> = ({
     }, [star]);
 
     return (
-        <svg ref={svgRef} className={cn('absolute inset-0 h-full w-full', className)}>
+        <svg
+            aria-hidden="true"
+            ref={svgRef}
+            className={cn('absolute inset-0 h-full w-full', className)}
+            style={{ mixBlendMode: 'screen' }}
+            focusable="false"
+            role="presentation"
+        >
             {star && (
                 <rect
                     key={star.id}
@@ -111,16 +123,17 @@ export const ShootingStars: React.FC<ShootingStarsProps> = ({
                     y={star.y}
                     width={starWidth * star.scale}
                     height={starHeight}
-                    fill="url(#gradient)"
+                    fill={`url(#${gradientRef})`}
                     transform={`rotate(${star.angle}, ${
                         star.x + (starWidth * star.scale) / 2
                     }, ${star.y + starHeight / 2})`}
+                    opacity={0.95}
                 />
             )}
             <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style={{ stopColor: trailColor, stopOpacity: 0 }} />
-                    <stop offset="100%" style={{ stopColor: starColor, stopOpacity: 1 }} />
+                <linearGradient id={gradientRef} x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor={trailColor} stopOpacity={0} />
+                    <stop offset="100%" stopColor={starColor} stopOpacity={1} />
                 </linearGradient>
             </defs>
         </svg>

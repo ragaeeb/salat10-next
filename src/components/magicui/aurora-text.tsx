@@ -22,7 +22,7 @@ export const AuroraText = memo(({ children, className = '', colors, speed = 1 }:
     };
 
     return (
-        <span className={`relative inline-block ${className}`}>
+        <span className={`relative inline-block ${className}`} style={{ color: finalColors[0] }}>
             <span className="sr-only">{children}</span>
             <span
                 className="relative animate-aurora bg-[length:200%_auto] bg-clip-text text-transparent"
