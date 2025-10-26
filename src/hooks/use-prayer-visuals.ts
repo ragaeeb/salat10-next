@@ -20,6 +20,12 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
     const [currentPrayerInfo, setCurrentPrayerInfo] = useState<PrayerInfo>(() =>
         getPrayerInfoFromScroll(scrollYProgress.get()),
     );
+    const hasScrolledRef = useRef(false);
+
+    // Log useRealTime state changes
+    useEffect(() => {
+        console.log('[Prayer Visuals] useRealTime state changed to:', useRealTime);
+    }, [useRealTime]);
 
     // Visual state
     const [sunX, setSunX] = useState(50);
@@ -41,6 +47,7 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
         const initialInfo = getPrayerInfoFromScroll(scrollYProgress.get());
         setCurrentPrayerInfo(initialInfo);
         lastScrollProgressRef.current = scrollYProgress.get();
+        console.log('[Prayer Visuals] Initial scroll progress:', scrollYProgress.get());
 
         const unsubscribe = scrollYProgress.on('change', (latest) => {
             const previous = lastScrollProgressRef.current;
@@ -53,8 +60,18 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
             const isDeliberateScroll = previous < 0.1 && latest > 0.05 && latest < 0.5;
             const isContinuedScroll = previous > 0.05 && latest > 0.05;
 
+            console.log('[Prayer Visuals] Scroll change:', {
+                isContinuedScroll,
+                isDeliberateScroll,
+                latest,
+                previous,
+                willSwitchToScrollMode: isDeliberateScroll || isContinuedScroll,
+            });
+
             if (isDeliberateScroll || isContinuedScroll) {
+                console.log('[Prayer Visuals] Switching to scroll mode');
                 setUseRealTime(false);
+                hasScrolledRef.current = true;
 
                 const visuals = calculateScrollBasedVisuals(latest);
                 setSunX(visuals.sunX);
@@ -74,7 +91,14 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
 
     // Handle real-time updates based on actual prayer times
     useEffect(() => {
+        console.log('[Prayer Visuals] Real-time effect triggered:', {
+            currentDate: currentDate.toISOString(),
+            timingsLength: timings.length,
+            useRealTime,
+        });
+
         if (!timings.length || !useRealTime) {
+            console.log('[Prayer Visuals] Skipping real-time update (no timings or not in real-time mode)');
             return;
         }
 
@@ -90,6 +114,15 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
         const now = currentDate.getTime();
         const visuals = calculateRealTimeVisuals(now, prayerTimings);
 
+        console.log('[Prayer Visuals] Setting real-time visuals:', {
+            moonOpacity: visuals.moonOpacity,
+            moonX: visuals.moonX,
+            moonY: visuals.moonY,
+            sunOpacity: visuals.sunOpacity,
+            sunX: visuals.sunX,
+            sunY: visuals.sunY,
+        });
+
         setSunX(visuals.sunX);
         setSunY(visuals.sunY);
         setSunOpacity(visuals.sunOpacity);
@@ -103,21 +136,42 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
 
     // Reset to real-time mode on mount/visibility change
     useEffect(() => {
+        console.log('[Prayer Visuals] Mount effect - initializing');
+
         if (typeof window !== 'undefined') {
+            const currentScrollY = window.scrollY;
+            console.log('[Prayer Visuals] Current scroll position:', currentScrollY);
+
             window.history.scrollRestoration = 'manual';
             window.scrollTo({ behavior: 'instant', left: 0, top: 0 });
+            console.log('[Prayer Visuals] Scrolled to top on mount');
         }
         setUseRealTime(true);
 
         const handleVisibilityChange = () => {
+            console.log('[Prayer Visuals] Visibility changed:', {
+                currentScrollY: window.scrollY,
+                hasScrolled: hasScrolledRef.current,
+                scrollYProgress: scrollYProgress.get(),
+                visibilityState: document.visibilityState,
+            });
+
             if (document.visibilityState === 'visible') {
-                setUseRealTime(true);
-                window.scrollTo({ behavior: 'instant', left: 0, top: 0 });
+                // Only reset to real-time mode if user hasn't scrolled
+                if (!hasScrolledRef.current) {
+                    console.log(
+                        '[Prayer Visuals] Tab became visible - switching to real-time mode (no scroll detected)',
+                    );
+                    setUseRealTime(true);
+                } else {
+                    console.log('[Prayer Visuals] Tab became visible - staying in scroll mode (user has scrolled)');
+                }
             }
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => {
+            console.log('[Prayer Visuals] Cleanup - removing listeners');
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (typeof window !== 'undefined') {
                 window.history.scrollRestoration = 'auto';

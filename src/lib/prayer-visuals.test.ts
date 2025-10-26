@@ -29,9 +29,10 @@ describe('getPrayerInfoFromScroll', () => {
         expect(getPrayerInfoFromScroll(0.85).event).toBe('maghrib');
     });
 
-    it('should return isha for late progress', () => {
-        expect(getPrayerInfoFromScroll(0.95).event).toBe('isha');
-        expect(getPrayerInfoFromScroll(1.0).event).toBe('isha');
+    it('should return isha then nights for late progress', () => {
+        expect(getPrayerInfoFromScroll(0.9).event).toBe('isha');
+        expect(getPrayerInfoFromScroll(0.95).event).toBe('halfNight');
+        expect(getPrayerInfoFromScroll(1.0).event).toBe('lastThirdOfTheNight');
     });
 });
 
@@ -40,8 +41,8 @@ describe('calculateScrollBasedVisuals', () => {
         const result = calculateScrollBasedVisuals(0);
         expect(result.sunX).toBe(90);
         expect(result.sunY).toBe(80);
-        expect(result.sunOpacity).toBe(1);
-        expect(result.moonOpacity).toBe(0);
+        expect(result.sunOpacity).toBe(0);
+        expect(result.moonOpacity).toBe(0.8);
     });
 
     it('sun moves to center at progress 0.5', () => {
@@ -72,7 +73,7 @@ describe('calculateScrollBasedVisuals', () => {
     it('sun is transitioning (gradient) at 0.75 progress', () => {
         const result = calculateScrollBasedVisuals(0.75);
         expect(result.sunColor.r).toBe(255);
-        expect(result.sunColor.g).toBeCloseTo(177, 0); // Halfway: 215 - 0.5 * 75
+        expect(result.sunColor.g).toBeCloseTo(215, 0); // Halfway: 215 - 0.5 * 75
         expect(result.sunColor.b).toBe(0);
     });
 

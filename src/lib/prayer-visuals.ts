@@ -2,6 +2,38 @@
  * Pure utility functions for calculating prayer time visual states
  */
 
+// Scroll progress thresholds for prayer periods
+const SCROLL_LAST_THIRD_END = 0.1;
+const SCROLL_FAJR_END = 0.2;
+const SCROLL_SUNRISE_END = 0.5;
+const SCROLL_DHUHR_END = 0.65;
+const SCROLL_ASR_END = 0.8;
+const SCROLL_MAGHRIB_END = 0.87;
+const SCROLL_ISHA_END = 0.93;
+const SCROLL_HALF_NIGHT_END = 0.97;
+
+// Visual transition timing
+const SCROLL_SUNRISE_TRANSITION_START = 0.2;
+const SCROLL_SUNRISE_TRANSITION_END = 0.25;
+const SCROLL_ORANGE_TRANSITION_START = 0.75;
+const SCROLL_ORANGE_TRANSITION_END = 0.78;
+const SCROLL_SUNSET_TRANSITION_START = 0.78;
+const SCROLL_SUNSET_TRANSITION_END = 0.87;
+
+// Sun/Moon positioning constants
+const SUN_X_START = 90; // Right side (%)
+const SUN_X_END = 10; // Left side (%)
+const SUN_Y_HIGH = 80; // High in sky (%)
+const SUN_Y_LOW = 20; // Low/zenith (%)
+const MOON_Y_POSITION = 25; // Moon height (%)
+const MOON_X_START = 10; // Moon starts left (%)
+const MOON_X_END = 80; // Moon ends right (%)
+const MOON_OPACITY_MAX = 0.8;
+
+// Sun colors
+const SUN_COLOR_YELLOW = { b: 0, g: 215, r: 255 };
+const SUN_COLOR_ORANGE = { b: 0, g: 140, r: 255 };
+
 export type PrayerPeriod =
     | 'beforeFajr'
     | 'fajr'
@@ -29,28 +61,28 @@ export type PrayerInfo = { event: string; label: string };
  * Get prayer period and info based on scroll progress (0-1)
  */
 export function getPrayerInfoFromScroll(progress: number): PrayerInfo {
-    if (progress < 0.1) {
+    if (progress < SCROLL_LAST_THIRD_END) {
         return { event: 'lastThirdOfTheNight', label: 'Last Third of the Night' };
     }
-    if (progress < 0.2) {
+    if (progress < SCROLL_FAJR_END) {
         return { event: 'fajr', label: 'Fajr' };
     }
-    if (progress < 0.5) {
+    if (progress < SCROLL_SUNRISE_END) {
         return { event: 'sunrise', label: 'Sunrise' };
     }
-    if (progress < 0.65) {
+    if (progress < SCROLL_DHUHR_END) {
         return { event: 'dhuhr', label: 'Ḍhuhr' };
     }
-    if (progress < 0.8) {
+    if (progress < SCROLL_ASR_END) {
         return { event: 'asr', label: 'ʿAṣr' };
     }
-    if (progress < 0.87) {
+    if (progress < SCROLL_MAGHRIB_END) {
         return { event: 'maghrib', label: 'Maġrib' };
     }
-    if (progress < 0.93) {
+    if (progress < SCROLL_ISHA_END) {
         return { event: 'isha', label: 'ʿIshāʾ' };
     }
-    if (progress < 0.97) {
+    if (progress < SCROLL_HALF_NIGHT_END) {
         return { event: 'halfNight', label: 'Half of the Night' };
     }
     return { event: 'lastThirdOfTheNight', label: 'Last Third of the Night' };
@@ -60,67 +92,73 @@ export function getPrayerInfoFromScroll(progress: number): PrayerInfo {
  * Calculate sun/moon state based on scroll progress
  */
 export function calculateScrollBasedVisuals(progress: number): SunMoonState {
-    // Sun moves from right (90%) to left (10%)
-    const sunX = 90 - progress * 80;
+    // Sun moves from right to left
+    const sunX = SUN_X_START - progress * (SUN_X_START - SUN_X_END);
 
-    // Sun arcs: high at edges (80%), low at center (20%)
+    // Sun arcs: high at edges, low at center
     const sunY =
         progress < 0.5
-            ? 80 - progress * 2 * 60 // 80 -> 20
-            : 20 + (progress - 0.5) * 2 * 60; // 20 -> 80
+            ? SUN_Y_HIGH - progress * 2 * (SUN_Y_HIGH - SUN_Y_LOW)
+            : SUN_Y_LOW + (progress - 0.5) * 2 * (SUN_Y_HIGH - SUN_Y_LOW);
 
     let sunOpacity = 1;
     let moonOpacity = 0;
-    let moonX = 20; // Default moon position (left side)
-    let moonY = 25; // Default moon position (upper portion)
-    let sunColor = { b: 0, g: 215, r: 255 }; // Yellow
+    let moonX = MOON_X_START;
+    const moonY = MOON_Y_POSITION;
+    let sunColor = { ...SUN_COLOR_YELLOW };
 
-    // Before sunrise (0-0.2): sun is hidden, moon visible
-    if (progress < 0.2) {
+    // Last Third / Before Fajr: moon visible, sun hidden
+    if (progress < SCROLL_FAJR_END) {
         sunOpacity = 0;
-        moonOpacity = 0.8;
-        // Moon at the end of its journey (right side) during last third/fajr
-        moonX = 80;
-        moonY = 25;
+        moonOpacity = MOON_OPACITY_MAX;
+        moonX = MOON_X_END;
     }
-    // Sunrise transition (0.2-0.25): sun fades in, moon fades out
-    else if (progress >= 0.2 && progress < 0.25) {
-        const fadeProgress = (progress - 0.2) / 0.05;
+    // Sunrise transition: sun fades in, moon fades out
+    else if (progress < SCROLL_SUNRISE_TRANSITION_END) {
+        const fadeProgress =
+            (progress - SCROLL_SUNRISE_TRANSITION_START) /
+            (SCROLL_SUNRISE_TRANSITION_END - SCROLL_SUNRISE_TRANSITION_START);
         sunOpacity = fadeProgress;
-        moonOpacity = 0.8 * (1 - fadeProgress);
-        moonX = 80;
-        moonY = 25;
+        moonOpacity = MOON_OPACITY_MAX * (1 - fadeProgress);
+        moonX = MOON_X_END;
     }
-    // Smooth yellow to orange transition (0.7-0.8)
-    else if (progress >= 0.7 && progress < 0.8) {
-        const orangeProgress = (progress - 0.7) / 0.1;
+    // Day time - sun visible: yellow sun
+    else if (progress < SCROLL_ORANGE_TRANSITION_START) {
+        sunOpacity = 1;
+        moonOpacity = 0;
+        sunColor = { ...SUN_COLOR_YELLOW };
+    }
+    // Asr - transition to orange
+    else if (progress < SCROLL_ORANGE_TRANSITION_END) {
+        sunOpacity = 1;
+        moonOpacity = 0;
+        const orangeProgress =
+            (progress - SCROLL_ORANGE_TRANSITION_START) /
+            (SCROLL_ORANGE_TRANSITION_END - SCROLL_ORANGE_TRANSITION_START);
         sunColor = {
-            b: 0,
-            g: Math.round(215 - orangeProgress * 75), // 215 → 140
-            r: 255,
+            b: SUN_COLOR_YELLOW.b,
+            g: Math.round(SUN_COLOR_YELLOW.g - orangeProgress * (SUN_COLOR_YELLOW.g - SUN_COLOR_ORANGE.g)),
+            r: SUN_COLOR_YELLOW.r,
         };
-    } else if (progress >= 0.8 && progress < 0.87) {
-        sunColor = { b: 0, g: 140, r: 255 };
     }
-
-    // Maghrib transition (0.85-0.87): fade sun out, fade moon in
-    if (progress >= 0.85 && progress < 0.87) {
-        const fadeProgress = (progress - 0.85) / 0.02;
+    // Late Asr leading up to Maghrib: sun sets, moon rises
+    // By SCROLL_MAGHRIB_END, sun is completely gone and moon is completely visible
+    else if (progress < SCROLL_MAGHRIB_END) {
+        const fadeProgress =
+            (progress - SCROLL_SUNSET_TRANSITION_START) /
+            (SCROLL_SUNSET_TRANSITION_END - SCROLL_SUNSET_TRANSITION_START);
         sunOpacity = 1 - fadeProgress;
-        moonOpacity = fadeProgress * 0.8;
-        moonX = 10; // Moon starts from left
-        moonY = 25;
+        moonOpacity = fadeProgress * MOON_OPACITY_MAX;
+        moonX = MOON_X_START;
+        sunColor = { ...SUN_COLOR_ORANGE };
     }
-    // After Maghrib (0.87-1.0): moon travels from left to right
-    else if (progress >= 0.87) {
+    // At and after Maghrib: sun is gone, moon travels across night sky
+    else {
         sunOpacity = 0;
-        moonOpacity = 0.8;
-
-        // Moon travels from left (10%) to right (80%) through the night
-        // 0.87 = Isha start, 0.93 = Half Night, 1.0 = Last Third
-        const nightProgress = (progress - 0.87) / (1.0 - 0.87);
-        moonX = 10 + nightProgress * 70; // 10% -> 80%
-        moonY = 25; // Keep moon at consistent height
+        moonOpacity = MOON_OPACITY_MAX;
+        // Moon travels from left to right
+        const nightProgress = (progress - SCROLL_MAGHRIB_END) / (1.0 - SCROLL_MAGHRIB_END);
+        moonX = MOON_X_START + nightProgress * (MOON_X_END - MOON_X_START);
     }
 
     return { moonOpacity, moonX, moonY, sunColor, sunOpacity, sunX, sunY };
@@ -167,8 +205,6 @@ export function calculateRealTimeVisuals(now: number, timings: PrayerTimings): S
         const progress = (now - fajr) / (sunrise - fajr);
         sunX = 85 - progress * 15;
         sunY = 95 - progress * 15;
-        moonX = 80;
-        moonY = 25;
     }
     // Sunrise to Dhuhr
     else if (now < dhuhr) {

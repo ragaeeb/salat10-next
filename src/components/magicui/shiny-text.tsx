@@ -8,15 +8,7 @@ import { cn } from '@/lib/utils';
 const animationProps: MotionProps = {
     animate: { '--x': '-100%' },
     initial: { '--x': '100%' },
-    transition: {
-        damping: 15,
-        mass: 2,
-        repeat: Infinity,
-        repeatDelay: 1,
-        repeatType: 'loop',
-        stiffness: 20,
-        type: 'spring',
-    },
+    transition: { damping: 15, mass: 2, stiffness: 20, type: 'spring' },
 };
 
 interface ShinyTextProps extends Omit<React.HTMLAttributes<HTMLElement>, keyof MotionProps>, MotionProps {
