@@ -1,4 +1,4 @@
-import { useMotionValue } from 'motion/react';
+import { type MotionValue, useMotionValue } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import type { PrayerTiming } from '@/components/prayer/prayer-times-card';
 import {
@@ -11,7 +11,7 @@ import {
 
 export type UsePrayerVisualsParams = {
     currentDate: Date;
-    scrollYProgress: { get: () => number; on: (event: string, callback: (v: number) => void) => () => void };
+    scrollYProgress: MotionValue<number>;
     timings: PrayerTiming[];
 };
 
@@ -103,12 +103,12 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
         }
 
         const prayerTimings: PrayerTimings = {
-            asr: timings.find((t) => t.event === 'asr')?.value.getTime(),
-            dhuhr: timings.find((t) => t.event === 'dhuhr')?.value.getTime(),
-            fajr: timings.find((t) => t.event === 'fajr')?.value.getTime(),
-            isha: timings.find((t) => t.event === 'isha')?.value.getTime(),
-            maghrib: timings.find((t) => t.event === 'maghrib')?.value.getTime(),
-            sunrise: timings.find((t) => t.event === 'sunrise')?.value.getTime(),
+            asr: timings.find((t) => t.event === 'asr')!.value.getTime(),
+            dhuhr: timings.find((t) => t.event === 'dhuhr')!.value.getTime(),
+            fajr: timings.find((t) => t.event === 'fajr')!.value.getTime(),
+            isha: timings.find((t) => t.event === 'isha')!.value.getTime(),
+            maghrib: timings.find((t) => t.event === 'maghrib')!.value.getTime(),
+            sunrise: timings.find((t) => t.event === 'sunrise')!.value.getTime(),
         };
 
         const now = currentDate.getTime();
@@ -177,7 +177,7 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
                 window.history.scrollRestoration = 'auto';
             }
         };
-    }, []);
+    }, [scrollYProgress]);
 
     return {
         currentPrayerInfo,
