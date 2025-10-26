@@ -27,7 +27,7 @@ export default function PrayerTimesPage() {
     const { error: quoteError, loading: quoteLoading, quote } = useMotivationalQuote();
     const { copy, status: copyStatus } = useCopyFeedback();
 
-    const { scrollYProgress, skyColor, fajrGradientOpacity } = usePrayerParallax();
+    const { scrollYProgress, skyColor, fajrGradientOpacity, lightRaysOpacity } = usePrayerParallax();
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
@@ -118,6 +118,56 @@ export default function PrayerTimesPage() {
                     className="-z-10 pointer-events-none fixed inset-0"
                     style={{ backgroundColor: useRealTime ? 'rgba(135, 206, 235, 0.3)' : skyColor }}
                 />
+
+                {/* Last Third of Night - Light pillars shooting upward */}
+                {!useRealTime && (
+                    <motion.div
+                        className="-z-10 pointer-events-none fixed inset-0 overflow-hidden"
+                        style={{ opacity: lightRaysOpacity }}
+                    >
+                        {/* Base horizon glow */}
+                        <div
+                            className="absolute inset-0"
+                            style={{
+                                background:
+                                    'radial-gradient(ellipse 120% 40% at 50% 100%, rgba(100, 140, 255, 0.25) 0%, rgba(80, 120, 200, 0.15) 25%, rgba(60, 90, 150, 0.08) 45%, transparent 70%)',
+                            }}
+                        />
+                        {/* Vertical light pillars - subtle beams */}
+                        <div
+                            className="absolute inset-0"
+                            style={{
+                                background: `
+                                    linear-gradient(0deg, 
+                                        rgba(120, 160, 255, 0.08) 0%, 
+                                        transparent 40%),
+                                    linear-gradient(0deg, 
+                                        transparent 0%, 
+                                        rgba(100, 140, 230, 0.05) 20%,
+                                        transparent 45%),
+                                    repeating-linear-gradient(90deg,
+                                        transparent 0px,
+                                        transparent 80px,
+                                        rgba(140, 180, 255, 0.04) 80px,
+                                        rgba(120, 160, 240, 0.08) 100px,
+                                        rgba(100, 140, 220, 0.06) 120px,
+                                        transparent 140px,
+                                        transparent 220px)
+                                `,
+                                maskImage: 'linear-gradient(to top, white 0%, white 50%, transparent 100%)',
+                                WebkitMaskImage: 'linear-gradient(to top, white 0%, white 50%, transparent 100%)',
+                            }}
+                        />
+                        {/* Subtle shimmer overlay */}
+                        <div
+                            className="absolute inset-0"
+                            style={{
+                                background:
+                                    'radial-gradient(circle at 30% 95%, rgba(140, 180, 255, 0.06) 0%, transparent 25%), radial-gradient(circle at 70% 95%, rgba(120, 160, 240, 0.05) 0%, transparent 25%)',
+                            }}
+                        />
+                    </motion.div>
+                )}
 
                 {/* Fajr horizon gradient overlay */}
                 {!useRealTime && (
