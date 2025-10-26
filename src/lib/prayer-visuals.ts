@@ -24,10 +24,10 @@ export function getPrayerInfoFromScroll(progress: number): PrayerInfo {
     if (progress < 0.2) {
         return { event: 'fajr', label: 'Fajr' };
     }
-    if (progress < 0.3) {
+    if (progress < 0.5) {
         return { event: 'sunrise', label: 'Sunrise' };
     }
-    if (progress < 0.6) {
+    if (progress < 0.65) {
         return { event: 'dhuhr', label: 'Ḍhuhr' };
     }
     if (progress < 0.8) {

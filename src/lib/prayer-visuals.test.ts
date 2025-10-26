@@ -12,12 +12,12 @@ describe('getPrayerInfoFromScroll', () => {
         expect(getPrayerInfoFromScroll(0.15).event).toBe('fajr');
     });
 
-    it('should return sunrise for 0.2-0.3 progress', () => {
+    it('should return sunrise for 0.2 and < 0.5 progress', () => {
         expect(getPrayerInfoFromScroll(0.25).event).toBe('sunrise');
+        expect(getPrayerInfoFromScroll(0.4).event).toBe('sunrise');
     });
 
-    it('should return dhuhr for 0.3-0.6 progress', () => {
-        expect(getPrayerInfoFromScroll(0.4).event).toBe('dhuhr');
+    it('should return dhuhr for >= 0.5 progress', () => {
         expect(getPrayerInfoFromScroll(0.5).event).toBe('dhuhr');
     });
 

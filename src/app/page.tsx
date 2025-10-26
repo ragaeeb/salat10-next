@@ -151,11 +151,13 @@ export default function PrayerTimesPage() {
                 />
 
                 {/* Prayer time label */}
-                <div className="-translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none fixed top-1/2 left-1/2">
-                    <ShinyText className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50">
-                        {activePrayerDisplay}
-                    </ShinyText>
-                </div>
+                {!useRealTime && (
+                    <div className="-translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none fixed top-1/2 left-1/2">
+                        <ShinyText className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50">
+                            {activePrayerDisplay}
+                        </ShinyText>
+                    </div>
+                )}
 
                 {/* Original background gradient */}
                 <div className="-z-20 fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(135,206,235,0.4),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(10,46,120,0.6),_transparent_65%)]" />

@@ -39,28 +39,5 @@ export function usePrayerParallax() {
         ],
     );
 
-    // Prayer time labels with opacity based on scroll position
-    const getPrayerInfo = useCallback((progress: number) => {
-        if (progress < 0.1) {
-            return { event: 'lastThirdOfTheNight', label: 'Last Third of the Night' } as const;
-        }
-        if (progress < 0.2) {
-            return { event: 'fajr', label: 'Fajr' } as const;
-        }
-        if (progress < 0.3) {
-            return { event: 'sunrise', label: 'Sunrise' } as const;
-        }
-        if (progress < 0.6) {
-            return { event: 'dhuhr', label: 'Ḍhuhr' } as const;
-        }
-        if (progress < 0.8) {
-            return { event: 'asr', label: 'ʿAṣr' } as const;
-        }
-        if (progress < 0.9) {
-            return { event: 'maghrib', label: 'Maġrib' } as const;
-        }
-        return { event: 'isha', label: 'ʿIshāʾ' } as const;
-    }, []);
-
-    return { getPrayerInfo, lightBlueSkyColor, scrollYProgress, skyColor: skyColor, sunX, sunY };
+    return { lightBlueSkyColor, scrollYProgress, skyColor: skyColor, sunX, sunY };
 }
