@@ -1,9 +1,9 @@
 'use client';
 
 import { Settings2Icon } from 'lucide-react';
-import { motion, useMotionTemplate } from 'motion/react';
+import { motion, useInView, useMotionTemplate, useTransform } from 'motion/react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ShootingStars } from '@/components/aceternity/shooting-stars';
 import { StarsBackground } from '@/components/aceternity/stars-background';
 import DebugLogger from '@/components/debug-logger';
@@ -31,6 +31,8 @@ export default function PrayerTimesPage() {
     const { copy, status: copyStatus } = useCopyFeedback();
 
     const { scrollYProgress, skyColor, fajrGradientOpacity, lightRaysOpacity, starsOpacity } = usePrayerParallax();
+    const parallaxTriggerRef = useRef<HTMLDivElement | null>(null);
+    const shouldUseScrollMode = useInView(parallaxTriggerRef, { margin: '0px 0px -55% 0px' });
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
@@ -70,7 +72,12 @@ export default function PrayerTimesPage() {
         sunColorG,
         sunColorB,
         useRealTime,
-    } = usePrayerVisuals({ currentDate, scrollYProgress, timings: result.timings });
+    } = usePrayerVisuals({ currentDate, scrollYProgress, shouldUseScrollMode, timings: result.timings });
+
+    const sunLeft = useTransform(sunX, (value) => `${value}%`);
+    const sunTop = useTransform(sunY, (value) => `${value}%`);
+    const moonLeft = useTransform(moonX, (value) => `${value}%`);
+    const moonTop = useTransform(moonY, (value) => `${value}%`);
 
     const sunBackgroundColor = useMotionTemplate`rgb(${sunColorR}, ${sunColorG}, ${sunColorB})`;
     const sunBoxShadow = useMotionTemplate`0 0 60px 20px rgba(${sunColorR}, ${sunColorG}, ${sunColorB}, 0.4)`;
@@ -125,15 +132,15 @@ export default function PrayerTimesPage() {
     }
 
     console.log('[Page] Render state:', {
-        moonOpacity,
-        moonX,
-        moonY,
+        moonOpacity: moonOpacity.get(),
+        moonX: moonX.get(),
+        moonY: moonY.get(),
         sunColorB: sunColorB.get(),
         sunColorG: sunColorG.get(),
         sunColorR: sunColorR.get(),
-        sunOpacity,
-        sunX,
-        sunY,
+        sunOpacity: sunOpacity.get(),
+        sunX: sunX.get(),
+        sunY: sunY.get(),
         useRealTime,
     });
 
@@ -217,14 +224,8 @@ export default function PrayerTimesPage() {
             {/* Sun */}
             <motion.div
                 aria-hidden
-                animate={{ left: `${sunX}%`, opacity: sunOpacity, top: `${sunY}%` }}
-                className="pointer-events-none fixed z-40 h-20 w-20"
-                style={{ x: '-50%', y: '-50%' }}
-                transition={{
-                    left: { damping: 24, stiffness: 140, type: 'spring' },
-                    opacity: { duration: 0.45, ease: 'easeOut' },
-                    top: { damping: 24, stiffness: 140, type: 'spring' },
-                }}
+                className="-translate-x-1/2 -translate-y-1/2 pointer-events-none fixed z-40 h-20 w-20"
+                style={{ left: sunLeft, opacity: sunOpacity, top: sunTop }}
             >
                 <motion.div
                     animate={{ scale: [1, 1.06, 1] }}
@@ -237,14 +238,8 @@ export default function PrayerTimesPage() {
             {/* Moon */}
             <motion.div
                 aria-hidden
-                animate={{ left: `${moonX}%`, opacity: moonOpacity, top: `${moonY}%` }}
-                className="pointer-events-none fixed z-40 h-16 w-16"
-                style={{ x: '-50%', y: '-50%' }}
-                transition={{
-                    left: { damping: 28, stiffness: 160, type: 'spring' },
-                    opacity: { duration: 0.45, ease: 'easeOut' },
-                    top: { damping: 28, stiffness: 160, type: 'spring' },
-                }}
+                className="-translate-x-1/2 -translate-y-1/2 pointer-events-none fixed z-40 h-16 w-16"
+                style={{ left: moonLeft, opacity: moonOpacity, top: moonTop }}
             >
                 <motion.div
                     animate={{ scale: [1, 1.04, 1] }}
@@ -308,6 +303,8 @@ export default function PrayerTimesPage() {
                         onToday={handleToday}
                         timings={result.timings}
                     />
+
+                    <div aria-hidden className="pointer-events-none h-px w-full opacity-0" ref={parallaxTriggerRef} />
                 </div>
             </TooltipProvider>
         </div>

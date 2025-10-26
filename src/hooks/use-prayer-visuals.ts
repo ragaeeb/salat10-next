@@ -1,5 +1,5 @@
 import { type MotionValue, useMotionValue, useSpring } from 'motion/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PrayerTiming } from '@/components/prayer/prayer-times-card';
 import {
     calculateRealTimeVisuals,
@@ -11,17 +11,28 @@ import {
 
 export type UsePrayerVisualsParams = {
     currentDate: Date;
+    shouldUseScrollMode: boolean;
     scrollYProgress: MotionValue<number>;
     timings: PrayerTiming[];
 };
 
-export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UsePrayerVisualsParams) {
+export function usePrayerVisuals({
+    currentDate,
+    scrollYProgress,
+    shouldUseScrollMode,
+    timings,
+}: UsePrayerVisualsParams) {
     const [useRealTime, setUseRealTime] = useState(true);
     const [currentPrayerInfo, setCurrentPrayerInfo] = useState<PrayerInfo>(() =>
         getPrayerInfoFromScroll(scrollYProgress.get()),
     );
     const hasScrolledRef = useRef(false);
     const useRealTimeRef = useRef(true);
+    const shouldUseScrollModeRef = useRef(shouldUseScrollMode);
+
+    useEffect(() => {
+        shouldUseScrollModeRef.current = shouldUseScrollMode;
+    }, [shouldUseScrollMode]);
 
     useEffect(() => {
         useRealTimeRef.current = useRealTime;
@@ -32,13 +43,21 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
         console.log('[Prayer Visuals] useRealTime state changed to:', useRealTime);
     }, [useRealTime]);
 
-    // Visual state
-    const [sunX, setSunX] = useState(50);
-    const [sunY, setSunY] = useState(80);
-    const [sunOpacity, setSunOpacity] = useState(1);
-    const [moonOpacity, setMoonOpacity] = useState(0);
-    const [moonX, setMoonX] = useState(20);
-    const [moonY, setMoonY] = useState(25);
+    const sunXTarget = useMotionValue(50);
+    const sunYTarget = useMotionValue(80);
+    const sunOpacityTarget = useMotionValue(1);
+    const moonXTarget = useMotionValue(20);
+    const moonYTarget = useMotionValue(25);
+    const moonOpacityTarget = useMotionValue(0);
+
+    const springConfig = useMemo(() => ({ damping: 26, mass: 0.8, stiffness: 150 }), []);
+
+    const sunX = useSpring(sunXTarget, springConfig);
+    const sunY = useSpring(sunYTarget, springConfig);
+    const sunOpacity = useSpring(sunOpacityTarget, { damping: 24, mass: 0.7, stiffness: 160 });
+    const moonX = useSpring(moonXTarget, springConfig);
+    const moonY = useSpring(moonYTarget, springConfig);
+    const moonOpacity = useSpring(moonOpacityTarget, { damping: 24, mass: 0.7, stiffness: 160 });
 
     // Motion values for sun color
     const sunColorR = useMotionValue(255);
@@ -51,83 +70,90 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
     const progressSpring = useSpring(scrollYProgress, { damping: 24, mass: 0.9, stiffness: 140 });
 
     useEffect(() => {
-        const initialInfo = getPrayerInfoFromScroll(scrollYProgress.get());
-        setCurrentPrayerInfo(initialInfo);
-        lastScrollProgressRef.current = scrollYProgress.get();
-        console.log('[Prayer Visuals] Initial scroll progress:', scrollYProgress.get());
+        const initialProgress = scrollYProgress.get();
+        lastScrollProgressRef.current = initialProgress;
+        setCurrentPrayerInfo(getPrayerInfoFromScroll(initialProgress));
+        console.log('[Prayer Visuals] Initial scroll progress:', initialProgress);
 
         const unsubscribe = progressSpring.on('change', (rawLatest) => {
             const latest = Math.min(1, Math.max(0, rawLatest));
-            const previous = lastScrollProgressRef.current;
             lastScrollProgressRef.current = latest;
-            const delta = Math.abs(latest - previous);
 
             const nextInfo = getPrayerInfoFromScroll(latest);
             setCurrentPrayerInfo(nextInfo);
 
-            // Only switch to scroll mode if user is deliberately scrolling
-            const SCROLL_ACTIVATION_THRESHOLD = 0.32;
-            const SCROLL_RETURN_THRESHOLD = 0.18;
-            const MIN_SCROLL_DELTA = 0.006;
-
-            const passesActivation = latest >= SCROLL_ACTIVATION_THRESHOLD;
-            const shouldReturnToRealTime = latest <= SCROLL_RETURN_THRESHOLD;
-            const deltaIsMeaningful = delta > MIN_SCROLL_DELTA;
-
-            const isDeliberateScroll = previous < SCROLL_ACTIVATION_THRESHOLD && passesActivation && deltaIsMeaningful;
-            const isContinuedScroll = hasScrolledRef.current && passesActivation && deltaIsMeaningful;
-
-            console.log('[Prayer Visuals] Scroll change:', {
-                isContinuedScroll,
-                isDeliberateScroll,
-                latest,
-                previous,
-                willSwitchToScrollMode: isDeliberateScroll || isContinuedScroll,
-            });
-
-            if (!useRealTimeRef.current && shouldReturnToRealTime && deltaIsMeaningful) {
-                console.log('[Prayer Visuals] Returning to real-time mode');
-                setUseRealTime(true);
-                useRealTimeRef.current = true;
-                hasScrolledRef.current = false;
+            if (!shouldUseScrollModeRef.current) {
                 return;
             }
 
-            if ((isDeliberateScroll || isContinuedScroll) && useRealTimeRef.current) {
-                console.log('[Prayer Visuals] Switching to scroll mode');
-                setUseRealTime(false);
-                useRealTimeRef.current = false;
-                hasScrolledRef.current = true;
-
-                const visuals = calculateScrollBasedVisuals(latest);
-                setSunX(visuals.sunX);
-                setSunY(visuals.sunY);
-                setSunOpacity(visuals.sunOpacity);
-                setMoonOpacity(visuals.moonOpacity);
-                setMoonX(visuals.moonX);
-                setMoonY(visuals.moonY);
-                sunColorR.set(visuals.sunColor.r);
-                sunColorG.set(visuals.sunColor.g);
-                sunColorB.set(visuals.sunColor.b);
-                return;
-            }
-
-            if (!useRealTimeRef.current && deltaIsMeaningful) {
-                const visuals = calculateScrollBasedVisuals(latest);
-                setSunX(visuals.sunX);
-                setSunY(visuals.sunY);
-                setSunOpacity(visuals.sunOpacity);
-                setMoonOpacity(visuals.moonOpacity);
-                setMoonX(visuals.moonX);
-                setMoonY(visuals.moonY);
-                sunColorR.set(visuals.sunColor.r);
-                sunColorG.set(visuals.sunColor.g);
-                sunColorB.set(visuals.sunColor.b);
-            }
+            const visuals = calculateScrollBasedVisuals(latest);
+            sunXTarget.set(visuals.sunX);
+            sunYTarget.set(visuals.sunY);
+            sunOpacityTarget.set(visuals.sunOpacity);
+            moonOpacityTarget.set(visuals.moonOpacity);
+            moonXTarget.set(visuals.moonX);
+            moonYTarget.set(visuals.moonY);
+            sunColorR.set(visuals.sunColor.r);
+            sunColorG.set(visuals.sunColor.g);
+            sunColorB.set(visuals.sunColor.b);
         });
 
         return () => unsubscribe();
-    }, [progressSpring, scrollYProgress, sunColorR, sunColorG, sunColorB]);
+    }, [
+        moonOpacityTarget,
+        moonXTarget,
+        moonYTarget,
+        progressSpring,
+        scrollYProgress,
+        sunColorB,
+        sunColorG,
+        sunColorR,
+        sunOpacityTarget,
+        sunXTarget,
+        sunYTarget,
+    ]);
+
+    useEffect(() => {
+        const latest = Math.min(1, Math.max(0, progressSpring.get()));
+
+        if (shouldUseScrollMode && useRealTimeRef.current) {
+            console.log('[Prayer Visuals] Triggering scroll mode from sentinel');
+            setUseRealTime(false);
+            useRealTimeRef.current = false;
+            hasScrolledRef.current = true;
+
+            const visuals = calculateScrollBasedVisuals(latest);
+            sunXTarget.set(visuals.sunX);
+            sunYTarget.set(visuals.sunY);
+            sunOpacityTarget.set(visuals.sunOpacity);
+            moonOpacityTarget.set(visuals.moonOpacity);
+            moonXTarget.set(visuals.moonX);
+            moonYTarget.set(visuals.moonY);
+            sunColorR.set(visuals.sunColor.r);
+            sunColorG.set(visuals.sunColor.g);
+            sunColorB.set(visuals.sunColor.b);
+            return;
+        }
+
+        if (!shouldUseScrollMode && !useRealTimeRef.current) {
+            console.log('[Prayer Visuals] Returning to real-time mode from sentinel');
+            setUseRealTime(true);
+            useRealTimeRef.current = true;
+            hasScrolledRef.current = false;
+        }
+    }, [
+        moonOpacityTarget,
+        moonXTarget,
+        moonYTarget,
+        progressSpring,
+        shouldUseScrollMode,
+        sunColorB,
+        sunColorG,
+        sunColorR,
+        sunOpacityTarget,
+        sunXTarget,
+        sunYTarget,
+    ]);
 
     // Handle real-time updates based on actual prayer times
     useEffect(() => {
@@ -163,16 +189,29 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
             sunY: visuals.sunY,
         });
 
-        setSunX(visuals.sunX);
-        setSunY(visuals.sunY);
-        setSunOpacity(visuals.sunOpacity);
-        setMoonOpacity(visuals.moonOpacity);
-        setMoonX(visuals.moonX);
-        setMoonY(visuals.moonY);
+        sunXTarget.set(visuals.sunX);
+        sunYTarget.set(visuals.sunY);
+        sunOpacityTarget.set(visuals.sunOpacity);
+        moonOpacityTarget.set(visuals.moonOpacity);
+        moonXTarget.set(visuals.moonX);
+        moonYTarget.set(visuals.moonY);
         sunColorR.set(visuals.sunColor.r);
         sunColorG.set(visuals.sunColor.g);
         sunColorB.set(visuals.sunColor.b);
-    }, [currentDate, timings, useRealTime, sunColorR, sunColorG, sunColorB]);
+    }, [
+        currentDate,
+        moonOpacityTarget,
+        moonXTarget,
+        moonYTarget,
+        sunColorB,
+        sunColorG,
+        sunColorR,
+        sunOpacityTarget,
+        sunXTarget,
+        sunYTarget,
+        timings,
+        useRealTime,
+    ]);
 
     // Reset to real-time mode on mount/visibility change
     useEffect(() => {
