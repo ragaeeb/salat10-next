@@ -185,6 +185,11 @@ export default function SettingsPage() {
             <div className="relative z-10 flex w-full flex-col gap-10">
                 <header className="rounded-3xl border border-border/60 bg-card/90 p-8 shadow-lg backdrop-blur">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <Button asChild>
+                            <Link className="inline-flex items-center gap-2 self-start" href="/">
+                                <ArrowLeft className="h-4 w-4" /> Back to prayer times
+                            </Link>
+                        </Button>
                         <div className="space-y-2">
                             <h1 className="font-bold text-3xl text-foreground">Location &amp; calculation settings</h1>
                             <p className="text-muted-foreground text-sm">
@@ -192,11 +197,6 @@ export default function SettingsPage() {
                                 so the explorer page updates instantly.
                             </p>
                         </div>
-                        <Button asChild>
-                            <Link className="inline-flex items-center gap-2" href="/">
-                                <ArrowLeft className="h-4 w-4" /> Back to prayer times
-                            </Link>
-                        </Button>
                     </div>
                 </header>
 

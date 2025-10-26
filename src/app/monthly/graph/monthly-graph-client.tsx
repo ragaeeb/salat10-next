@@ -1,22 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useId, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
-import { PeriodNavigator } from '@/components/timetable/period-navigator';
 import { PrayerLineChart } from '@/components/timetable/graph/prayer-line-chart';
 import { Button } from '@/components/ui/button';
+import { useCalculationConfig } from '@/hooks/use-calculation-config';
 import { monthly } from '@/lib/calculator';
 import { salatLabels } from '@/lib/salat-labels';
-import { useCalculationConfig } from '@/hooks/use-calculation-config';
 
 import { clampMonth, parseInteger } from '../utils';
 
-export type MonthlyGraphClientProps = {
-    initialMonth: number;
-    initialYear: number;
-};
+export type MonthlyGraphClientProps = { initialMonth: number; initialYear: number };
 
 export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphClientProps) {
     const searchParams = useSearchParams();
@@ -135,9 +132,9 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
 
     if (!hydrated) {
         return (
-            <div className="grid min-h-[70vh] grid-rows-[auto,1fr] gap-6">
+            <div className="flex h-screen flex-col gap-6 p-6">
                 <div className="h-12 w-full animate-pulse rounded-md bg-muted/60" />
-                <div className="h-full min-h-[360px] w-full animate-pulse rounded-md bg-muted/40" />
+                <div className="h-full w-full flex-1 animate-pulse rounded-md bg-muted/40" />
             </div>
         );
     }
@@ -152,7 +149,7 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
                     id={selectId}
                     value={selectedEvent ?? eventOptions[0]?.event ?? ''}
                     onChange={(event) => handleEventChange(event.target.value)}
-                    className="inline-flex h-9 min-w-[8rem] items-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    className="inline-flex h-9 min-w-[8rem] items-center rounded-md border border-input bg-background px-3 font-medium text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
                     {eventOptions.map((option) => (
                         <option key={option.event} value={option.event}>
@@ -163,25 +160,44 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
             </>
         ) : null;
 
-    const addon = (
-        <div className="flex flex-wrap items-center gap-2">
-            <Button asChild size="sm" variant="outline">
-                <Link href={timetableHref}>Monthly timetable</Link>
-            </Button>
-            {eventSelect}
-        </div>
-    );
-
     return (
-        <div className="grid min-h-[70vh] grid-rows-[auto,1fr] gap-6">
-            <PeriodNavigator label={schedule?.label ?? ''} onNavigate={handleNavigate} addon={addon} />
-            <PrayerLineChart
-                schedule={schedule}
-                className="h-full min-h-[360px] w-full"
-                selectedEvent={selectedEvent ?? null}
-                onSelectedEventChange={handleEventChange}
-                onOptionsChange={handleOptionsChange}
-            />
+        <div className="flex h-screen flex-col gap-6 p-6">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/80 p-3 shadow">
+                <div className="flex items-center gap-2">
+                    <Button asChild size="sm" variant="outline">
+                        <Link href="/">
+                            <ChevronLeft className="mr-1 h-4 w-4" />
+                            Home
+                        </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline">
+                        <Link href={timetableHref}>Timetable</Link>
+                    </Button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => handleNavigate(-1)} aria-label="Previous month">
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <p className="min-w-[180px] text-center font-semibold text-foreground text-lg sm:text-xl">
+                        {schedule?.label ?? ''}
+                    </p>
+                    <Button variant="ghost" size="icon" onClick={() => handleNavigate(1)} aria-label="Next month">
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+
+                {eventSelect}
+            </div>
+            <div className="min-h-0 flex-1">
+                <PrayerLineChart
+                    schedule={schedule}
+                    className="h-full w-full"
+                    selectedEvent={selectedEvent ?? null}
+                    onSelectedEventChange={handleEventChange}
+                    onOptionsChange={handleOptionsChange}
+                />
+            </div>
         </div>
     );
 }

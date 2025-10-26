@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 
 import { Footer } from '@/components/footer';
-import { ThemeProvider } from '@/components/theme-provider';
 
 import './globals.css';
 
@@ -22,14 +21,12 @@ export const metadata: Metadata = { description: 'Salat10', title: 'Salat10' };
  */
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="en" className="dark">
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-                <ThemeProvider>
-                    <div className="flex min-h-screen flex-col">
-                        <main className="flex-1">{children}</main>
-                        <Footer />
-                    </div>
-                </ThemeProvider>
+                <div className="flex min-h-screen flex-col">
+                    <main className="flex-1">{children}</main>
+                    <Footer />
+                </div>
             </body>
         </html>
     );

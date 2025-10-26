@@ -8,15 +8,7 @@ import { cn } from '@/lib/utils';
 const animationProps: MotionProps = {
     animate: { '--x': '-100%' },
     initial: { '--x': '100%' },
-    transition: {
-        damping: 15,
-        mass: 2,
-        repeat: Infinity,
-        repeatDelay: 1,
-        repeatType: 'loop',
-        stiffness: 20,
-        type: 'spring',
-    },
+    transition: { damping: 15, mass: 2, stiffness: 20, type: 'spring' },
 };
 
 interface ShinyTextProps extends Omit<React.HTMLAttributes<HTMLElement>, keyof MotionProps>, MotionProps {
@@ -32,24 +24,14 @@ export const ShinyText = ({ children, className, ...props }: ShinyTextProps) => 
             {...props}
             style={{ '--x': '100%' } as any}
         >
+            <span className="relative block">{children}</span>
             <span
-                className="relative block bg-gradient-to-r from-[#084c66] via-[#0a5a7b] to-[#0b6d8c] bg-clip-text text-transparent"
+                className="absolute inset-0 z-10 block bg-gradient-to-r from-transparent via-white/60 to-transparent"
                 style={{
                     maskImage:
-                        'linear-gradient(-75deg, #000 calc(var(--x) + 20%), transparent calc(var(--x) + 30%), #000 calc(var(--x) + 100%))',
+                        'linear-gradient(-75deg, transparent calc(var(--x) + 15%), #000 calc(var(--x) + 25%), transparent calc(var(--x) + 35%))',
                     WebkitMaskImage:
-                        'linear-gradient(-75deg, #000 calc(var(--x) + 20%), transparent calc(var(--x) + 30%), #000 calc(var(--x) + 100%))',
-                }}
-            >
-                {children}
-            </span>
-            <span
-                className="absolute inset-0 z-10 block bg-gradient-to-r from-white/10 via-white/80 to-white/10"
-                style={{
-                    maskImage:
-                        'linear-gradient(-75deg, transparent calc(var(--x) + 20%), #000 calc(var(--x) + 25%), transparent calc(var(--x) + 30%))',
-                    WebkitMaskImage:
-                        'linear-gradient(-75deg, transparent calc(var(--x) + 20%), #000 calc(var(--x) + 25%), transparent calc(var(--x) + 30%))',
+                        'linear-gradient(-75deg, transparent calc(var(--x) + 15%), #000 calc(var(--x) + 25%), transparent calc(var(--x) + 35%))',
                 }}
             />
         </motion.span>

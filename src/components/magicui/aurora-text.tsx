@@ -2,8 +2,6 @@
 
 import type React from 'react';
 import { memo } from 'react';
-import { useThemeMode } from '@/components/theme-provider';
-import { ShinyText } from '../magicui/shiny-text';
 
 interface AuroraTextProps {
     children: React.ReactNode;
@@ -13,10 +11,7 @@ interface AuroraTextProps {
 }
 
 export const AuroraText = memo(({ children, className = '', colors, speed = 1 }: AuroraTextProps) => {
-    const { theme } = useThemeMode();
-
-    const defaultColors = theme === 'dark' ? ['#ffffff', '#bcd7ff', '#80b8ff'] : ['#084c66', '#0a5a7b', '#0b6d8c'];
-
+    const defaultColors = ['#ffffff', '#bcd7ff', '#80b8ff'];
     const finalColors = colors || defaultColors;
 
     const gradientStyle = {
@@ -29,17 +24,13 @@ export const AuroraText = memo(({ children, className = '', colors, speed = 1 }:
     return (
         <span className={`relative inline-block ${className}`}>
             <span className="sr-only">{children}</span>
-            {theme === 'dark' ? (
-                <span
-                    className="relative animate-aurora bg-[length:200%_auto] bg-clip-text text-transparent"
-                    style={gradientStyle}
-                    aria-hidden="true"
-                >
-                    {children}
-                </span>
-            ) : (
-                <ShinyText className={className}>{children}</ShinyText>
-            )}
+            <span
+                className="relative animate-aurora bg-[length:200%_auto] bg-clip-text text-transparent"
+                style={gradientStyle}
+                aria-hidden="true"
+            >
+                {children}
+            </span>
         </span>
     );
 });
