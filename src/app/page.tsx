@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ShootingStars } from '@/components/aceternity/shooting-stars';
 import { StarsBackground } from '@/components/aceternity/stars-background';
+import DebugLogger from '@/components/debug-logger';
 import { ShinyText } from '@/components/magicui/shiny-text';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QUOTE_WATERMARK, QuoteCard } from '@/components/prayer/quote-card';
@@ -138,6 +139,7 @@ export default function PrayerTimesPage() {
 
     return (
         <div className="relative min-h-[300vh]">
+            <DebugLogger />
             {/* Parallax sky background with solid color */}
             <motion.div
                 className="-z-30 pointer-events-none fixed inset-0"
