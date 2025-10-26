@@ -134,30 +134,6 @@ export default function PrayerTimesPage() {
                             }}
                         />
                         {/* Vertical light pillars - subtle beams */}
-                        <div
-                            className="absolute inset-0"
-                            style={{
-                                background: `
-                                    linear-gradient(0deg, 
-                                        rgba(120, 160, 255, 0.08) 0%, 
-                                        transparent 40%),
-                                    linear-gradient(0deg, 
-                                        transparent 0%, 
-                                        rgba(100, 140, 230, 0.05) 20%,
-                                        transparent 45%),
-                                    repeating-linear-gradient(90deg,
-                                        transparent 0px,
-                                        transparent 80px,
-                                        rgba(140, 180, 255, 0.04) 80px,
-                                        rgba(120, 160, 240, 0.08) 100px,
-                                        rgba(100, 140, 220, 0.06) 120px,
-                                        transparent 140px,
-                                        transparent 220px)
-                                `,
-                                maskImage: 'linear-gradient(to top, white 0%, white 50%, transparent 100%)',
-                                WebkitMaskImage: 'linear-gradient(to top, white 0%, white 50%, transparent 100%)',
-                            }}
-                        />
                         {/* Subtle shimmer overlay */}
                         <div
                             className="absolute inset-0"
