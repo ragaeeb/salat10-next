@@ -26,6 +26,8 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
     const [sunY, setSunY] = useState(80);
     const [sunOpacity, setSunOpacity] = useState(1);
     const [moonOpacity, setMoonOpacity] = useState(0);
+    const [moonX, setMoonX] = useState(20);
+    const [moonY, setMoonY] = useState(25);
 
     // Motion values for sun color
     const sunColorR = useMotionValue(255);
@@ -59,6 +61,8 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
                 setSunY(visuals.sunY);
                 setSunOpacity(visuals.sunOpacity);
                 setMoonOpacity(visuals.moonOpacity);
+                setMoonX(visuals.moonX);
+                setMoonY(visuals.moonY);
                 sunColorR.set(visuals.sunColor.r);
                 sunColorG.set(visuals.sunColor.g);
                 sunColorB.set(visuals.sunColor.b);
@@ -90,6 +94,8 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
         setSunY(visuals.sunY);
         setSunOpacity(visuals.sunOpacity);
         setMoonOpacity(visuals.moonOpacity);
+        setMoonX(visuals.moonX);
+        setMoonY(visuals.moonY);
         sunColorR.set(visuals.sunColor.r);
         sunColorG.set(visuals.sunColor.g);
         sunColorB.set(visuals.sunColor.b);
@@ -119,5 +125,17 @@ export function usePrayerVisuals({ currentDate, scrollYProgress, timings }: UseP
         };
     }, []);
 
-    return { currentPrayerInfo, moonOpacity, sunColorB, sunColorG, sunColorR, sunOpacity, sunX, sunY, useRealTime };
+    return {
+        currentPrayerInfo,
+        moonOpacity,
+        moonX,
+        moonY,
+        sunColorB,
+        sunColorG,
+        sunColorR,
+        sunOpacity,
+        sunX,
+        sunY,
+        useRealTime,
+    };
 }

@@ -55,8 +55,19 @@ export default function PrayerTimesPage() {
 
     const result = useMemo(() => daily(salatLabels, calculationArgs, currentDate), [calculationArgs, currentDate]);
 
-    const { currentPrayerInfo, sunX, sunY, sunOpacity, moonOpacity, sunColorR, sunColorG, sunColorB, useRealTime } =
-        usePrayerVisuals({ currentDate, scrollYProgress, timings: result.timings });
+    const {
+        currentPrayerInfo,
+        sunX,
+        sunY,
+        sunOpacity,
+        moonOpacity,
+        moonX,
+        moonY,
+        sunColorR,
+        sunColorG,
+        sunColorB,
+        useRealTime,
+    } = usePrayerVisuals({ currentDate, scrollYProgress, timings: result.timings });
 
     const sunBackgroundColor = useMotionTemplate`rgb(${sunColorR}, ${sunColorG}, ${sunColorB})`;
     const sunBoxShadow = useMotionTemplate`0 0 60px 20px rgba(${sunColorR}, ${sunColorG}, ${sunColorB}, 0.4)`;
@@ -178,9 +189,9 @@ export default function PrayerTimesPage() {
                     className="-z-10 pointer-events-none fixed h-16 w-16 rounded-full bg-gray-200"
                     style={{
                         boxShadow: '0 0 40px 15px rgba(200, 200, 220, 0.3)',
-                        left: '20%',
+                        left: `${moonX}%`,
                         opacity: moonOpacity,
-                        top: '25%',
+                        top: `${moonY}%`,
                         x: '-50%',
                         y: '-50%',
                     }}
