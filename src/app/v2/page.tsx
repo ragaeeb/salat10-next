@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowLeft, ChevronDown, ChevronUp, Settings2Icon } from 'lucide-react';
-import { motion, useMotionTemplate, useScroll } from 'motion/react';
+import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ShootingStars } from '@/components/aceternity/shooting-stars';
@@ -13,7 +13,8 @@ import { calculateScrollBasedVisuals, getPrayerInfoFromScroll } from '@/lib/pray
 import { salatLabels } from '@/lib/salat-labels';
 import { useSettings } from '@/lib/settings';
 
-const DAY_HEIGHT = 100000;
+const DAY_HEIGHT = 20000;
+const DEBUG_MODE = false;
 
 type DayData = { date: Date; timings: Array<{ event: string; value: Date; label: string }> };
 
@@ -29,56 +30,86 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
         sunrise: timings.find((t) => t.event === 'sunrise')?.value.getTime(),
     };
 
-    if (!times.fajr || !times.lastThirdOfTheNight) {
+    if (DEBUG_MODE) {
+        console.log('[Initial Scroll Position Debug]', {
+            asrTime: times.asr ? new Date(times.asr).toLocaleTimeString() : 'N/A',
+            dhuhrTime: times.dhuhr ? new Date(times.dhuhr).toLocaleTimeString() : 'N/A',
+            fajrTime: times.fajr ? new Date(times.fajr).toLocaleTimeString() : 'N/A',
+            ishaTime: times.isha ? new Date(times.isha).toLocaleTimeString() : 'N/A',
+            lastThirdTime: times.lastThirdOfTheNight ? new Date(times.lastThirdOfTheNight).toLocaleTimeString() : 'N/A',
+            maghribTime: times.maghrib ? new Date(times.maghrib).toLocaleTimeString() : 'N/A',
+            middleOfNightTime: times.middleOfTheNight ? new Date(times.middleOfTheNight).toLocaleTimeString() : 'N/A',
+            nowTime: new Date(now).toLocaleTimeString(),
+            sunriseTime: times.sunrise ? new Date(times.sunrise).toLocaleTimeString() : 'N/A',
+        });
+    }
+
+    if (!times.fajr || !times.sunrise || !times.dhuhr) {
+        if (DEBUG_MODE) {
+            console.log('[Initial Scroll] Missing critical times, defaulting to 0.5');
+        }
         return 0.5;
     }
 
-    if (now < times.fajr) {
-        if (times.lastThirdOfTheNight < times.fajr) {
+    let scrollPos = 0.5;
+    let period = 'unknown';
+
+    if (times.lastThirdOfTheNight && now < times.lastThirdOfTheNight) {
+        period = 'before lastThird';
+        scrollPos = 0;
+    } else if (now < times.fajr) {
+        if (times.lastThirdOfTheNight && times.lastThirdOfTheNight < times.fajr) {
             const progress = (now - times.lastThirdOfTheNight) / (times.fajr - times.lastThirdOfTheNight);
-            return Math.max(0, Math.min(0.1, progress * 0.1));
+            scrollPos = Math.max(0, Math.min(0.1, progress * 0.1));
+            period = 'lastThird to fajr';
+        } else {
+            scrollPos = 0;
+            period = 'before fajr';
         }
-        return 0;
-    }
-
-    if (times.sunrise && now < times.sunrise) {
+    } else if (now < times.sunrise) {
         const progress = (now - times.fajr) / (times.sunrise - times.fajr);
-        return 0.1 + progress * 0.1;
-    }
-
-    if (times.dhuhr && now < times.dhuhr) {
-        const progress = times.sunrise ? (now - times.sunrise) / (times.dhuhr - times.sunrise) : 0;
-        return 0.2 + progress * 0.3;
-    }
-
-    if (times.asr && now < times.asr) {
-        const progress = times.dhuhr ? (now - times.dhuhr) / (times.asr - times.dhuhr) : 0;
-        return 0.5 + progress * 0.15;
-    }
-
-    if (times.maghrib && now < times.maghrib) {
+        scrollPos = 0.1 + progress * 0.1;
+        period = 'fajr to sunrise';
+    } else if (now < times.dhuhr) {
+        const progress = (now - times.sunrise) / (times.dhuhr - times.sunrise);
+        scrollPos = 0.2 + progress * 0.3;
+        period = 'sunrise to dhuhr';
+    } else if (times.asr && now < times.asr) {
+        const progress = (now - times.dhuhr) / (times.asr - times.dhuhr);
+        scrollPos = 0.5 + progress * 0.15;
+        period = 'dhuhr to asr';
+    } else if (times.maghrib && now < times.maghrib) {
         const progress = times.asr ? (now - times.asr) / (times.maghrib - times.asr) : 0;
-        return 0.65 + progress * 0.15;
-    }
-
-    if (times.isha && now < times.isha) {
+        scrollPos = 0.65 + progress * 0.15;
+        period = 'asr to maghrib';
+    } else if (times.isha && now < times.isha) {
         const progress = times.maghrib ? (now - times.maghrib) / (times.isha - times.maghrib) : 0;
-        return 0.8 + progress * 0.07;
-    }
-
-    if (times.middleOfTheNight && now < times.middleOfTheNight) {
+        scrollPos = 0.8 + progress * 0.07;
+        period = 'maghrib to isha';
+    } else if (times.middleOfTheNight && now < times.middleOfTheNight) {
         const progress = times.isha ? (now - times.isha) / (times.middleOfTheNight - times.isha) : 0;
-        return 0.87 + progress * 0.06;
-    }
-
-    if (times.lastThirdOfTheNight && times.lastThirdOfTheNight > times.fajr && now < times.lastThirdOfTheNight) {
+        scrollPos = 0.87 + progress * 0.06;
+        period = 'isha to middleOfNight';
+    } else if (times.lastThirdOfTheNight && times.lastThirdOfTheNight > times.fajr && now < times.lastThirdOfTheNight) {
         const progress = times.middleOfTheNight
             ? (now - times.middleOfTheNight) / (times.lastThirdOfTheNight - times.middleOfTheNight)
             : 0;
-        return 0.93 + progress * 0.04;
+        scrollPos = 0.93 + progress * 0.04;
+        period = 'middleOfNight to lastThird';
+    } else {
+        scrollPos = 0.97;
+        period = 'after lastThird';
     }
 
-    return 0.97;
+    if (DEBUG_MODE) {
+        console.log('[Initial Scroll Position]', {
+            calculatedScrollTop: (scrollPos * DAY_HEIGHT).toFixed(0),
+            period,
+            scrollPos: scrollPos.toFixed(3),
+        });
+    }
+
+    return scrollPos;
 };
 
 const getDateAtOffset = (baseDate: Date, offsetDays: number): Date => {
@@ -87,16 +118,102 @@ const getDateAtOffset = (baseDate: Date, offsetDays: number): Date => {
     return date;
 };
 
+const getSkyColor = (scrollProgress: number): string => {
+    const skyColors = [
+        'rgba(10, 15, 35, 0.4)',
+        'rgba(15, 20, 45, 0.38)',
+        'rgba(26, 26, 46, 0.35)',
+        'rgba(40, 50, 75, 0.35)',
+        'rgba(60, 80, 110, 0.4)',
+        'rgba(100, 120, 150, 0.45)',
+        'rgba(135, 206, 235, 0.3)',
+        'rgba(160, 220, 255, 0.35)',
+        'rgba(255, 165, 0, 0.3)',
+        'rgba(255, 140, 0, 0.4)',
+        'rgba(138, 73, 107, 0.3)',
+        'rgba(40, 40, 60, 0.6)',
+        'rgba(5, 5, 15, 0.95)',
+        'rgba(0, 0, 0, 0.98)',
+        'rgba(0, 0, 0, 0.98)',
+    ];
+
+    const stops = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.5, 0.55, 0.75, 0.82, 0.87, 0.9, 0.93, 0.97, 1];
+    let index = 0;
+    for (let i = 0; i < stops.length - 1; i++) {
+        if (scrollProgress >= stops[i] && scrollProgress < stops[i + 1]) {
+            index = i;
+            break;
+        }
+    }
+
+    return skyColors[index];
+};
+
+const getStarsOpacity = (scrollProgress: number): number => {
+    if (scrollProgress < 0.85) {
+        return 0;
+    }
+    if (scrollProgress < 0.9) {
+        return ((scrollProgress - 0.85) / 0.05) * 0.5;
+    }
+    if (scrollProgress < 0.93) {
+        return 0.5 + ((scrollProgress - 0.9) / 0.03) * 0.5;
+    }
+    return 1;
+};
+
+const getFajrGradientOpacity = (scrollProgress: number): number => {
+    if (scrollProgress < 0.08) {
+        return 0;
+    }
+    if (scrollProgress < 0.12) {
+        return ((scrollProgress - 0.08) / 0.04) * 0.3;
+    }
+    if (scrollProgress < 0.2) {
+        return 0.3 + ((scrollProgress - 0.12) / 0.08) * 0.7;
+    }
+    if (scrollProgress < 0.25) {
+        return 1 - ((scrollProgress - 0.2) / 0.05) * 0.2;
+    }
+    if (scrollProgress < 0.27) {
+        return 0.8 - ((scrollProgress - 0.25) / 0.02) * 0.8;
+    }
+    return 0;
+};
+
+const getLightRaysOpacity = (scrollProgress: number): number => {
+    if (scrollProgress < 0.02) {
+        return 0.8 + (scrollProgress / 0.02) * 0.2;
+    }
+    if (scrollProgress < 0.08) {
+        return 1 - ((scrollProgress - 0.02) / 0.06) * 0.7;
+    }
+    if (scrollProgress < 0.1) {
+        return 0.3 - ((scrollProgress - 0.08) / 0.02) * 0.3;
+    }
+    if (scrollProgress < 0.93) {
+        return 0;
+    }
+    if (scrollProgress < 0.95) {
+        return ((scrollProgress - 0.93) / 0.02) * 0.3;
+    }
+    if (scrollProgress < 0.98) {
+        return 0.3 + ((scrollProgress - 0.95) / 0.03) * 0.5;
+    }
+    return 0.8 + ((scrollProgress - 0.98) / 0.02) * 0.2;
+};
+
 export default function ParallaxPage() {
     const { settings, hydrated, numeric } = useSettings();
     const containerRef = useRef<HTMLDivElement>(null);
     const { scrollY } = useScroll();
     const [days, setDays] = useState<DayData[]>([]);
-    const [scrollProgress, setScrollProgress] = useState(0);
     const [hasInitialized, setHasInitialized] = useState(false);
     const [showLoadPrev, setShowLoadPrev] = useState(false);
     const [showLoadNext, setShowLoadNext] = useState(false);
+    const [currentDayIndex, setCurrentDayIndex] = useState(0);
     const lastScrollY = useRef(0);
+    const currentProgressRef = useRef(0);
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
 
@@ -148,8 +265,25 @@ export default function ParallaxPage() {
         }
 
         const now = new Date().getTime();
+
+        if (DEBUG_MODE) {
+            console.log('[Initialization Debug]', {
+                currentTime: new Date(now).toLocaleTimeString(),
+                dayDate: today.date.toLocaleDateString(),
+                timingsCount: today.timings.length,
+            });
+        }
+
         const position = getPrayerScrollPosition(now, today.timings);
         const scrollTop = position * DAY_HEIGHT;
+
+        if (DEBUG_MODE) {
+            console.log('[Setting Initial Scroll]', {
+                dayHeight: DAY_HEIGHT,
+                position: position.toFixed(3),
+                scrollTop: scrollTop.toFixed(0),
+            });
+        }
 
         window.history.scrollRestoration = 'manual';
         window.scrollTo({ behavior: 'instant', left: 0, top: scrollTop });
@@ -161,6 +295,10 @@ export default function ParallaxPage() {
         };
     }, [hydrated, hasInitialized, days]);
 
+    const totalHeight = days.length * DAY_HEIGHT;
+
+    const scrollProgress = useTransform(scrollY, (latest) => (latest % DAY_HEIGHT) / DAY_HEIGHT);
+
     useEffect(() => {
         if (!hasInitialized || days.length === 0) {
             return;
@@ -169,21 +307,24 @@ export default function ParallaxPage() {
         const unsubscribe = scrollY.on('change', (latest) => {
             lastScrollY.current = latest;
 
-            const totalHeight = days.length * DAY_HEIGHT;
-            const dayProgress = (latest % DAY_HEIGHT) / DAY_HEIGHT;
-            setScrollProgress(dayProgress);
+            const dayIndex = Math.floor(latest / DAY_HEIGHT);
+            if (dayIndex !== currentDayIndex) {
+                setCurrentDayIndex(dayIndex);
+            }
+
+            currentProgressRef.current = (latest % DAY_HEIGHT) / DAY_HEIGHT;
 
             const distanceFromTop = latest;
             const distanceFromBottom = totalHeight - latest - window.innerHeight;
 
-            setShowLoadPrev(distanceFromTop < 5000);
-            setShowLoadNext(distanceFromBottom < 5000);
+            setShowLoadPrev(distanceFromTop < 3000);
+            setShowLoadNext(distanceFromBottom < 3000);
         });
 
         return () => unsubscribe();
-    }, [scrollY, hasInitialized, days]);
+    }, [scrollY, hasInitialized, days, totalHeight, currentDayIndex]);
 
-    const handleLoadPrev = () => {
+    const handleLoadPrev = useCallback(() => {
         setDays((prev) => {
             const firstDate = prev[0].date;
             const newDate = getDateAtOffset(firstDate, -1);
@@ -194,92 +335,70 @@ export default function ParallaxPage() {
         requestAnimationFrame(() => {
             window.scrollTo({ behavior: 'instant', left: 0, top: lastScrollY.current + DAY_HEIGHT });
         });
-    };
+    }, [loadDay]);
 
-    const handleLoadNext = () => {
+    const handleLoadNext = useCallback(() => {
         setDays((prev) => {
             const lastDate = prev[prev.length - 1].date;
             const newDate = getDateAtOffset(lastDate, 1);
             const newDay = loadDay(newDate);
             return [...prev, newDay];
         });
-    };
+    }, [loadDay]);
 
-    const visuals = useMemo(() => calculateScrollBasedVisuals(scrollProgress), [scrollProgress]);
-    const prayerInfo = useMemo(() => getPrayerInfoFromScroll(scrollProgress), [scrollProgress]);
+    const skyColor = useTransform(scrollProgress, getSkyColor);
+    const starsOpacity = useTransform(scrollProgress, getStarsOpacity);
+    const fajrGradientOpacity = useTransform(scrollProgress, getFajrGradientOpacity);
+    const lightRaysOpacity = useTransform(scrollProgress, getLightRaysOpacity);
 
-    const sunBackgroundColor = useMotionTemplate`rgb(${visuals.sunColor.r}, ${visuals.sunColor.g}, ${visuals.sunColor.b})`;
-    const sunBoxShadow = useMotionTemplate`0 0 60px 20px rgba(${visuals.sunColor.r}, ${visuals.sunColor.g}, ${visuals.sunColor.b}, 0.4)`;
+    const sunX = useTransform(scrollProgress, (p) => calculateScrollBasedVisuals(p).sunX);
+    const sunY = useTransform(scrollProgress, (p) => calculateScrollBasedVisuals(p).sunY);
+    const sunOpacity = useTransform(scrollProgress, (p) => calculateScrollBasedVisuals(p).sunOpacity);
+    const sunColorR = useTransform(scrollProgress, (p) => calculateScrollBasedVisuals(p).sunColor.r);
+    const sunColorG = useTransform(scrollProgress, (p) => calculateScrollBasedVisuals(p).sunColor.g);
+    const sunColorB = useTransform(scrollProgress, (p) => calculateScrollBasedVisuals(p).sunColor.b);
 
-    const { skyColor, starsOpacity, fajrGradientOpacity, lightRaysOpacity } = useMemo(() => {
-        const skyColors = [
-            'rgba(10, 15, 35, 0.4)',
-            'rgba(15, 20, 45, 0.38)',
-            'rgba(26, 26, 46, 0.35)',
-            'rgba(40, 50, 75, 0.35)',
-            'rgba(60, 80, 110, 0.4)',
-            'rgba(100, 120, 150, 0.45)',
-            'rgba(135, 206, 235, 0.3)',
-            'rgba(160, 220, 255, 0.35)',
-            'rgba(255, 165, 0, 0.3)',
-            'rgba(255, 140, 0, 0.4)',
-            'rgba(138, 73, 107, 0.3)',
-            'rgba(40, 40, 60, 0.6)',
-            'rgba(5, 5, 15, 0.95)',
-            'rgba(0, 0, 0, 0.98)',
-            'rgba(0, 0, 0, 0.98)',
-        ];
+    const sunBackgroundColor = useTransform([sunColorR, sunColorG, sunColorB], ([r, g, b]) => `rgb(${r}, ${g}, ${b})`);
+    const sunBoxShadow = useTransform(
+        [sunColorR, sunColorG, sunColorB],
+        ([r, g, b]) => `0 0 60px 20px rgba(${r}, ${g}, ${b}, 0.4)`,
+    );
+    const sunLeftPosition = useTransform(sunX, (x) => `${x}%`);
+    const sunTopPosition = useTransform(sunY, (y) => `${y}%`);
 
-        const stops = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.5, 0.55, 0.75, 0.82, 0.87, 0.9, 0.93, 0.97, 1];
-        let index = 0;
-        for (let i = 0; i < stops.length - 1; i++) {
-            if (scrollProgress >= stops[i] && scrollProgress < stops[i + 1]) {
-                index = i;
-                break;
+    const moonX = useTransform(scrollProgress, (p) => calculateScrollBasedVisuals(p).moonX);
+    const moonY = useTransform(scrollProgress, (p) => calculateScrollBasedVisuals(p).moonY);
+    const moonOpacity = useTransform(scrollProgress, (p) => calculateScrollBasedVisuals(p).moonOpacity);
+
+    const moonLeftPosition = useTransform(moonX, (x) => `${x}%`);
+    const moonTopPosition = useTransform(moonY, (y) => `${y}%`);
+
+    const currentDayTimings = useMemo(() => {
+        return days[currentDayIndex]?.timings || [];
+    }, [days, currentDayIndex]);
+
+    const [prayerInfo, setPrayerInfo] = useState(() => getPrayerInfoFromScroll(0, currentDayTimings));
+
+    useEffect(() => {
+        const unsubscribe = scrollProgress.on('change', (progress) => {
+            if (DEBUG_MODE) {
+                const visuals = calculateScrollBasedVisuals(progress);
+                console.log('[Parallax Debug]', {
+                    moonOpacity: visuals.moonOpacity.toFixed(3),
+                    progress: progress.toFixed(3),
+                    sunColor: visuals.sunColor,
+                    sunOpacity: visuals.sunOpacity.toFixed(3),
+                    sunX: visuals.sunX.toFixed(1),
+                    sunY: visuals.sunY.toFixed(1),
+                });
             }
-        }
 
-        const starsOpacity =
-            scrollProgress < 0.85
-                ? 0
-                : scrollProgress < 0.9
-                  ? ((scrollProgress - 0.85) / 0.05) * 0.5
-                  : scrollProgress < 0.93
-                    ? 0.5 + ((scrollProgress - 0.9) / 0.03) * 0.5
-                    : 1;
+            const info = getPrayerInfoFromScroll(progress, currentDayTimings);
+            setPrayerInfo(info);
+        });
 
-        const fajrGradientOpacity =
-            scrollProgress < 0.08
-                ? 0
-                : scrollProgress < 0.12
-                  ? ((scrollProgress - 0.08) / 0.04) * 0.3
-                  : scrollProgress < 0.2
-                    ? 0.3 + ((scrollProgress - 0.12) / 0.08) * 0.7
-                    : scrollProgress < 0.25
-                      ? 1 - ((scrollProgress - 0.2) / 0.05) * 0.2
-                      : scrollProgress < 0.27
-                        ? 0.8 - ((scrollProgress - 0.25) / 0.02) * 0.8
-                        : 0;
-
-        const lightRaysOpacity =
-            scrollProgress < 0.02
-                ? 0.8 + (scrollProgress / 0.02) * 0.2
-                : scrollProgress < 0.08
-                  ? 1 - ((scrollProgress - 0.02) / 0.06) * 0.7
-                  : scrollProgress < 0.1
-                    ? 0.3 - ((scrollProgress - 0.08) / 0.02) * 0.3
-                    : scrollProgress < 0.93
-                      ? 0
-                      : scrollProgress < 0.95
-                        ? ((scrollProgress - 0.93) / 0.02) * 0.3
-                        : scrollProgress < 0.98
-                          ? 0.3 + ((scrollProgress - 0.95) / 0.03) * 0.5
-                          : 0.8 + ((scrollProgress - 0.98) / 0.02) * 0.2;
-
-        return { fajrGradientOpacity, lightRaysOpacity, skyColor: skyColors[index], starsOpacity };
-    }, [scrollProgress]);
-
-    const totalHeight = days.length * DAY_HEIGHT;
+        return () => unsubscribe();
+    }, [scrollProgress, currentDayTimings]);
 
     if (!hydrated) {
         return null;
@@ -345,30 +464,28 @@ export default function ParallaxPage() {
                 />
 
                 <motion.div
-                    className="pointer-events-none absolute z-30 h-20 w-20 rounded-full will-change-transform"
+                    className={`pointer-events-none absolute z-30 h-20 w-20 rounded-full ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}
                     style={{
                         backgroundColor: sunBackgroundColor,
                         boxShadow: sunBoxShadow,
-                        left: `${visuals.sunX}%`,
-                        opacity: visuals.sunOpacity,
-                        top: `${visuals.sunY}%`,
-                        transform: 'translate(-50%, -50%)',
+                        left: sunLeftPosition,
+                        opacity: sunOpacity,
+                        top: sunTopPosition,
+                        transform: 'translate(-50%, -50%) translate3d(0, 0, 0)',
+                        willChange: 'transform, opacity',
                     }}
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity }}
                 />
 
                 <motion.div
-                    className="pointer-events-none absolute z-30 h-16 w-16 rounded-full bg-gray-200 will-change-transform"
+                    className={`pointer-events-none absolute z-30 h-16 w-16 rounded-full bg-gray-200 ${DEBUG_MODE ? 'border-2 border-blue-500' : ''}`}
                     style={{
                         boxShadow: '0 0 40px 15px rgba(200, 200, 220, 0.3)',
-                        left: `${visuals.moonX}%`,
-                        opacity: visuals.moonOpacity,
-                        top: `${visuals.moonY}%`,
-                        transform: 'translate(-50%, -50%)',
+                        left: moonLeftPosition,
+                        opacity: moonOpacity,
+                        top: moonTopPosition,
+                        transform: 'translate(-50%, -50%) translate3d(0, 0, 0)',
+                        willChange: 'transform, opacity',
                     }}
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
                 />
 
                 <div className="-translate-x-1/2 -translate-y-1/2 pointer-events-none absolute top-1/2 left-1/2 z-25">
@@ -378,6 +495,16 @@ export default function ParallaxPage() {
                     >
                         {prayerInfo.label}
                     </ShinyText>
+                    {prayerInfo.time && (
+                        <motion.div
+                            key={prayerInfo.time}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-4 text-center font-semibold text-[clamp(1.5rem,4vw,2.5rem)] text-foreground/50"
+                        >
+                            {prayerInfo.time}
+                        </motion.div>
+                    )}
                 </div>
 
                 <div className="absolute inset-0 z-15 bg-[radial-gradient(circle_at_top,_rgba(135,206,235,0.4),_transparent_65%)]" />
