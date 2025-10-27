@@ -31,17 +31,27 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
     };
 
     if (DEBUG_MODE) {
-        console.log('[Initial Scroll Position Debug]', {
-            asrTime: times.asr ? new Date(times.asr).toLocaleTimeString() : 'N/A',
-            dhuhrTime: times.dhuhr ? new Date(times.dhuhr).toLocaleTimeString() : 'N/A',
-            fajrTime: times.fajr ? new Date(times.fajr).toLocaleTimeString() : 'N/A',
-            ishaTime: times.isha ? new Date(times.isha).toLocaleTimeString() : 'N/A',
-            lastThirdTime: times.lastThirdOfTheNight ? new Date(times.lastThirdOfTheNight).toLocaleTimeString() : 'N/A',
-            maghribTime: times.maghrib ? new Date(times.maghrib).toLocaleTimeString() : 'N/A',
-            middleOfNightTime: times.middleOfTheNight ? new Date(times.middleOfTheNight).toLocaleTimeString() : 'N/A',
-            nowTime: new Date(now).toLocaleTimeString(),
-            sunriseTime: times.sunrise ? new Date(times.sunrise).toLocaleTimeString() : 'N/A',
-        });
+        console.log(
+            '[Initial Scroll Position Debug]',
+            'nowTime:',
+            new Date(now).toLocaleTimeString(),
+            'fajrTime:',
+            times.fajr ? new Date(times.fajr).toLocaleTimeString() : 'N/A',
+            'sunriseTime:',
+            times.sunrise ? new Date(times.sunrise).toLocaleTimeString() : 'N/A',
+            'dhuhrTime:',
+            times.dhuhr ? new Date(times.dhuhr).toLocaleTimeString() : 'N/A',
+            'asrTime:',
+            times.asr ? new Date(times.asr).toLocaleTimeString() : 'N/A',
+            'maghribTime:',
+            times.maghrib ? new Date(times.maghrib).toLocaleTimeString() : 'N/A',
+            'ishaTime:',
+            times.isha ? new Date(times.isha).toLocaleTimeString() : 'N/A',
+            'middleOfNightTime:',
+            times.middleOfTheNight ? new Date(times.middleOfTheNight).toLocaleTimeString() : 'N/A',
+            'lastThirdTime:',
+            times.lastThirdOfTheNight ? new Date(times.lastThirdOfTheNight).toLocaleTimeString() : 'N/A',
+        );
     }
 
     if (!times.fajr || !times.sunrise || !times.dhuhr) {
@@ -54,17 +64,16 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
     let scrollPos = 0.5;
     let period = 'unknown';
 
-    if (times.lastThirdOfTheNight && now < times.lastThirdOfTheNight) {
-        period = 'before lastThird';
-        scrollPos = 0;
-    } else if (now < times.fajr) {
-        if (times.lastThirdOfTheNight && times.lastThirdOfTheNight < times.fajr) {
+    // Check if we're before fajr (includes last third of night period)
+    if (now < times.fajr) {
+        // Check if last third is before fajr (same day) and we're in that period
+        if (times.lastThirdOfTheNight && times.lastThirdOfTheNight < times.fajr && now >= times.lastThirdOfTheNight) {
             const progress = (now - times.lastThirdOfTheNight) / (times.fajr - times.lastThirdOfTheNight);
             scrollPos = Math.max(0, Math.min(0.1, progress * 0.1));
             period = 'lastThird to fajr';
         } else {
             scrollPos = 0;
-            period = 'before fajr';
+            period = 'before fajr (or after midnight before lastThird)';
         }
     } else if (now < times.sunrise) {
         const progress = (now - times.fajr) / (times.sunrise - times.fajr);
@@ -90,7 +99,8 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
         const progress = times.isha ? (now - times.isha) / (times.middleOfTheNight - times.isha) : 0;
         scrollPos = 0.87 + progress * 0.06;
         period = 'isha to middleOfNight';
-    } else if (times.lastThirdOfTheNight && times.lastThirdOfTheNight > times.fajr && now < times.lastThirdOfTheNight) {
+    } else if (times.lastThirdOfTheNight && now < times.lastThirdOfTheNight) {
+        // Last third is after midnight but before fajr (next day)
         const progress = times.middleOfTheNight
             ? (now - times.middleOfTheNight) / (times.lastThirdOfTheNight - times.middleOfTheNight)
             : 0;
@@ -102,11 +112,15 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
     }
 
     if (DEBUG_MODE) {
-        console.log('[Initial Scroll Position]', {
-            calculatedScrollTop: (scrollPos * DAY_HEIGHT).toFixed(0),
+        console.log(
+            '[Initial Scroll Position]',
+            'period:',
             period,
-            scrollPos: scrollPos.toFixed(3),
-        });
+            'scrollPos:',
+            scrollPos.toFixed(3),
+            'calculatedScrollTop:',
+            (scrollPos * DAY_HEIGHT).toFixed(0),
+        );
     }
 
     return scrollPos;
@@ -267,22 +281,30 @@ export default function ParallaxPage() {
         const now = new Date().getTime();
 
         if (DEBUG_MODE) {
-            console.log('[Initialization Debug]', {
-                currentTime: new Date(now).toLocaleTimeString(),
-                dayDate: today.date.toLocaleDateString(),
-                timingsCount: today.timings.length,
-            });
+            console.log(
+                '[Initialization Debug]',
+                'currentTime:',
+                new Date(now).toLocaleTimeString(),
+                'dayDate:',
+                today.date.toLocaleDateString(),
+                'timingsCount:',
+                today.timings.length,
+            );
         }
 
         const position = getPrayerScrollPosition(now, today.timings);
         const scrollTop = position * DAY_HEIGHT;
 
         if (DEBUG_MODE) {
-            console.log('[Setting Initial Scroll]', {
-                dayHeight: DAY_HEIGHT,
-                position: position.toFixed(3),
-                scrollTop: scrollTop.toFixed(0),
-            });
+            console.log(
+                '[Setting Initial Scroll]',
+                'position:',
+                position.toFixed(3),
+                'scrollTop:',
+                scrollTop.toFixed(0),
+                'dayHeight:',
+                DAY_HEIGHT,
+            );
         }
 
         window.history.scrollRestoration = 'manual';
@@ -383,14 +405,21 @@ export default function ParallaxPage() {
         const unsubscribe = scrollProgress.on('change', (progress) => {
             if (DEBUG_MODE) {
                 const visuals = calculateScrollBasedVisuals(progress);
-                console.log('[Parallax Debug]', {
-                    moonOpacity: visuals.moonOpacity.toFixed(3),
-                    progress: progress.toFixed(3),
-                    sunColor: visuals.sunColor,
-                    sunOpacity: visuals.sunOpacity.toFixed(3),
-                    sunX: visuals.sunX.toFixed(1),
-                    sunY: visuals.sunY.toFixed(1),
-                });
+                console.log(
+                    '[Parallax Debug]',
+                    'progress:',
+                    progress.toFixed(3),
+                    'sunX:',
+                    visuals.sunX.toFixed(1),
+                    'sunY:',
+                    visuals.sunY.toFixed(1),
+                    'sunOpacity:',
+                    visuals.sunOpacity.toFixed(3),
+                    'sunColor:',
+                    visuals.sunColor,
+                    'moonOpacity:',
+                    visuals.moonOpacity.toFixed(3),
+                );
             }
 
             const info = getPrayerInfoFromScroll(progress, currentDayTimings);
