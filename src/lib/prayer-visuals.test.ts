@@ -2,47 +2,53 @@ import { describe, expect, it } from 'bun:test';
 import { calculateRealTimeVisuals, calculateScrollBasedVisuals, getPrayerInfoFromScroll } from './prayer-visuals';
 
 describe('getPrayerInfoFromScroll', () => {
-    it('should return last third of night for early progress', () => {
+    it('should return fajr for early progress', () => {
         const result = getPrayerInfoFromScroll(0.05);
-        expect(result.event).toBe('lastThirdOfTheNight');
-        expect(result.label).toBe('Last Third of the Night');
+        expect(result.event).toBe('fajr');
+        expect(result.label).toBe('Fajr');
     });
 
-    it('should return fajr for 0.1-0.2 progress', () => {
-        expect(getPrayerInfoFromScroll(0.15).event).toBe('fajr');
+    it('should return sunrise for 0.1-0.2 progress', () => {
+        expect(getPrayerInfoFromScroll(0.15).event).toBe('sunrise');
     });
 
-    it('should return sunrise for 0.2 and < 0.5 progress', () => {
-        expect(getPrayerInfoFromScroll(0.25).event).toBe('sunrise');
-        expect(getPrayerInfoFromScroll(0.4).event).toBe('sunrise');
+    it('should return dhuhr for 0.2-0.5 progress', () => {
+        expect(getPrayerInfoFromScroll(0.25).event).toBe('dhuhr');
+        expect(getPrayerInfoFromScroll(0.4).event).toBe('dhuhr');
     });
 
-    it('should return dhuhr for >= 0.5 progress', () => {
-        expect(getPrayerInfoFromScroll(0.5).event).toBe('dhuhr');
+    it('should return asr for 0.5-0.65 progress', () => {
+        expect(getPrayerInfoFromScroll(0.55).event).toBe('asr');
     });
 
-    it('should return asr for 0.6-0.8 progress', () => {
-        expect(getPrayerInfoFromScroll(0.7).event).toBe('asr');
+    it('should return maghrib for 0.65-0.8 progress', () => {
+        expect(getPrayerInfoFromScroll(0.7).event).toBe('maghrib');
     });
 
-    it('should return maghrib for 0.8-0.9 progress', () => {
-        expect(getPrayerInfoFromScroll(0.85).event).toBe('maghrib');
+    it('should return isha for 0.8-0.87 progress', () => {
+        expect(getPrayerInfoFromScroll(0.85).event).toBe('isha');
     });
 
-    it('should return isha then nights for late progress', () => {
-        expect(getPrayerInfoFromScroll(0.9).event).toBe('isha');
-        expect(getPrayerInfoFromScroll(0.95).event).toBe('halfNight');
+    it('should return half night then last third for late progress', () => {
+        expect(getPrayerInfoFromScroll(0.9).event).toBe('middleOfTheNight');
+        expect(getPrayerInfoFromScroll(0.95).event).toBe('lastThirdOfTheNight');
         expect(getPrayerInfoFromScroll(1.0).event).toBe('lastThirdOfTheNight');
     });
 });
 
 describe('calculateScrollBasedVisuals', () => {
-    it('sun starts at right side at progress 0', () => {
+    it('sun starts rising at progress 0 (fajr)', () => {
         const result = calculateScrollBasedVisuals(0);
         expect(result.sunX).toBe(90);
         expect(result.sunY).toBe(80);
         expect(result.sunOpacity).toBe(0);
         expect(result.moonOpacity).toBe(0.8);
+    });
+
+    it('sun is visible after fajr at progress 0.1', () => {
+        const result = calculateScrollBasedVisuals(0.1);
+        expect(result.sunOpacity).toBe(1);
+        expect(result.moonOpacity).toBe(0);
     });
 
     it('sun moves to center at progress 0.5', () => {
@@ -58,38 +64,38 @@ describe('calculateScrollBasedVisuals', () => {
         expect(result.sunY).toBe(80);
     });
 
-    it('sun is yellow before 0.7 progress', () => {
-        const result = calculateScrollBasedVisuals(0.6);
+    it('sun is yellow before 0.6 progress', () => {
+        const result = calculateScrollBasedVisuals(0.5);
         expect(result.sunColor).toEqual({ b: 0, g: 215, r: 255 });
     });
 
-    it('sun starts transitioning to orange at 0.7 progress', () => {
-        const result = calculateScrollBasedVisuals(0.7);
+    it('sun starts transitioning to orange at 0.6 progress', () => {
+        const result = calculateScrollBasedVisuals(0.6);
         expect(result.sunColor.r).toBe(255);
         expect(result.sunColor.g).toBe(215); // Still yellow at start
         expect(result.sunColor.b).toBe(0);
     });
 
-    it('sun is transitioning (gradient) at 0.75 progress', () => {
-        const result = calculateScrollBasedVisuals(0.75);
+    it('sun is transitioning (gradient) at 0.615 progress', () => {
+        const result = calculateScrollBasedVisuals(0.615);
         expect(result.sunColor.r).toBe(255);
-        expect(result.sunColor.g).toBeCloseTo(215, 0); // Halfway: 215 - 0.5 * 75
+        expect(result.sunColor.g).toBeCloseTo(178, 0); // Halfway: 215 - 0.5 * 75
         expect(result.sunColor.b).toBe(0);
     });
 
-    it('sun is fully orange at 0.8+ progress', () => {
-        const result = calculateScrollBasedVisuals(0.8);
+    it('sun is fully orange at 0.63+ progress', () => {
+        const result = calculateScrollBasedVisuals(0.65);
         expect(result.sunColor).toEqual({ b: 0, g: 140, r: 255 });
     });
 
-    it('sun fades out during maghrib transition (0.75-0.85)', () => {
-        const result = calculateScrollBasedVisuals(0.8);
+    it('sun fades out during maghrib transition (0.63-0.72)', () => {
+        const result = calculateScrollBasedVisuals(0.67);
         expect(result.sunOpacity).toBeLessThan(1);
         expect(result.moonOpacity).toBeGreaterThan(0);
     });
 
-    it('sun completely hidden after maghrib (0.85+)', () => {
-        const result = calculateScrollBasedVisuals(0.9);
+    it('sun completely hidden after maghrib (0.72+)', () => {
+        const result = calculateScrollBasedVisuals(0.75);
         expect(result.sunOpacity).toBe(0);
         expect(result.moonOpacity).toBe(0.8);
     });

@@ -18,6 +18,7 @@ const DEBUG_MODE = false;
 
 type DayData = { date: Date; timings: Array<{ event: string; value: Date; label: string }> };
 
+// Replace the getPrayerScrollPosition function with this:
 const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; value: Date }>) => {
     const times = {
         asr: timings.find((t) => t.event === 'asr')?.value.getTime(),
@@ -56,32 +57,43 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
 
     if (!times.fajr || !times.sunrise || !times.dhuhr) {
         if (DEBUG_MODE) {
-            console.log('[Initial Scroll] Missing critical times, defaulting to 0.5');
+            console.log('[Initial Scroll] Missing critical times, defaulting to 0.05');
         }
-        return 0.5;
+        return 0.05;
     }
 
-    let scrollPos = 0.5;
+    let scrollPos = 0.05;
     let period = 'unknown';
 
-    // Check if we're before fajr (includes last third of night period)
-    if (now < times.fajr) {
-        // Check if last third is before fajr (same day) and we're in that period
-        if (times.lastThirdOfTheNight && times.lastThirdOfTheNight < times.fajr && now >= times.lastThirdOfTheNight) {
-            const progress = (now - times.lastThirdOfTheNight) / (times.fajr - times.lastThirdOfTheNight);
-            scrollPos = Math.max(0, Math.min(0.1, progress * 0.1));
-            period = 'lastThird to fajr';
-        } else {
-            scrollPos = 0;
-            period = 'before fajr (or after midnight before lastThird)';
-        }
+    // Check if we're in the night periods (after isha or before fajr)
+    if (times.isha && times.middleOfTheNight && now >= times.isha && now < times.middleOfTheNight) {
+        const progress = (now - times.isha) / (times.middleOfTheNight - times.isha);
+        scrollPos = 0.87 + progress * 0.06;
+        period = 'isha to middleOfNight';
+    } else if (
+        times.middleOfTheNight &&
+        times.lastThirdOfTheNight &&
+        now >= times.middleOfTheNight &&
+        now < times.lastThirdOfTheNight
+    ) {
+        const progress = (now - times.middleOfTheNight) / (times.lastThirdOfTheNight - times.middleOfTheNight);
+        scrollPos = 0.93 + progress * 0.04;
+        period = 'middleOfNight to lastThird';
+    } else if (times.lastThirdOfTheNight && now >= times.lastThirdOfTheNight && now < times.fajr) {
+        const progress = (now - times.lastThirdOfTheNight) / (times.fajr - times.lastThirdOfTheNight);
+        scrollPos = 0.97 + progress * 0.03;
+        period = 'lastThird to fajr (wrapping to top)';
+    } else if (now < times.fajr) {
+        // Before fajr but not in lastThird period (edge case)
+        scrollPos = 0;
+        period = 'before fajr';
     } else if (now < times.sunrise) {
         const progress = (now - times.fajr) / (times.sunrise - times.fajr);
-        scrollPos = 0.1 + progress * 0.1;
+        scrollPos = 0.0 + progress * 0.1;
         period = 'fajr to sunrise';
     } else if (now < times.dhuhr) {
         const progress = (now - times.sunrise) / (times.dhuhr - times.sunrise);
-        scrollPos = 0.2 + progress * 0.3;
+        scrollPos = 0.1 + progress * 0.4;
         period = 'sunrise to dhuhr';
     } else if (times.asr && now < times.asr) {
         const progress = (now - times.dhuhr) / (times.asr - times.dhuhr);
@@ -95,20 +107,9 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
         const progress = times.maghrib ? (now - times.maghrib) / (times.isha - times.maghrib) : 0;
         scrollPos = 0.8 + progress * 0.07;
         period = 'maghrib to isha';
-    } else if (times.middleOfTheNight && now < times.middleOfTheNight) {
-        const progress = times.isha ? (now - times.isha) / (times.middleOfTheNight - times.isha) : 0;
-        scrollPos = 0.87 + progress * 0.06;
-        period = 'isha to middleOfNight';
-    } else if (times.lastThirdOfTheNight && now < times.lastThirdOfTheNight) {
-        // Last third is after midnight but before fajr (next day)
-        const progress = times.middleOfTheNight
-            ? (now - times.middleOfTheNight) / (times.lastThirdOfTheNight - times.middleOfTheNight)
-            : 0;
-        scrollPos = 0.93 + progress * 0.04;
-        period = 'middleOfNight to lastThird';
     } else {
-        scrollPos = 0.97;
-        period = 'after lastThird';
+        scrollPos = 0.87;
+        period = 'after isha (default)';
     }
 
     if (DEBUG_MODE) {
@@ -126,32 +127,27 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
     return scrollPos;
 };
 
-const getDateAtOffset = (baseDate: Date, offsetDays: number): Date => {
-    const date = new Date(baseDate);
-    date.setDate(date.getDate() + offsetDays);
-    return date;
-};
-
+// Replace the getSkyColor function with this:
 const getSkyColor = (scrollProgress: number): string => {
     const skyColors = [
-        'rgba(10, 15, 35, 0.4)',
-        'rgba(15, 20, 45, 0.38)',
-        'rgba(26, 26, 46, 0.35)',
-        'rgba(40, 50, 75, 0.35)',
-        'rgba(60, 80, 110, 0.4)',
-        'rgba(100, 120, 150, 0.45)',
-        'rgba(135, 206, 235, 0.3)',
-        'rgba(160, 220, 255, 0.35)',
-        'rgba(255, 165, 0, 0.3)',
-        'rgba(255, 140, 0, 0.4)',
-        'rgba(138, 73, 107, 0.3)',
-        'rgba(40, 40, 60, 0.6)',
-        'rgba(5, 5, 15, 0.95)',
-        'rgba(0, 0, 0, 0.98)',
-        'rgba(0, 0, 0, 0.98)',
+        'rgba(26, 26, 46, 0.35)', // 0.0 - Fajr pre-dawn
+        'rgba(40, 50, 75, 0.35)', // 0.05 - Fajr dawn
+        'rgba(60, 80, 110, 0.4)', // 0.1 - Sunrise beginning
+        'rgba(100, 120, 150, 0.45)', // 0.15 - Post-sunrise
+        'rgba(135, 206, 235, 0.3)', // 0.2 - Morning (Dhuhr period start)
+        'rgba(160, 220, 255, 0.35)', // 0.35 - Mid-morning
+        'rgba(135, 206, 235, 0.3)', // 0.5 - Asr period start
+        'rgba(255, 165, 0, 0.3)', // 0.6 - Late afternoon
+        'rgba(255, 140, 0, 0.4)', // 0.7 - Pre-Maghrib
+        'rgba(138, 73, 107, 0.3)', // 0.8 - Isha period start
+        'rgba(40, 40, 60, 0.6)', // 0.85 - Post-Isha
+        'rgba(5, 5, 15, 0.95)', // 0.9 - Half night period
+        'rgba(0, 0, 0, 0.98)', // 0.93 - Last third period start
+        'rgba(10, 15, 35, 0.4)', // 0.97 - Deep night
+        'rgba(15, 20, 45, 0.38)', // 1.0 - End of last third
     ];
 
-    const stops = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.5, 0.55, 0.75, 0.82, 0.87, 0.9, 0.93, 0.97, 1];
+    const stops = [0, 0.05, 0.1, 0.15, 0.2, 0.35, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.93, 0.97, 1];
     let index = 0;
     for (let i = 0; i < stops.length - 1; i++) {
         if (scrollProgress >= stops[i] && scrollProgress < stops[i + 1]) {
@@ -163,48 +159,43 @@ const getSkyColor = (scrollProgress: number): string => {
     return skyColors[index];
 };
 
+// Replace the getStarsOpacity function with this:
 const getStarsOpacity = (scrollProgress: number): number => {
-    if (scrollProgress < 0.85) {
+    if (scrollProgress < 0.7) {
         return 0;
     }
-    if (scrollProgress < 0.9) {
-        return ((scrollProgress - 0.85) / 0.05) * 0.5;
+    if (scrollProgress < 0.75) {
+        return ((scrollProgress - 0.7) / 0.05) * 0.5;
     }
-    if (scrollProgress < 0.93) {
-        return 0.5 + ((scrollProgress - 0.9) / 0.03) * 0.5;
+    if (scrollProgress < 0.8) {
+        return 0.5 + ((scrollProgress - 0.75) / 0.05) * 0.5;
     }
     return 1;
 };
 
+// Replace the getFajrGradientOpacity function with this:
 const getFajrGradientOpacity = (scrollProgress: number): number => {
-    if (scrollProgress < 0.08) {
+    if (scrollProgress < 0.0) {
         return 0;
     }
+    if (scrollProgress < 0.02) {
+        return (scrollProgress / 0.02) * 0.3;
+    }
+    if (scrollProgress < 0.08) {
+        return 0.3 + ((scrollProgress - 0.02) / 0.06) * 0.7;
+    }
     if (scrollProgress < 0.12) {
-        return ((scrollProgress - 0.08) / 0.04) * 0.3;
+        return 1 - ((scrollProgress - 0.08) / 0.04) * 0.2;
     }
-    if (scrollProgress < 0.2) {
-        return 0.3 + ((scrollProgress - 0.12) / 0.08) * 0.7;
-    }
-    if (scrollProgress < 0.25) {
-        return 1 - ((scrollProgress - 0.2) / 0.05) * 0.2;
-    }
-    if (scrollProgress < 0.27) {
-        return 0.8 - ((scrollProgress - 0.25) / 0.02) * 0.8;
+    if (scrollProgress < 0.15) {
+        return 0.8 - ((scrollProgress - 0.12) / 0.03) * 0.8;
     }
     return 0;
 };
 
+// Replace the getLightRaysOpacity function with this:
 const getLightRaysOpacity = (scrollProgress: number): number => {
-    if (scrollProgress < 0.02) {
-        return 0.8 + (scrollProgress / 0.02) * 0.2;
-    }
-    if (scrollProgress < 0.08) {
-        return 1 - ((scrollProgress - 0.02) / 0.06) * 0.7;
-    }
-    if (scrollProgress < 0.1) {
-        return 0.3 - ((scrollProgress - 0.08) / 0.02) * 0.3;
-    }
+    // Light rays at beginning (Fajr) and end (Last third of night)
     if (scrollProgress < 0.93) {
         return 0;
     }
@@ -416,7 +407,7 @@ export default function ParallaxPage() {
                     'sunOpacity:',
                     visuals.sunOpacity.toFixed(3),
                     'sunColor:',
-                    visuals.sunColor,
+                    JSON.stringify(visuals.sunColor),
                     'moonOpacity:',
                     visuals.moonOpacity.toFixed(3),
                 );

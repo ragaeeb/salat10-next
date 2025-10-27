@@ -1,18 +1,10 @@
-const SCROLL_LAST_THIRD_END = 0.1;
-const SCROLL_FAJR_END = 0.2;
-const SCROLL_SUNRISE_END = 0.5;
-const SCROLL_DHUHR_END = 0.65;
-const SCROLL_ASR_END = 0.8;
-const SCROLL_MAGHRIB_END = 0.87;
-const SCROLL_ISHA_END = 0.93;
-const SCROLL_HALF_NIGHT_END = 0.97;
-
-const SCROLL_SUNRISE_TRANSITION_START = 0.2;
-const SCROLL_SUNRISE_TRANSITION_END = 0.25;
-const SCROLL_ORANGE_TRANSITION_START = 0.75;
-const SCROLL_ORANGE_TRANSITION_END = 0.78;
-const SCROLL_SUNSET_TRANSITION_START = 0.78;
-const SCROLL_SUNSET_TRANSITION_END = 0.87;
+const SCROLL_FAJR_END = 0.1;
+const SCROLL_SUNRISE_END = 0.2;
+const SCROLL_DHUHR_END = 0.5;
+const SCROLL_ASR_END = 0.65;
+const SCROLL_MAGHRIB_END = 0.8;
+const SCROLL_ISHA_END = 0.87;
+const SCROLL_HALF_NIGHT_END = 0.93;
 
 const SUN_X_START = 90;
 const SUN_X_END = 10;
@@ -53,13 +45,10 @@ export const getPrayerInfoFromScroll = (
     progress: number,
     timings?: Array<{ event: string; value: Date; label: string }>,
 ): PrayerInfo => {
-    let event = 'lastThirdOfTheNight';
-    let label = 'Last Third of the Night';
+    let event = 'fajr';
+    let label = 'Fajr';
 
-    if (progress < SCROLL_LAST_THIRD_END) {
-        event = 'lastThirdOfTheNight';
-        label = 'Last Third of the Night';
-    } else if (progress < SCROLL_FAJR_END) {
+    if (progress < SCROLL_FAJR_END) {
         event = 'fajr';
         label = 'Fajr';
     } else if (progress < SCROLL_SUNRISE_END) {
@@ -80,6 +69,9 @@ export const getPrayerInfoFromScroll = (
     } else if (progress < SCROLL_HALF_NIGHT_END) {
         event = 'middleOfTheNight';
         label = 'Half of the Night';
+    } else {
+        event = 'lastThirdOfTheNight';
+        label = 'Last Third of the Night';
     }
 
     const timing = timings?.find((t) => t.event === event);
@@ -105,37 +97,38 @@ export const calculateScrollBasedVisuals = (progress: number): SunMoonState => {
     let sunColor = { ...SUN_COLOR_YELLOW };
 
     if (progress < 0.1) {
-        sunOpacity = 0;
-        moonOpacity = MOON_OPACITY_MAX;
-        moonX = MOON_X_END;
-    } else if (progress < 0.2) {
-        const fadeProgress = (progress - 0.1) / 0.1;
+        // Fajr - sun rising
+        const fadeProgress = progress / 0.1;
         sunOpacity = fadeProgress;
         moonOpacity = MOON_OPACITY_MAX * (1 - fadeProgress);
         moonX = MOON_X_END;
-    } else if (progress < 0.75) {
+    } else if (progress < 0.6) {
+        // Sunrise through afternoon - sun fully visible and yellow
         sunOpacity = 1;
         moonOpacity = 0;
         sunColor = { ...SUN_COLOR_YELLOW };
-    } else if (progress < 0.78) {
+    } else if (progress < 0.63) {
+        // Start of orange transition
         sunOpacity = 1;
         moonOpacity = 0;
-        const orangeProgress = (progress - 0.75) / 0.03;
+        const orangeProgress = (progress - 0.6) / 0.03;
         sunColor = {
             b: SUN_COLOR_YELLOW.b,
             g: Math.round(SUN_COLOR_YELLOW.g - orangeProgress * (SUN_COLOR_YELLOW.g - SUN_COLOR_ORANGE.g)),
             r: SUN_COLOR_YELLOW.r,
         };
-    } else if (progress < 0.87) {
-        const fadeProgress = (progress - 0.78) / 0.09;
+    } else if (progress < 0.72) {
+        // Sunset transition - sun fading, moon appearing
+        const fadeProgress = (progress - 0.63) / 0.09;
         sunOpacity = Math.max(0, 1 - fadeProgress);
         moonOpacity = fadeProgress * MOON_OPACITY_MAX;
         moonX = MOON_X_START;
         sunColor = { ...SUN_COLOR_ORANGE };
     } else {
+        // Night time - only moon visible
         sunOpacity = 0;
         moonOpacity = MOON_OPACITY_MAX;
-        const nightProgress = (progress - 0.87) / (1.0 - 0.87);
+        const nightProgress = (progress - 0.72) / (1.0 - 0.72);
         moonX = MOON_X_START + nightProgress * (MOON_X_END - MOON_X_START);
     }
 
