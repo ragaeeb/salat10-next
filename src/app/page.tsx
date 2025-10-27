@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ShootingStars } from '@/components/aceternity/shooting-stars';
 import { StarsBackground } from '@/components/aceternity/stars-background';
-import DebugLogger from '@/components/debug-logger';
 import { ShinyText } from '@/components/magicui/shiny-text';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QUOTE_WATERMARK, QuoteCard } from '@/components/prayer/quote-card';
@@ -138,17 +137,16 @@ export default function PrayerTimesPage() {
     });
 
     return (
-        <div className="relative min-h-[300vh]">
-            <DebugLogger />
+        <div className="relative isolate min-h-[300vh]">
             {/* Parallax sky background with solid color */}
             <motion.div
-                className="-z-30 pointer-events-none fixed inset-0"
+                className="pointer-events-none fixed inset-0 z-0"
                 style={{ backgroundColor: useRealTime ? 'rgba(135, 206, 235, 0.3)' : skyColor }}
             />
 
             {/* Shooting Stars and Stars Background - visible during night periods */}
             {!useRealTime && (
-                <motion.div className="-z-20 pointer-events-none fixed inset-0" style={{ opacity: starsOpacity }}>
+                <motion.div className="pointer-events-none fixed inset-0 z-10" style={{ opacity: starsOpacity }}>
                     <ShootingStars
                         starColor="#9E00FF"
                         trailColor="#2EB9DF"
@@ -172,7 +170,7 @@ export default function PrayerTimesPage() {
             {/* Last Third of Night - Light pillars shooting upward */}
             {!useRealTime && (
                 <motion.div
-                    className="-z-10 pointer-events-none fixed inset-0 overflow-hidden"
+                    className="pointer-events-none fixed inset-0 z-20 overflow-hidden"
                     style={{ opacity: lightRaysOpacity }}
                 >
                     {/* Base horizon glow */}
@@ -198,7 +196,7 @@ export default function PrayerTimesPage() {
             {/* Fajr horizon gradient overlay */}
             {!useRealTime && (
                 <motion.div
-                    className="-z-10 pointer-events-none fixed inset-0"
+                    className="pointer-events-none fixed inset-0 z-20"
                     style={{
                         background:
                             'linear-gradient(to top, rgba(255, 200, 80, 0.95) 0%, rgba(255, 180, 90, 0.85) 12%, rgba(255, 160, 100, 0.75) 22%, rgba(240, 160, 120, 0.6) 32%, rgba(180, 150, 140, 0.45) 45%, rgba(120, 130, 160, 0.3) 60%, transparent 78%)',
@@ -209,7 +207,7 @@ export default function PrayerTimesPage() {
 
             {/* Sun */}
             <motion.div
-                className="-z-10 pointer-events-none fixed h-20 w-20 rounded-full"
+                className="will-change: pointer-events-none fixed z-30 h-20 w-20 transform rounded-full"
                 style={{
                     backgroundColor: sunBackgroundColor,
                     boxShadow: sunBoxShadow,
@@ -225,7 +223,7 @@ export default function PrayerTimesPage() {
 
             {/* Moon */}
             <motion.div
-                className="-z-10 pointer-events-none fixed h-16 w-16 rounded-full bg-gray-200"
+                className="will-change: pointer-events-none fixed z-30 h-16 w-16 transform rounded-full bg-gray-200"
                 style={{
                     boxShadow: '0 0 40px 15px rgba(200, 200, 220, 0.3)',
                     left: `${moonX}%`,
@@ -240,10 +238,10 @@ export default function PrayerTimesPage() {
 
             {/* Prayer time label */}
             {!useRealTime && (
-                <div className="-translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none fixed top-1/2 left-1/2">
+                <div className="-translate-x-1/2 -translate-y-1/2 pointer-events-none fixed top-1/2 left-1/2 z-25">
                     <ShinyText
                         key={activePrayerDisplay}
-                        className="whitespace-nowrap text-center font-bold text-6xl text-foreground/50"
+                        className="block text-balance text-center font-bold text-[clamp(2.25rem,8vw,4.5rem)] text-foreground/60 leading-tight drop-shadow-sm"
                     >
                         {activePrayerDisplay}
                     </ShinyText>
@@ -251,12 +249,12 @@ export default function PrayerTimesPage() {
             )}
 
             {/* Original background gradient */}
-            <div className="-z-20 fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(135,206,235,0.4),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(10,46,120,0.6),_transparent_65%)]" />
+            <div className="fixed inset-0 z-15 bg-[radial-gradient(circle_at_top,_rgba(135,206,235,0.4),_transparent_65%)]" />
 
-            <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
+            <div className="fixed top-4 right-4 z-60 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
                 <Button
                     asChild
-                    className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90 dark:border-white/70 dark:bg-white dark:text-[var(--primary-foreground)] dark:hover:bg-white/90"
+                    className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90"
                     size="icon"
                 >
                     <Link aria-label="Open settings" href="/settings">
@@ -266,7 +264,7 @@ export default function PrayerTimesPage() {
             </div>
 
             <TooltipProvider>
-                <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pt-24 pb-16 sm:px-6 lg:px-8">
+                <div className="relative z-50 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pt-24 pb-16 sm:px-6 lg:px-8">
                     <QuoteCard
                         copyStatus={copyStatus}
                         error={quoteError}
