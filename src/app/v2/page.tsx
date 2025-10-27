@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowLeft, ChevronDown, ChevronUp, Settings2Icon } from 'lucide-react';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { AnimatePresence, motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ShootingStars } from '@/components/aceternity/shooting-stars';
@@ -12,13 +12,19 @@ import { daily } from '@/lib/calculator';
 import { calculateScrollBasedVisuals, getPrayerInfoFromScroll } from '@/lib/prayer-visuals';
 import { salatLabels } from '@/lib/salat-labels';
 import { useSettings } from '@/lib/settings';
+import { FajrGradient } from './components';
 
 const DAY_HEIGHT = 20000;
-const DEBUG_MODE = false;
+const DEBUG_MODE = true;
 
 type DayData = { date: Date; timings: Array<{ event: string; value: Date; label: string }> };
 
-// Replace the getPrayerScrollPosition function with this:
+const getDateAtOffset = (date: Date, days: number): Date => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+};
+
 const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; value: Date }>) => {
     const times = {
         asr: timings.find((t) => t.event === 'asr')?.value.getTime(),
@@ -65,7 +71,6 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
     let scrollPos = 0.05;
     let period = 'unknown';
 
-    // Check if we're in the night periods (after isha or before fajr)
     if (times.isha && times.middleOfTheNight && now >= times.isha && now < times.middleOfTheNight) {
         const progress = (now - times.isha) / (times.middleOfTheNight - times.isha);
         scrollPos = 0.87 + progress * 0.06;
@@ -84,7 +89,6 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
         scrollPos = 0.97 + progress * 0.03;
         period = 'lastThird to fajr (wrapping to top)';
     } else if (now < times.fajr) {
-        // Before fajr but not in lastThird period (edge case)
         scrollPos = 0;
         period = 'before fajr';
     } else if (now < times.sunrise) {
@@ -127,39 +131,37 @@ const getPrayerScrollPosition = (now: number, timings: Array<{ event: string; va
     return scrollPos;
 };
 
-// Replace the getSkyColor function with this:
 const getSkyColor = (scrollProgress: number): string => {
     const skyColors = [
         'rgba(26, 26, 46, 0.35)', // 0.0 - Fajr pre-dawn
         'rgba(40, 50, 75, 0.35)', // 0.05 - Fajr dawn
         'rgba(60, 80, 110, 0.4)', // 0.1 - Sunrise beginning
         'rgba(100, 120, 150, 0.45)', // 0.15 - Post-sunrise
-        'rgba(135, 206, 235, 0.3)', // 0.2 - Morning (Dhuhr period start)
+        'rgba(135, 206, 235, 0.3)', // 0.2 - Morning
         'rgba(160, 220, 255, 0.35)', // 0.35 - Mid-morning
-        'rgba(135, 206, 235, 0.3)', // 0.5 - Asr period start
-        'rgba(255, 165, 0, 0.3)', // 0.6 - Late afternoon
-        'rgba(255, 140, 0, 0.4)', // 0.7 - Pre-Maghrib
-        'rgba(138, 73, 107, 0.3)', // 0.8 - Isha period start
+        'rgba(135, 206, 235, 0.3)', // 0.5 - Dhuhr
+        'rgba(160, 220, 255, 0.35)', // 0.58 - Mid-dhuhr
+        'rgba(255, 165, 0, 0.3)', // 0.65 - Asr
+        'rgba(255, 140, 0, 0.4)', // 0.72 - Pre-Maghrib
+        'rgba(138, 73, 107, 0.3)', // 0.8 - Maghrib/Isha
         'rgba(40, 40, 60, 0.6)', // 0.85 - Post-Isha
-        'rgba(5, 5, 15, 0.95)', // 0.9 - Half night period
-        'rgba(0, 0, 0, 0.98)', // 0.93 - Last third period start
-        'rgba(10, 15, 35, 0.4)', // 0.97 - Deep night
-        'rgba(15, 20, 45, 0.38)', // 1.0 - End of last third
+        'rgba(5, 5, 15, 0.95)', // 0.9 - Half night
+        'rgba(0, 0, 0, 0.98)', // 0.93 - Last third start
+        'rgba(10, 15, 35, 0.4)', // 0.97 - Last third deep
+        'rgba(26, 26, 46, 0.35)', // 1.0 - Last third end (matches Fajr start)
     ];
 
-    const stops = [0, 0.05, 0.1, 0.15, 0.2, 0.35, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.93, 0.97, 1];
-    let index = 0;
+    const stops = [0, 0.05, 0.1, 0.15, 0.2, 0.35, 0.5, 0.58, 0.65, 0.72, 0.8, 0.85, 0.9, 0.93, 0.97, 1];
+
     for (let i = 0; i < stops.length - 1; i++) {
         if (scrollProgress >= stops[i] && scrollProgress < stops[i + 1]) {
-            index = i;
-            break;
+            return skyColors[i];
         }
     }
 
-    return skyColors[index];
+    return skyColors[skyColors.length - 1];
 };
 
-// Replace the getStarsOpacity function with this:
 const getStarsOpacity = (scrollProgress: number): number => {
     if (scrollProgress < 0.7) {
         return 0;
@@ -173,39 +175,38 @@ const getStarsOpacity = (scrollProgress: number): number => {
     return 1;
 };
 
-// Replace the getFajrGradientOpacity function with this:
 const getFajrGradientOpacity = (scrollProgress: number): number => {
-    if (scrollProgress < 0.0) {
-        return 0;
+    // Gentle pre-Fajr hint during the last couple percent of the day (wrap-around)
+    if (scrollProgress >= 0.98) {
+        return 0.25 * ((scrollProgress - 0.98) / 0.02); // 0 → 0.25
     }
+    // Fajr proper (0.00 → 0.15), stronger early presence so yellow "reads"
     if (scrollProgress < 0.02) {
-        return (scrollProgress / 0.02) * 0.3;
+        return 0.4 + (scrollProgress / 0.02) * 0.2; // 0.40 → 0.60
     }
     if (scrollProgress < 0.08) {
-        return 0.3 + ((scrollProgress - 0.02) / 0.06) * 0.7;
+        return 0.6 + ((scrollProgress - 0.02) / 0.06) * 0.4; // 0.60 → 1.00
     }
     if (scrollProgress < 0.12) {
-        return 1 - ((scrollProgress - 0.08) / 0.04) * 0.2;
+        return 1.0 - ((scrollProgress - 0.08) / 0.04) * 0.2; // 1.00 → 0.80
     }
     if (scrollProgress < 0.15) {
-        return 0.8 - ((scrollProgress - 0.12) / 0.03) * 0.8;
+        return 0.8 - ((scrollProgress - 0.12) / 0.03) * 0.8; // 0.80 → 0
     }
     return 0;
 };
 
-// Replace the getLightRaysOpacity function with this:
 const getLightRaysOpacity = (scrollProgress: number): number => {
-    // Light rays at beginning (Fajr) and end (Last third of night)
     if (scrollProgress < 0.93) {
         return 0;
     }
     if (scrollProgress < 0.95) {
-        return ((scrollProgress - 0.93) / 0.02) * 0.3;
+        return ((scrollProgress - 0.93) / 0.02) * 0.25;
     }
     if (scrollProgress < 0.98) {
-        return 0.3 + ((scrollProgress - 0.95) / 0.03) * 0.5;
+        return 0.25 + ((scrollProgress - 0.95) / 0.03) * 0.35;
     }
-    return 0.8 + ((scrollProgress - 0.98) / 0.02) * 0.2;
+    return 0.6 + ((scrollProgress - 0.98) / 0.02) * 0.2; // cap ~0.8
 };
 
 export default function ParallaxPage() {
@@ -474,14 +475,7 @@ export default function ParallaxPage() {
                     />
                 </motion.div>
 
-                <motion.div
-                    className="pointer-events-none absolute inset-0 z-20"
-                    style={{
-                        background:
-                            'linear-gradient(to top, rgba(255, 200, 80, 0.95) 0%, rgba(255, 180, 90, 0.85) 12%, rgba(255, 160, 100, 0.75) 22%, rgba(240, 160, 120, 0.6) 32%, rgba(180, 150, 140, 0.45) 45%, rgba(120, 130, 160, 0.3) 60%, transparent 78%)',
-                        opacity: fajrGradientOpacity,
-                    }}
-                />
+                <FajrGradient opacity={fajrGradientOpacity as any} />
 
                 <motion.div
                     className={`pointer-events-none absolute z-30 h-20 w-20 rounded-full ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}
@@ -509,21 +503,32 @@ export default function ParallaxPage() {
                 />
 
                 <div className="-translate-x-1/2 -translate-y-1/2 pointer-events-none absolute top-1/2 left-1/2 z-25">
-                    <ShinyText
-                        key={prayerInfo.label}
-                        className="block text-balance text-center font-bold text-[clamp(2.25rem,8vw,4.5rem)] text-foreground/60 leading-tight drop-shadow-sm"
-                    >
-                        {prayerInfo.label}
-                    </ShinyText>
-                    {prayerInfo.time && (
+                    <AnimatePresence mode="wait">
                         <motion.div
-                            key={prayerInfo.time}
-                            initial={{ opacity: 0, y: -10 }}
+                            key={prayerInfo.label}
+                            initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mt-4 text-center font-semibold text-[clamp(1.5rem,4vw,2.5rem)] text-foreground/50"
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.22, ease: 'easeOut' }}
                         >
-                            {prayerInfo.time}
+                            <ShinyText className="block text-balance text-center font-extrabold text-[clamp(2rem,8vw,4.5rem)] text-foreground/60 leading-tight drop-shadow-sm">
+                                {prayerInfo.label}
+                            </ShinyText>
                         </motion.div>
+                    </AnimatePresence>
+                    {prayerInfo.time && (
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={prayerInfo.time}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                transition={{ duration: 0.18, ease: 'easeOut' }}
+                                className="mt-4 text-center font-semibold text-[clamp(1.5rem,4vw,2.5rem)] text-foreground/50"
+                            >
+                                {prayerInfo.time}
+                            </motion.div>
+                        </AnimatePresence>
                     )}
                 </div>
 

@@ -51,21 +51,18 @@ export const getPrayerInfoFromScroll = (
     if (progress < SCROLL_FAJR_END) {
         event = 'fajr';
         label = 'Fajr';
-    } else if (progress < SCROLL_SUNRISE_END) {
+    } else if (progress < SCROLL_DHUHR_END) {
         event = 'sunrise';
         label = 'Sunrise';
-    } else if (progress < SCROLL_DHUHR_END) {
+    } else if (progress < SCROLL_ASR_END) {
         event = 'dhuhr';
         label = 'Ḍhuhr';
-    } else if (progress < SCROLL_ASR_END) {
+    } else if (progress < SCROLL_MAGHRIB_END) {
         event = 'asr';
         label = 'ʿAṣr';
-    } else if (progress < SCROLL_MAGHRIB_END) {
-        event = 'maghrib';
-        label = 'Maġrib';
     } else if (progress < SCROLL_ISHA_END) {
-        event = 'isha';
-        label = 'ʿIshāʾ';
+        event = 'maghrib';
+        label = 'Maghrib';
     } else if (progress < SCROLL_HALF_NIGHT_END) {
         event = 'middleOfTheNight';
         label = 'Half of the Night';

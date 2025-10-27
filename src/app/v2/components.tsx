@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'motion/react';
+import { MotionValue, motion } from 'motion/react';
 import { memo } from 'react';
 import { ShootingStars } from '@/components/aceternity/shooting-stars';
 import { StarsBackground } from '@/components/aceternity/stars-background';
