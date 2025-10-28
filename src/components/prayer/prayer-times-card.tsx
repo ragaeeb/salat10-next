@@ -1,9 +1,7 @@
-'use client';
-
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuroraText } from '@/components/magicui/aurora-text';
 import { Meteors } from '@/components/magicui/meteors';
 import { Button } from '@/components/ui/button';
@@ -16,7 +14,6 @@ import { cn } from '@/lib/utils';
 export type PrayerTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
 
 export type PrayerTimesCardProps = {
-    activeLabel: string;
     activeEvent: string | null;
     addressLabel: string;
     dateLabel: string;
@@ -112,14 +109,7 @@ const Countdown = () => {
     );
 };
 
-// Helper function to calculate daily timings (simplified version)
-const calculateDailyTimings = (config: any, date: Date) => {
-    // This is a placeholder - in real implementation, this would use the actual Adhan library
-    // For now, return empty to avoid errors
-    return { timings: [] };
-};
 export function PrayerTimesCard({
-    activeLabel,
     activeEvent,
     addressLabel,
     dateLabel,

@@ -3,7 +3,9 @@
 import { CalculationMethod, CalculationParameters } from 'adhan';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-export const STORAGE_KEY = 'salat10-next:settings';
+import packageJson from '@/../package.json';
+
+const STORAGE_KEY = packageJson.name;
 
 const methodFactories = {
     Dubai: CalculationMethod.Dubai,
@@ -15,7 +17,6 @@ const methodFactories = {
     NorthAmerica: CalculationMethod.NorthAmerica,
     Qatar: CalculationMethod.Qatar,
     Singapore: CalculationMethod.Singapore,
-    Tehran: CalculationMethod.Tehran,
     Turkey: CalculationMethod.Turkey,
     UmmAlQura: CalculationMethod.UmmAlQura,
 } as const;
@@ -34,7 +35,6 @@ export const methodOptions = [
     { label: 'Kuwait', value: 'Kuwait' },
     { label: 'Qatar', value: 'Qatar' },
     { label: 'Singapore', value: 'Singapore' },
-    { label: 'Tehran', value: 'Tehran' },
     { label: 'Turkey (Diyanet)', value: 'Turkey' },
 ] as const;
 
@@ -108,8 +108,8 @@ export type Settings = {
 
 export const defaultSettings: Settings = {
     address: 'Ottawa, Canada',
-    fajrAngle: '15',
-    ishaAngle: '15',
+    fajrAngle: '12',
+    ishaAngle: '12',
     ishaInterval: '0',
     latitude: '45.3506',
     longitude: '-75.7930',

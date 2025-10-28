@@ -88,7 +88,7 @@ export default function PrayerTimesPage() {
     }
 
     return (
-        <div className="relative min-h-screen bg-gradient-to-b from-sky-100 to-slate-50">
+        <div className="relative min-h-screen bg-background">
             <div className="fixed top-4 right-4 z-50 flex items-center gap-2 sm:top-6 sm:right-6">
                 <Button
                     asChild
