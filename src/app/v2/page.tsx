@@ -1,24 +1,23 @@
 'use client';
 
 import { ArrowLeft, ChevronDown, ChevronUp, Settings2Icon } from 'lucide-react';
-import { AnimatePresence, motion, useScroll, useSpring, useTransform } from 'motion/react';
+import { AnimatePresence, type MotionValue, motion, useScroll, useSpring, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ShinyText } from '@/components/magicui/shiny-text';
+import { Moon } from '@/components/moon';
+import { Sun } from '@/components/sun';
 import { Button } from '@/components/ui/button';
 import { daily } from '@/lib/calculator';
 import { salatLabels } from '@/lib/salat-labels';
 import { useSettings } from '@/lib/settings';
-
 import {
     FajrGradient,
     LightRays,
-    Moon as MoonNode,
     RadialGradientOverlay,
     SkyBackground,
     StarsLayer,
-    Sun as SunNode,
     SunsetGradient,
 } from './components';
 
@@ -652,10 +651,16 @@ function ParallaxInner({ settings, numeric }: { settings: SettingsT; numeric: Nu
                 {hasNext && <FajrGradient opacity={bottomSeamFajrOpacity * 0.8} />}
 
                 {/* Sun (RIGHT -> LEFT arc) */}
-                <SunNode x={sunX} y={sunY} opacity={sunOpacity} color={{ b: sunColorB, g: sunColorG, r: sunColorR }} />
+                <Sun
+                    size={120}
+                    x={sunX}
+                    y={sunY}
+                    opacity={sunOpacity}
+                    color={{ b: sunColorB, g: sunColorG, r: sunColorR }}
+                />
 
                 {/* Moon (LEFT -> RIGHT, straight line) */}
-                <MoonNode x={moonX} y={moonY} opacity={moonOpacity} />
+                <Moon x={moonX} y={moonY} opacity={moonOpacity} color={{ b: 255, g: 255, r: 255 }} />
 
                 {/* Center title + time */}
                 <div className="-translate-x-1/2 -translate-y-1/2 pointer-events-none absolute top-1/2 left-1/2 z-25">

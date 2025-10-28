@@ -112,54 +112,6 @@ export const SunsetGradient = memo<SunsetGradientProps>(({ opacity }) => (
 ));
 SunsetGradient.displayName = 'SunsetGradient';
 
-type SunProps = {
-    x: number | MotionValue<number>;
-    y: number | MotionValue<number>;
-    opacity: number | MotionValue<number>;
-    color: { r: number | MotionValue<number>; g: number | MotionValue<number>; b: number | MotionValue<number> };
-};
-export const Sun = memo<SunProps>(({ x, y, opacity, color }) => (
-    <motion.div
-        className="pointer-events-none absolute z-30 h-20 w-20 rounded-full"
-        style={{
-            backgroundColor: useTransform(
-                [color.r as MotionValue<number>, color.g as MotionValue<number>, color.b as MotionValue<number>],
-                ([r, g, b]) => `rgb(${r}, ${g}, ${b})`,
-            ),
-            boxShadow: useTransform(
-                [color.r as MotionValue<number>, color.g as MotionValue<number>, color.b as MotionValue<number>],
-                ([r, g, b]) => `0 0 60px 20px rgba(${r}, ${g}, ${b}, 0.4)`,
-            ),
-            left: useTransform(x as MotionValue<number>, (vx) => `${vx}%`),
-            opacity,
-            top: useTransform(y as MotionValue<number>, (vy) => `${vy}%`),
-            transform: 'translate(-50%, -50%) translate3d(0,0,0)',
-            willChange: 'transform, opacity',
-        }}
-    />
-));
-Sun.displayName = 'Sun';
-
-type MoonProps = {
-    x: number | MotionValue<number>;
-    y: number | MotionValue<number>;
-    opacity: number | MotionValue<number>;
-};
-export const Moon = memo<MoonProps>(({ x, y, opacity }) => (
-    <motion.div
-        className="pointer-events-none absolute z-30 h-16 w-16 rounded-full bg-gray-200"
-        style={{
-            boxShadow: '0 0 40px 15px rgba(200, 200, 220, 0.3)',
-            left: useTransform(x as MotionValue<number>, (vx) => `${vx}%`),
-            opacity,
-            top: useTransform(y as MotionValue<number>, (vy) => `${vy}%`),
-            transform: 'translate(-50%, -50%) translate3d(0,0,0)',
-            willChange: 'transform, opacity',
-        }}
-    />
-));
-Moon.displayName = 'Moon';
-
 export const RadialGradientOverlay = memo(() => (
     <div className="absolute inset-0 z-15 bg-[radial-gradient(circle_at_top,_rgba(135,206,235,0.4),_transparent_65%)]" />
 ));
