@@ -172,7 +172,7 @@ export default function SettingsPage() {
                 } else if (error.code === error.POSITION_UNAVAILABLE) {
                     setLocationMessage('Location information unavailable.');
                 } else if (error.code === error.TIMEOUT) {
-                    +setLocationMessage('Timed out while retrieving location. Please try again.');
+                    setLocationMessage('Timed out while retrieving location. Please try again.');
                 } else {
                     setLocationMessage('Unable to retrieve location. Please try again.');
                 }
