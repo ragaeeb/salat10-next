@@ -63,11 +63,13 @@ const fetchCoordinatesForAddress = async (address: string): Promise<GeocodeResul
     return result;
 };
 
+const DEFAULT_TZ = 'UTC';
+
 const getBrowserTimezone = (): string => {
     try {
-        return Intl.DateTimeFormat().resolvedOptions().timeZone;
+        return Intl.DateTimeFormat().resolvedOptions().timeZone ?? DEFAULT_TZ;
     } catch {
-        return 'UTC';
+        return DEFAULT_TZ;
     }
 };
 
@@ -108,6 +110,7 @@ export default function SettingsPage() {
                     setLocationStatus('error');
                     setLocationMessage('Location access denied. Please enter manually.');
                 },
+                { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
             );
         }
     }, [hydrated, setSettings, settings.latitude, settings.longitude]);
@@ -168,10 +171,13 @@ export default function SettingsPage() {
                     setLocationMessage('Location access denied. Please enable location permissions.');
                 } else if (error.code === error.POSITION_UNAVAILABLE) {
                     setLocationMessage('Location information unavailable.');
+                } else if (error.code === error.TIMEOUT) {
+                    +setLocationMessage('Timed out while retrieving location. Please try again.');
                 } else {
                     setLocationMessage('Unable to retrieve location. Please try again.');
                 }
             },
+            { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
         );
     };
 
@@ -277,7 +283,8 @@ export default function SettingsPage() {
                     </div>
 
                     {locationMessage && (
-                        <div
+                        <output
+                            aria-live={locationStatus === 'error' ? 'assertive' : 'polite'}
                             className={`mt-4 rounded-lg border p-3 text-sm ${
                                 locationStatus === 'error'
                                     ? 'border-destructive/50 bg-destructive/10 text-destructive'
@@ -285,7 +292,7 @@ export default function SettingsPage() {
                             }`}
                         >
                             {locationMessage}
-                        </div>
+                        </output>
                     )}
 
                     <div className="mt-6 grid gap-4 md:grid-cols-2">

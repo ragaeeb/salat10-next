@@ -1,7 +1,7 @@
 // components.tsx
 
 import { type MotionValue, motion, useMotionTemplate, useTransform } from 'framer-motion';
-import { memo } from 'react';
+import { memo, useId } from 'react';
 
 type SunProps = {
     x: number | MotionValue<number>;
@@ -20,6 +20,9 @@ export const Sun = memo<SunProps>(({ x, y, opacity, color, size = 80, width, hei
     const leftPct = useTransform(x as MotionValue<number>, (v) => `${v}%`);
     const topPct = useTransform(y as MotionValue<number>, (v) => `${v}%`);
     const fill = useMotionTemplate`rgb(${color.r}, ${color.g}, ${color.b})`;
+    const uid = useId();
+    const glowId = `sunGlow-${uid}`;
+    const haloId = `sunHalo-${uid}`;
 
     const w = width ?? size;
     const h = height ?? size;
@@ -43,23 +46,24 @@ export const Sun = memo<SunProps>(({ x, y, opacity, color, size = 80, width, hei
             aria-hidden
             focusable="false"
         >
+            <title>Sun</title>
             <defs>
-                <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
                     <feGaussianBlur stdDeviation="8" result="blur" />
                     <feMerge>
                         <feMergeNode in="blur" />
                         <feMergeNode in="SourceGraphic" />
                     </feMerge>
                 </filter>
-                <radialGradient id="sunHalo" cx="50%" cy="50%" r="50%">
+                <radialGradient id={haloId} cx="50%" cy="50%" r="50%">
                     <stop offset="60%" stopColor="currentColor" stopOpacity="0.45" />
                     <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
                 </radialGradient>
             </defs>
 
-            <motion.circle cx="40" cy="40" r="18" fill="currentColor" filter="url(#softGlow)" />
+            <motion.circle cx="40" cy="40" r="18" fill="currentColor" filter={`url(#${glowId})`} />
             <motion.circle cx="40" cy="40" r="28" fill="currentColor" />
-            <circle cx="40" cy="40" r="32" fill="url(#sunHalo)" />
+            <circle cx="40" cy="40" r="32" fill={`url(#${haloId})`} />
         </motion.svg>
     );
 });
