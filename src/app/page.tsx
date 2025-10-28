@@ -3,7 +3,8 @@
 import { IconSunMoon } from '@tabler/icons-react';
 import { Settings2Icon } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QUOTE_WATERMARK, QuoteCard } from '@/components/prayer/quote-card';
 import { Button } from '@/components/ui/button';
@@ -23,9 +24,17 @@ export default function PrayerTimesPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const { error: quoteError, loading: quoteLoading, quote } = useMotivationalQuote();
     const { copy, status: copyStatus } = useCopyFeedback();
+    const router = useRouter();
 
     const timeZone = settings.timeZone?.trim() || 'UTC';
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
+
+    // Redirect to settings if coordinates are not set
+    useEffect(() => {
+        if (hydrated && !hasValidCoordinates) {
+            router.push('/settings');
+        }
+    }, [hydrated, hasValidCoordinates, router]);
 
     const calculationArgs = useMemo(
         () => ({
@@ -83,7 +92,7 @@ export default function PrayerTimesPage() {
         await copy(`"${sourceQuote.text}" - [${sourceQuote.citation}]${QUOTE_WATERMARK}`);
     };
 
-    if (!hydrated) {
+    if (!hydrated || !hasValidCoordinates) {
         return null;
     }
 
@@ -122,7 +131,6 @@ export default function PrayerTimesPage() {
                     />
 
                     <PrayerTimesCard
-                        activeLabel={result.activeLabel ?? '—'}
                         activeEvent={result.activeEvent}
                         addressLabel={addressLabel}
                         dateLabel={result.date}
