@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowLeft, ChevronDown, ChevronUp, Settings2Icon } from 'lucide-react';
-import { AnimatePresence, type MotionValue, motion, useScroll, useSpring, useTransform } from 'motion/react';
+import { AnimatePresence, motion, useScroll, useSpring, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -530,7 +530,6 @@ function ParallaxInner({ settings, numeric }: { settings: SettingsT; numeric: Nu
         }
         return lerp(POS.WEST_X, POS.EAST_X, invLerp(appearStart, 1.0, p));
     });
-    const moonYRaw = useTransform(scrollProgress, () => POS.MOON_Y);
     const moonOpacityRaw = useTransform(scrollProgress, (p) => (timeline ? moonOpacityAt(p, timeline) : 0));
 
     const springCfg = { damping: 28, mass: 0.25, stiffness: 220 };
@@ -539,7 +538,7 @@ function ParallaxInner({ settings, numeric }: { settings: SettingsT; numeric: Nu
     const sunOpacity = useSpring(sunOpacityRaw, { damping: 25, mass: 0.25, stiffness: 180 });
 
     const moonX = useSpring(moonXRaw, springCfg);
-    const moonY = useSpring(moonYRaw, springCfg);
+    const moonY = useSpring(POS.MOON_Y, springCfg);
     const moonOpacity = useSpring(moonOpacityRaw, { damping: 25, mass: 0.25, stiffness: 180 });
 
     // Phase info label + time
@@ -569,7 +568,7 @@ function ParallaxInner({ settings, numeric }: { settings: SettingsT; numeric: Nu
     // Load day handlers (checklist #12 & #13)
     const handleLoadPrev = useCallback(() => {
         setDays((prev) => {
-            const firstDate = prev[0].date;
+            const firstDate = prev[0]!.date;
             const newDate = new Date(firstDate);
             newDate.setDate(newDate.getDate() - 1);
             const newDay = loadDay(newDate);
@@ -584,7 +583,7 @@ function ParallaxInner({ settings, numeric }: { settings: SettingsT; numeric: Nu
 
     const handleLoadNext = useCallback(() => {
         setDays((prev) => {
-            const lastDate = prev[prev.length - 1].date;
+            const lastDate = prev[prev.length - 1]!.date;
             const newDate = new Date(lastDate);
             newDate.setDate(newDate.getDate() + 1);
             const newDay = loadDay(newDate);
