@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/ragaeeb/salat10-next/compare/v1.1.0...v1.2.0) (2025-10-28)
+
+
+### Features
+
+* **v1.2:** Add scrolling parallax with moon and sun ([#5](https://github.com/ragaeeb/salat10-next/issues/5)) ([99979aa](https://github.com/ragaeeb/salat10-next/commit/99979aaa8094f9718aa50b3250c2d4f91d14db8d))
+
 # [1.1.0](https://github.com/ragaeeb/salat10-next/compare/v1.0.0...v1.1.0) (2025-10-26)
 
 
