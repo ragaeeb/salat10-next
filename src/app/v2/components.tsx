@@ -21,30 +21,35 @@ SkyBackground.displayName = 'SkyBackground';
 
 type StarsLayerProps = {
     opacity: number | MotionValue<number>;
+    /** If true, show shooting/comet streaks. If false, only static stars. */
+    shooting?: boolean;
     density?: number;
     minDelay?: number;
     maxDelay?: number;
+    /** If true, disable the entire layer (respects reduced motion). */
     disabled?: boolean;
 };
 
 export const StarsLayer = memo<StarsLayerProps>(
-    ({ opacity, density = 0.0002, minDelay = 1200, maxDelay = 4200, disabled }) => {
+    ({ opacity, shooting = true, density = 0.0002, minDelay = 1200, maxDelay = 4200, disabled }) => {
         if (disabled) {
             return null;
         }
 
         return (
             <motion.div className="pointer-events-none absolute inset-0 z-10" style={{ opacity }}>
-                <ShootingStars
-                    starColor="#9E00FF"
-                    trailColor="#2EB9DF"
-                    minSpeed={10}
-                    maxSpeed={30}
-                    minDelay={minDelay}
-                    maxDelay={maxDelay}
-                    starWidth={20}
-                    starHeight={2}
-                />
+                {shooting && (
+                    <ShootingStars
+                        starColor="#9E00FF"
+                        trailColor="#2EB9DF"
+                        minSpeed={10}
+                        maxSpeed={30}
+                        minDelay={minDelay}
+                        maxDelay={maxDelay}
+                        starWidth={20}
+                        starHeight={2}
+                    />
+                )}
                 <StarsBackground
                     starDensity={density}
                     allStarsTwinkle
@@ -84,8 +89,9 @@ export const FajrGradient = memo<FajrGradientProps>(({ opacity }) => (
     <motion.div
         className="pointer-events-none absolute inset-0 z-20"
         style={{
+            /* Warmer, more immediate horizon glow */
             background:
-                'linear-gradient(to top, rgba(255, 205, 90, 0.95) 0%, rgba(255, 185, 95, 0.85) 12%, rgba(255, 165, 110, 0.75) 22%, rgba(240, 160, 120, 0.6) 32%, rgba(180, 150, 140, 0.45) 45%, rgba(120, 130, 160, 0.3) 60%, transparent 78%)',
+                'linear-gradient(to top, rgba(255, 210, 95, 0.95) 0%, rgba(255, 195, 95, 0.88) 12%, rgba(255, 175, 110, 0.78) 22%, rgba(242, 165, 120, 0.62) 32%, rgba(185, 155, 140, 0.48) 45%, rgba(128, 135, 160, 0.34) 60%, transparent 78%)',
             opacity,
         }}
     />
