@@ -3,7 +3,9 @@
 import { CalculationMethod, CalculationParameters } from 'adhan';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-export const STORAGE_KEY = 'salat10-next:settings';
+import packageJson from '@/../package.json';
+
+const STORAGE_KEY = packageJson.name;
 
 const methodFactories = {
     Dubai: CalculationMethod.Dubai,
@@ -15,7 +17,6 @@ const methodFactories = {
     NorthAmerica: CalculationMethod.NorthAmerica,
     Qatar: CalculationMethod.Qatar,
     Singapore: CalculationMethod.Singapore,
-    Tehran: CalculationMethod.Tehran,
     Turkey: CalculationMethod.Turkey,
     UmmAlQura: CalculationMethod.UmmAlQura,
 } as const;
@@ -23,70 +24,23 @@ const methodFactories = {
 type MethodFactoryKey = keyof typeof methodFactories;
 
 export const methodOptions = [
-    { label: 'Custom (Other)', value: 'Other' },
-    { label: 'Muslim World League', value: 'MuslimWorldLeague' },
-    { label: 'Egyptian General Authority', value: 'Egyptian' },
-    { label: 'Karachi (University of Islamic Sciences)', value: 'Karachi' },
-    { label: 'Umm al-Qura (Makkah)', value: 'UmmAlQura' },
-    { label: 'Dubai', value: 'Dubai' },
-    { label: 'Moonsighting Committee Worldwide', value: 'MoonsightingCommittee' },
-    { label: 'North America (ISNA)', value: 'NorthAmerica' },
-    { label: 'Kuwait', value: 'Kuwait' },
-    { label: 'Qatar', value: 'Qatar' },
-    { label: 'Singapore', value: 'Singapore' },
-    { label: 'Tehran', value: 'Tehran' },
-    { label: 'Turkey (Diyanet)', value: 'Turkey' },
+    { label: 'Nautical Twilight (12°, 12°)', value: 'Other' },
+    { label: 'Muslim World League (18°, 17°)', value: 'MuslimWorldLeague' },
+    { label: 'Egyptian General Authority (19.5°, 17.5°)', value: 'Egyptian' },
+    { label: 'Karachi - University of Islamic Sciences (18°, 18°)', value: 'Karachi' },
+    { label: 'Umm al-Qura - Makkah (18.5°, 90 min)', value: 'UmmAlQura' },
+    { label: 'Dubai (18.2°, 18.2°)', value: 'Dubai' },
+    { label: 'Moonsighting Committee Worldwide (18°, 18°)', value: 'MoonsightingCommittee' },
+    { label: 'North America - ISNA (15°, 15°)', value: 'NorthAmerica' },
+    { label: 'Kuwait (18°, 17.5°)', value: 'Kuwait' },
+    { label: 'Qatar (18°, 90 min)', value: 'Qatar' },
+    { label: 'Singapore (20°, 18°)', value: 'Singapore' },
+    { label: 'Turkey - Diyanet (18°, 17°)', value: 'Turkey' },
 ] as const;
 
 export type MethodValue = (typeof methodOptions)[number]['value'];
 
 type MethodPreset = { fajrAngle: number; ishaAngle: number; ishaInterval: number };
-
-const buildPreset = (method: MethodValue): MethodPreset => {
-    if (method === 'Other') {
-        return { fajrAngle: 0, ishaAngle: 0, ishaInterval: 0 };
-    }
-
-    const factory = methodFactories[method as MethodFactoryKey];
-    if (!factory) {
-        return { fajrAngle: 0, ishaAngle: 0, ishaInterval: 0 };
-    }
-    const params = factory();
-    return { fajrAngle: params.fajrAngle, ishaAngle: params.ishaAngle, ishaInterval: params.ishaInterval ?? 0 };
-};
-
-const buildMethodPresets = () => {
-    const presets = {} as Record<MethodValue, MethodPreset>;
-    for (const option of methodOptions) {
-        presets[option.value] = buildPreset(option.value);
-    }
-    return presets;
-};
-
-export const methodPresets: Record<MethodValue, MethodPreset> = buildMethodPresets();
-
-const METHOD_TOLERANCE = 0.01;
-
-export const detectMethodFor = (preset: MethodPreset): MethodValue => {
-    const candidates = Object.entries(methodPresets) as [MethodValue, MethodPreset][];
-    for (const [method, values] of candidates) {
-        if (method === 'Other') {
-            continue;
-        }
-        const intervalMatches = Math.abs(values.ishaInterval - preset.ishaInterval) < METHOD_TOLERANCE;
-        const fajrMatches = Math.abs(values.fajrAngle - preset.fajrAngle) < METHOD_TOLERANCE;
-        const ishaMatches = Math.abs(values.ishaAngle - preset.ishaAngle) < METHOD_TOLERANCE;
-        if (intervalMatches && fajrMatches && ishaMatches) {
-            return method;
-        }
-    }
-    return 'Other';
-};
-
-export const methodLabelMap = methodOptions.reduce<Record<string, string>>((acc, option) => {
-    acc[option.value] = option.label;
-    return acc;
-}, {});
 
 export const getDefaultTimeZone = () => {
     if (typeof Intl !== 'undefined') {
@@ -107,15 +61,66 @@ export type Settings = {
 };
 
 export const defaultSettings: Settings = {
-    address: 'Ottawa, Canada',
-    fajrAngle: '15',
-    ishaAngle: '15',
+    address: '',
+    fajrAngle: '12',
+    ishaAngle: '12',
     ishaInterval: '0',
-    latitude: '45.3506',
-    longitude: '-75.7930',
-    method: 'NorthAmerica',
+    latitude: '',
+    longitude: '',
+    method: 'Other',
     timeZone: getDefaultTimeZone(),
 };
+
+const buildPreset = (method: MethodValue): MethodPreset => {
+    if (method === 'Other') {
+        return {
+            fajrAngle: Number.parseFloat(defaultSettings.fajrAngle),
+            ishaAngle: Number.parseFloat(defaultSettings.ishaAngle),
+            ishaInterval: Number.parseFloat(defaultSettings.ishaInterval),
+        };
+    }
+
+    const factory = methodFactories[method as MethodFactoryKey];
+    if (!factory) {
+        return {
+            fajrAngle: Number.parseFloat(defaultSettings.fajrAngle),
+            ishaAngle: Number.parseFloat(defaultSettings.ishaAngle),
+            ishaInterval: Number.parseFloat(defaultSettings.ishaInterval),
+        };
+    }
+    const params = factory();
+    return { fajrAngle: params.fajrAngle, ishaAngle: params.ishaAngle, ishaInterval: params.ishaInterval ?? 0 };
+};
+
+const buildMethodPresets = () => {
+    const presets = {} as Record<MethodValue, MethodPreset>;
+    for (const option of methodOptions) {
+        presets[option.value] = buildPreset(option.value);
+    }
+    return presets;
+};
+
+export const methodPresets: Record<MethodValue, MethodPreset> = buildMethodPresets();
+
+const METHOD_TOLERANCE = 0.01;
+
+export const detectMethodFor = (preset: MethodPreset): MethodValue => {
+    const candidates = Object.entries(methodPresets) as [MethodValue, MethodPreset][];
+    for (const [method, values] of candidates) {
+        const intervalMatches = Math.abs(values.ishaInterval - preset.ishaInterval) < METHOD_TOLERANCE;
+        const fajrMatches = Math.abs(values.fajrAngle - preset.fajrAngle) < METHOD_TOLERANCE;
+        const ishaMatches = Math.abs(values.ishaAngle - preset.ishaAngle) < METHOD_TOLERANCE;
+        if (intervalMatches && fajrMatches && ishaMatches) {
+            return method;
+        }
+    }
+    return 'Other';
+};
+
+export const methodLabelMap = methodOptions.reduce<Record<string, string>>((acc, option) => {
+    acc[option.value] = option.label;
+    return acc;
+}, {});
 
 const mergeSettings = (stored: Partial<Settings> | null): Settings => ({
     ...defaultSettings,
@@ -134,7 +139,6 @@ export const hydrateParameters = (settings: Settings): CalculationParameters => 
     params.ishaAngle = Number.isFinite(parsedIsha) ? parsedIsha : preset.ishaAngle;
     params.ishaInterval = Number.isFinite(parsedInterval) ? parsedInterval : preset.ishaInterval;
     if (params.ishaInterval > 0) {
-        // Interval methods ignore the angle by definition.
         params.ishaAngle = preset.ishaAngle;
     }
     return params;

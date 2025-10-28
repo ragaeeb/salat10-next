@@ -1,9 +1,7 @@
-'use client';
-
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuroraText } from '@/components/magicui/aurora-text';
 import { Meteors } from '@/components/magicui/meteors';
 import { Button } from '@/components/ui/button';
@@ -16,7 +14,6 @@ import { cn } from '@/lib/utils';
 export type PrayerTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
 
 export type PrayerTimesCardProps = {
-    activeLabel: string;
     activeEvent: string | null;
     addressLabel: string;
     dateLabel: string;
@@ -42,13 +39,13 @@ const PrayerTimeRow = ({
     time: string;
 }) => {
     const labelContent = active ? (
-        <AuroraText className="font-semibold text-2xl md:text-3xl">{label}</AuroraText>
+        <AuroraText className="font-semibold text-2xl text-white md:text-3xl">{label}</AuroraText>
     ) : (
         <span className="font-semibold text-2xl md:text-3xl">{label}</span>
     );
 
     const timeContent = active ? (
-        <AuroraText className="font-semibold text-2xl md:text-3xl">{time}</AuroraText>
+        <AuroraText className="font-semibold text-2xl text-white md:text-3xl">{time}</AuroraText>
     ) : (
         <span className="font-semibold text-2xl md:text-3xl">{time}</span>
     );
@@ -57,7 +54,7 @@ const PrayerTimeRow = ({
         <li
             className={cn(
                 'flex items-center justify-between rounded-2xl px-4 py-3 text-foreground transition-colors',
-                active ? 'bg-white/10 shadow-lg ring-2 ring-primary/40 backdrop-blur dark:ring-white/40' : 'bg-white/5',
+                active ? 'bg-white/10 shadow-lg ring-2 ring-primary/40 backdrop-blur' : 'bg-white/5',
                 isFard ? 'font-semibold' : 'font-medium',
             )}
         >
@@ -112,14 +109,7 @@ const Countdown = () => {
     );
 };
 
-// Helper function to calculate daily timings (simplified version)
-const calculateDailyTimings = (config: any, date: Date) => {
-    // This is a placeholder - in real implementation, this would use the actual Adhan library
-    // For now, return empty to avoid errors
-    return { timings: [] };
-};
 export function PrayerTimesCard({
-    activeLabel,
     activeEvent,
     addressLabel,
     dateLabel,

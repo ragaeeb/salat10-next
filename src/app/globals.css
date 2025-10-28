@@ -1,6 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Force light color scheme everywhere */
+:root { color-scheme: light; }
+
+html[data-darkreader-mode],
+html[data-darkreader-scheme] {
+  filter: none !important;
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

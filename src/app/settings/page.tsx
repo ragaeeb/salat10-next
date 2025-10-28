@@ -1,15 +1,14 @@
 'use client';
 
-import { ArrowLeft, Compass, MapPin, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, Compass, MapPin, Navigation } from 'lucide-react';
 import Link from 'next/link';
 import type React from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { TimezoneCombobox } from '@/components/timezone-combobox';
 import { Button } from '@/components/ui/button';
 import {
     detectMethodFor,
-    getDefaultTimeZone,
     type MethodValue,
     methodOptions,
     methodPresets,
@@ -18,6 +17,7 @@ import {
 } from '@/lib/settings';
 
 type GeocodeStatus = 'idle' | 'loading' | 'success' | 'error';
+type LocationStatus = 'idle' | 'loading' | 'success' | 'error';
 
 type GeocodeResult = { latitude: number; longitude: number; label?: string };
 
@@ -63,19 +63,13 @@ const fetchCoordinatesForAddress = async (address: string): Promise<GeocodeResul
     return result;
 };
 
-const resolveTimezoneFor = async (latitude: number, longitude: number, fallback: string): Promise<string> => {
+const DEFAULT_TZ = 'UTC';
+
+const getBrowserTimezone = (): string => {
     try {
-        const tzResponse = await fetch(
-            `https://api.open-meteo.com/v1/timezone?latitude=${latitude}&longitude=${longitude}`,
-        );
-        if (!tzResponse.ok) {
-            return fallback;
-        }
-        const tzData = (await tzResponse.json()) as { timezone?: string };
-        return tzData?.timezone ?? fallback;
-    } catch (error) {
-        console.warn('Timezone lookup fallback to current setting', error);
-        return fallback;
+        return Intl.DateTimeFormat().resolvedOptions().timeZone ?? DEFAULT_TZ;
+    } catch {
+        return DEFAULT_TZ;
     }
 };
 
@@ -83,6 +77,43 @@ export default function SettingsPage() {
     const { settings, updateSetting, setSettings, resetSettings, hydrated } = useSettings();
     const [geocodeStatus, setGeocodeStatus] = useState<GeocodeStatus>('idle');
     const [geocodeMessage, setGeocodeMessage] = useState<string | null>(null);
+    const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
+    const [locationMessage, setLocationMessage] = useState<string | null>(null);
+
+    // Try to get browser location on mount if coordinates are not set
+    useEffect(() => {
+        if (!hydrated) {
+            return;
+        }
+
+        const hasCoords =
+            settings.latitude &&
+            settings.longitude &&
+            Number.isFinite(Number.parseFloat(settings.latitude)) &&
+            Number.isFinite(Number.parseFloat(settings.longitude));
+
+        if (!hasCoords && 'geolocation' in navigator) {
+            setLocationStatus('loading');
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setSettings((prev) => ({
+                        ...prev,
+                        latitude: position.coords.latitude.toFixed(4),
+                        longitude: position.coords.longitude.toFixed(4),
+                        timeZone: getBrowserTimezone(),
+                    }));
+                    setLocationStatus('success');
+                    setLocationMessage('Location detected from browser');
+                },
+                (error) => {
+                    console.warn('Geolocation failed:', error);
+                    setLocationStatus('error');
+                    setLocationMessage('Location access denied. Please enter manually.');
+                },
+                { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
+            );
+        }
+    }, [hydrated, setSettings, settings.latitude, settings.longitude]);
 
     const handleChange = useCallback(
         (key: keyof Settings) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -112,14 +143,42 @@ export default function SettingsPage() {
             setSettings((prev) => buildAngleState(prev, field, nextValue));
         };
 
-    const applyAnglePreset = (value: number) => {
-        setSettings((prev) => ({
-            ...prev,
-            fajrAngle: value.toString(),
-            ishaAngle: value.toString(),
-            ishaInterval: '0',
-            method: detectMethodFor({ fajrAngle: value, ishaAngle: value, ishaInterval: 0 }),
-        }));
+    const requestBrowserLocation = () => {
+        if (!('geolocation' in navigator)) {
+            setLocationStatus('error');
+            setLocationMessage('Geolocation is not supported by your browser');
+            return;
+        }
+
+        setLocationStatus('loading');
+        setLocationMessage(null);
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setSettings((prev) => ({
+                    ...prev,
+                    latitude: position.coords.latitude.toFixed(4),
+                    longitude: position.coords.longitude.toFixed(4),
+                    timeZone: getBrowserTimezone(),
+                }));
+                setLocationStatus('success');
+                setLocationMessage('Location updated from browser');
+            },
+            (error) => {
+                console.warn('Geolocation error:', error);
+                setLocationStatus('error');
+                if (error.code === error.PERMISSION_DENIED) {
+                    setLocationMessage('Location access denied. Please enable location permissions.');
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    setLocationMessage('Location information unavailable.');
+                } else if (error.code === error.TIMEOUT) {
+                    setLocationMessage('Timed out while retrieving location. Please try again.');
+                } else {
+                    setLocationMessage('Unable to retrieve location. Please try again.');
+                }
+            },
+            { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
+        );
     };
 
     const lookupCoordinates = async () => {
@@ -137,13 +196,12 @@ export default function SettingsPage() {
                 setGeocodeMessage('We could not find that location. Try a more specific address.');
                 return;
             }
-            const timezone = await resolveTimezoneFor(result.latitude, result.longitude, settings.timeZone);
             setSettings((prev) => ({
                 ...prev,
                 address: result.label ?? prev.address,
                 latitude: result.latitude.toFixed(4),
                 longitude: result.longitude.toFixed(4),
-                timeZone: timezone,
+                timeZone: getBrowserTimezone(),
             }));
             setGeocodeStatus('success');
             setGeocodeMessage(`Found coordinates near ${result.label ?? settings.address}.`);
@@ -193,8 +251,7 @@ export default function SettingsPage() {
                         <div className="space-y-2">
                             <h1 className="font-bold text-3xl text-foreground">Location &amp; calculation settings</h1>
                             <p className="text-muted-foreground text-sm">
-                                Adjust your coordinates, angles, and preferred method. Changes are saved in your browser
-                                so the explorer page updates instantly.
+                                Set your coordinates and calculation method. Changes are saved in your browser.
                             </p>
                         </div>
                     </div>
@@ -209,7 +266,7 @@ export default function SettingsPage() {
                                 variant="outline"
                                 size="sm"
                                 className="gap-2"
-                                onClick={() => updateSetting('timeZone', getDefaultTimeZone())}
+                                onClick={() => updateSetting('timeZone', getBrowserTimezone())}
                             >
                                 <Compass className="h-4 w-4" /> Use browser timezone
                             </Button>
@@ -220,10 +277,23 @@ export default function SettingsPage() {
                                 className="gap-2"
                                 onClick={() => resetSettings()}
                             >
-                                <RefreshCcw className="h-4 w-4" /> Reset to defaults
+                                Reset to defaults
                             </Button>
                         </div>
                     </div>
+
+                    {locationMessage && (
+                        <output
+                            aria-live={locationStatus === 'error' ? 'assertive' : 'polite'}
+                            className={`mt-4 rounded-lg border p-3 text-sm ${
+                                locationStatus === 'error'
+                                    ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                                    : 'border-primary/50 bg-primary/10 text-primary'
+                            }`}
+                        >
+                            {locationMessage}
+                        </output>
+                    )}
 
                     <div className="mt-6 grid gap-4 md:grid-cols-2">
                         <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
@@ -283,6 +353,17 @@ export default function SettingsPage() {
                                 type="text"
                                 value={settings.longitude}
                             />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                disabled={locationStatus === 'loading'}
+                                onClick={requestBrowserLocation}
+                            >
+                                <Navigation className="h-3.5 w-3.5" />
+                                {locationStatus === 'loading' ? 'Getting location…' : 'Use my current location'}
+                            </Button>
                         </label>
                         <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
                             Fajr angle (°)
@@ -319,7 +400,7 @@ export default function SettingsPage() {
                             </span>
                         </label>
                         <label className="flex flex-col gap-2 font-medium text-foreground text-sm md:col-span-2">
-                            Predefined method
+                            Calculation method
                             <select
                                 className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
                                 onChange={handleMethodSelect}
@@ -332,31 +413,10 @@ export default function SettingsPage() {
                                 ))}
                             </select>
                             <span className="text-muted-foreground text-xs">
-                                Selecting a method loads its built-in adjustments from Adhan. You can still tweak the
-                                angles to explore how twilight choices shift the schedule.
+                                Selecting a method loads its built-in angles from Adhan. You can still manually adjust
+                                angles afterward.
                             </span>
                         </label>
-                    </div>
-
-                    <div className="mt-6 space-y-3">
-                        <p className="font-semibold text-foreground text-sm">Quick twilight presets</p>
-                        <div className="flex flex-wrap gap-2">
-                            <Button type="button" variant="outline" size="sm" onClick={() => applyAnglePreset(18)}>
-                                Astronomical 18°
-                            </Button>
-                            <Button type="button" variant="outline" size="sm" onClick={() => applyAnglePreset(15)}>
-                                Middle 15°
-                            </Button>
-                            <Button type="button" variant="outline" size="sm" onClick={() => applyAnglePreset(12)}>
-                                Nautical 12°
-                            </Button>
-                            <Button type="button" variant="outline" size="sm" onClick={() => applyAnglePreset(6)}>
-                                Civil 6°
-                            </Button>
-                        </div>
-                        <p className="text-muted-foreground text-xs">
-                            Presets fill both Fajr and ʿIshāʾ angles. You can still type a custom value afterward.
-                        </p>
                     </div>
                 </section>
 
