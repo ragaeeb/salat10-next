@@ -6,22 +6,18 @@ import { useMemo } from 'react';
 import { TextAnimate } from '@/components/magicui/text-animate';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import type { Quote } from '@/hooks/use-motivational-quote';
+import { useCopyFeedback } from '@/hooks/use-copy-feedback';
+import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
 
-export type QuoteCardProps = {
-    copyStatus: 'idle' | 'copied' | 'error';
-    error: boolean;
-    loading: boolean;
-    onCopy: () => Promise<void>;
-    quote: Quote | null;
-};
-
-export const QUOTE_WATERMARK = '\n\nShared from Salat10 [https://salat10.vercel.app]';
+const QUOTE_WATERMARK = '\n\nShared from Salat10 [https://salat10.vercel.app]';
 
 /**
  * Renders the motivational quote card with copy and animation affordances.
  */
-export function QuoteCard({ copyStatus, error, loading, onCopy, quote }: QuoteCardProps) {
+export function QuoteCard() {
+    const { copy, status: copyStatus } = useCopyFeedback();
+    const { quote } = useMotivationalQuote();
+
     const copyLabel = useMemo(() => {
         if (copyStatus === 'copied') {
             return 'Copied!';
@@ -32,20 +28,10 @@ export function QuoteCard({ copyStatus, error, loading, onCopy, quote }: QuoteCa
         return 'Copy quote';
     }, [copyStatus]);
 
-    const display = useMemo(() => {
-        if (loading) {
-            return { citation: 'Loading...', text: 'Collecting a daily reflection for you.' };
-        }
-        if (error || !quote) {
-            return { citation: 'Salat10', text: 'Remembrance keeps the heart alive.' };
-        }
-        return quote;
-    }, [error, loading, quote]);
-
     const copyIcon = copyStatus === 'copied' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />;
 
     const copyQuote = async () => {
-        await onCopy();
+        await copy(`"${quote!.text}" - [${quote!.citation}]${QUOTE_WATERMARK}`);
     };
 
     return (
@@ -55,17 +41,19 @@ export function QuoteCard({ copyStatus, error, loading, onCopy, quote }: QuoteCa
             initial={{ opacity: 0, y: 12 }}
         >
             <div className="flex items-start justify-between gap-4">
-                <blockquote className="space-y-4 text-base md:text-lg">
-                    <TextAnimate
-                        animation="fadeIn"
-                        as="p"
-                        by="line"
-                        className="font-medium text-foreground leading-relaxed"
-                    >
-                        {`“${display.text}”`}
-                    </TextAnimate>
-                    <footer className="text-foreground/80 text-sm italic">— {display.citation}</footer>
-                </blockquote>
+                {quote && (
+                    <blockquote className="space-y-4 text-base md:text-lg">
+                        <TextAnimate
+                            animation="fadeIn"
+                            as="p"
+                            by="line"
+                            className="font-medium text-foreground leading-relaxed"
+                        >
+                            {`“${quote.text}”`}
+                        </TextAnimate>
+                        <footer className="text-foreground/80 text-sm italic">— {quote.citation}</footer>
+                    </blockquote>
+                )}
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button

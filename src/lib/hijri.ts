@@ -13,8 +13,8 @@ const islamicMonthNames = [
     'Shaʿbān',
     'Ramaḍān',
     'Shawwāl',
-    'Ḏū al-Qaʿdah',
-    'Ḏū al-Ḥijjah',
+    'Ḏū ʾl-Qaʿdah',
+    'Ḏū ʾl-Ḥijjah',
 ];
 
 const KUWAITI_CYCLE_DAYS = 10631;

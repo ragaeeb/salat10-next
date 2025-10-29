@@ -1,6 +1,6 @@
 import { Coordinates, PrayerTimes, SunnahTimes } from 'adhan';
-
-import { createParameters, type MethodValue } from './settings';
+import type { MethodValue } from '@/types/settings';
+import { createParameters } from './settings';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const FRIDAY = 5;
@@ -18,15 +18,15 @@ const formatTime = (t: Date, timeZone: string) => {
     return time;
 };
 
-const formatDate = (fajr: Date) =>
-    new Date(fajr).toLocaleDateString('en-US', { day: 'numeric', month: 'long', weekday: 'long', year: 'numeric' });
+const formatDate = (fajr: Date) => {
+    return new Date(fajr).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        weekday: 'long',
+        year: 'numeric',
+    });
+};
 
-/**
- * Returns a list of formatted times ordered from earliest to latest.
- * @param {*} calculationResult The result of the calculation times (object).
- * @param {*} latitude
- * @param {*} longitude
- */
 /**
  * Formats raw prayer time objects into a sorted, display-friendly collection.
  */

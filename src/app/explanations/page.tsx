@@ -72,7 +72,7 @@ export default function ExplanationsPage() {
     return (
         <div className="min-h-screen bg-background">
             {!hasValidCoordinates ? (
-                <div className="flex min-h-screen flex-col items-center justify-center p-6">
+                <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-md space-y-4">
                         <div className="mb-6">
                             <Button asChild variant="ghost" size="sm">
@@ -82,8 +82,8 @@ export default function ExplanationsPage() {
                                 </Link>
                             </Button>
                         </div>
-                        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6">
-                            <p className="text-destructive">
+                        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 sm:p-6">
+                            <p className="text-destructive text-sm sm:text-base">
                                 Please set valid coordinates in{' '}
                                 <Link href="/settings" className="underline">
                                     settings
@@ -94,7 +94,7 @@ export default function ExplanationsPage() {
                     </div>
                 </div>
             ) : error ? (
-                <div className="flex min-h-screen flex-col items-center justify-center p-6">
+                <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-md space-y-4">
                         <div className="mb-6">
                             <Button asChild variant="ghost" size="sm">
@@ -104,8 +104,8 @@ export default function ExplanationsPage() {
                                 </Link>
                             </Button>
                         </div>
-                        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6">
-                            <p className="text-destructive">{error}</p>
+                        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 sm:p-6">
+                            <p className="text-destructive text-sm sm:text-base">{error}</p>
                         </div>
                     </div>
                 </div>

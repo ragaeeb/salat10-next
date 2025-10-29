@@ -237,47 +237,47 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-background px-6 py-10">
+        <div className="relative min-h-screen overflow-hidden bg-background px-4 py-6 md:px-6 md:py-10">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,var(--primary)/0.12,transparent_70%)]" />
             <div className="pointer-events-none absolute bottom-[-20%] left-[-15%] h-96 w-96 rounded-full bg-[rgba(11,95,131,0.25)] blur-3xl" />
-            <div className="relative z-10 flex w-full flex-col gap-10">
-                <header className="rounded-3xl border border-border/60 bg-card/90 p-8 shadow-lg backdrop-blur">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <Button asChild>
-                            <Link className="inline-flex items-center gap-2 self-start" href="/">
-                                <ArrowLeft className="h-4 w-4" /> Back to prayer times
+            <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col gap-6 md:gap-10">
+                <header className="rounded-2xl border border-border/60 bg-card/90 p-4 shadow-lg backdrop-blur md:rounded-3xl md:p-8">
+                    <div className="flex flex-col gap-4">
+                        <Button asChild size="sm" className="self-start">
+                            <Link className="inline-flex items-center gap-2" href="/">
+                                <ArrowLeft className="h-4 w-4" /> Back
                             </Link>
                         </Button>
                         <div className="space-y-2">
-                            <h1 className="font-bold text-3xl text-foreground">Location &amp; calculation settings</h1>
-                            <p className="text-muted-foreground text-sm">
-                                Set your coordinates and calculation method. Changes are saved in your browser.
+                            <h1 className="font-bold text-foreground text-xl md:text-3xl">Location &amp; Settings</h1>
+                            <p className="text-muted-foreground text-xs md:text-sm">
+                                Configure your coordinates and calculation method
                             </p>
                         </div>
                     </div>
                 </header>
 
-                <section className="rounded-3xl border border-border/60 bg-card/90 p-8 shadow-lg backdrop-blur">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="font-semibold text-foreground text-xl">Your inputs</h2>
-                        <div className="flex flex-wrap items-center gap-2">
+                <section className="rounded-2xl border border-border/60 bg-card/90 p-4 shadow-lg backdrop-blur md:rounded-3xl md:p-8">
+                    <div className="mb-4 flex flex-col gap-3 md:mb-6 md:flex-row md:items-center md:justify-between">
+                        <h2 className="font-semibold text-foreground text-lg md:text-xl">Your inputs</h2>
+                        <div className="flex flex-col gap-2 md:flex-row">
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="gap-2"
+                                className="w-full gap-2 text-xs md:w-auto"
                                 onClick={() => updateSetting('timeZone', getBrowserTimezone())}
                             >
-                                <Compass className="h-4 w-4" /> Use browser timezone
+                                <Compass className="h-3.5 w-3.5" /> Browser timezone
                             </Button>
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="gap-2"
+                                className="w-full gap-2 text-xs md:w-auto"
                                 onClick={() => resetSettings()}
                             >
-                                Reset to defaults
+                                Reset defaults
                             </Button>
                         </div>
                     </div>
@@ -285,7 +285,7 @@ export default function SettingsPage() {
                     {locationMessage && (
                         <output
                             aria-live={locationStatus === 'error' ? 'assertive' : 'polite'}
-                            className={`mt-4 rounded-lg border p-3 text-sm ${
+                            className={`mb-4 rounded-lg border p-3 text-xs md:text-sm ${
                                 locationStatus === 'error'
                                     ? 'border-destructive/50 bg-destructive/10 text-destructive'
                                     : 'border-primary/50 bg-primary/10 text-primary'
@@ -295,22 +295,22 @@ export default function SettingsPage() {
                         </output>
                     )}
 
-                    <div className="mt-6 grid gap-4 md:grid-cols-2">
+                    <div className="space-y-5">
                         <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
                             Address or label
                             <input
-                                className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground text-sm shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
                                 onChange={handleChange('address')}
                                 placeholder="City, country"
                                 type="text"
                                 value={settings.address}
                             />
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-2">
                                 <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="gap-2"
+                                    className="w-full gap-2 text-xs md:w-auto"
                                     disabled={geocodeStatus === 'loading'}
                                     onClick={lookupCoordinates}
                                 >
@@ -326,6 +326,7 @@ export default function SettingsPage() {
                                 )}
                             </div>
                         </label>
+
                         <div className="flex flex-col gap-2 font-medium text-foreground text-sm">
                             <span id="timezone-label">Timezone</span>
                             <TimezoneCombobox
@@ -334,61 +335,69 @@ export default function SettingsPage() {
                                 onChange={(zone) => updateSetting('timeZone', zone)}
                             />
                         </div>
-                        <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
-                            Latitude (°)
-                            <input
-                                className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                                onChange={handleChange('latitude')}
-                                placeholder="45.3506"
-                                type="text"
-                                value={settings.latitude}
-                            />
-                        </label>
-                        <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
-                            Longitude (°)
-                            <input
-                                className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                                onChange={handleChange('longitude')}
-                                placeholder="-75.7930"
-                                type="text"
-                                value={settings.longitude}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="gap-2"
-                                disabled={locationStatus === 'loading'}
-                                onClick={requestBrowserLocation}
-                            >
-                                <Navigation className="h-3.5 w-3.5" />
-                                {locationStatus === 'loading' ? 'Getting location…' : 'Use my current location'}
-                            </Button>
-                        </label>
-                        <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
-                            Fajr angle (°)
-                            <input
-                                className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                                onChange={handleAngleChange('fajrAngle')}
-                                step="0.1"
-                                type="number"
-                                value={settings.fajrAngle}
-                            />
-                        </label>
-                        <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
-                            ʿIshāʾ angle (°)
-                            <input
-                                className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                                onChange={handleAngleChange('ishaAngle')}
-                                step="0.1"
-                                type="number"
-                                value={settings.ishaAngle}
-                            />
-                        </label>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
+                                Latitude (°)
+                                <input
+                                    className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground text-sm shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    onChange={handleChange('latitude')}
+                                    placeholder="45.3506"
+                                    type="text"
+                                    value={settings.latitude}
+                                />
+                            </label>
+                            <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
+                                Longitude (°)
+                                <input
+                                    className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground text-sm shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    onChange={handleChange('longitude')}
+                                    placeholder="-75.7930"
+                                    type="text"
+                                    value={settings.longitude}
+                                />
+                            </label>
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full gap-2 text-xs md:w-auto"
+                            disabled={locationStatus === 'loading'}
+                            onClick={requestBrowserLocation}
+                        >
+                            <Navigation className="h-3.5 w-3.5" />
+                            {locationStatus === 'loading' ? 'Getting location…' : 'Use my current location'}
+                        </Button>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
+                                Fajr angle (°)
+                                <input
+                                    className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground text-sm shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    onChange={handleAngleChange('fajrAngle')}
+                                    step="0.1"
+                                    type="number"
+                                    value={settings.fajrAngle}
+                                />
+                            </label>
+                            <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
+                                ʿIshāʾ angle (°)
+                                <input
+                                    className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground text-sm shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    onChange={handleAngleChange('ishaAngle')}
+                                    step="0.1"
+                                    type="number"
+                                    value={settings.ishaAngle}
+                                />
+                            </label>
+                        </div>
+
                         <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
                             ʿIshāʾ interval (minutes)
                             <input
-                                className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground text-sm shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
                                 min="0"
                                 onChange={handleAngleChange('ishaInterval')}
                                 step="1"
@@ -399,10 +408,11 @@ export default function SettingsPage() {
                                 Set to zero to use the angle instead of a fixed waiting period.
                             </span>
                         </label>
-                        <label className="flex flex-col gap-2 font-medium text-foreground text-sm md:col-span-2">
+
+                        <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
                             Calculation method
                             <select
-                                className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground text-sm shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
                                 onChange={handleMethodSelect}
                                 value={settings.method}
                             >
@@ -420,10 +430,10 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
-                <footer className="rounded-3xl border border-border/60 bg-card/80 p-6 text-muted-foreground text-xs shadow-inner">
+                <footer className="rounded-2xl border border-border/60 bg-card/80 p-4 text-muted-foreground text-xs shadow-inner md:rounded-3xl md:p-6">
                     Settings are stored in your browser&apos;s local storage. Clearing site data will reset them to the
                     defaults below:
-                    <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-secondary/60 p-4 font-mono text-foreground text-sm">
+                    <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-secondary/60 p-3 font-mono text-foreground text-xs md:p-4 md:text-sm">
                         {currentSettingsJson}
                     </pre>
                 </footer>
