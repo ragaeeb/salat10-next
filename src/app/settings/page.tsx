@@ -7,14 +7,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { TimezoneCombobox } from '@/components/timezone-combobox';
 import { Button } from '@/components/ui/button';
-import {
-    detectMethodFor,
-    type MethodValue,
-    methodOptions,
-    methodPresets,
-    type Settings,
-    useSettings,
-} from '@/lib/settings';
+import { useSettings } from '@/hooks/use-settings';
+import { CALCULATION_METHOD_OPTIONS } from '@/lib/constants';
+import { detectMethodFor, methodPresets } from '@/lib/settings';
+import type { MethodValue, Settings } from '@/types/settings';
 
 type GeocodeStatus = 'idle' | 'loading' | 'success' | 'error';
 type LocationStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -74,7 +70,7 @@ const getBrowserTimezone = (): string => {
 };
 
 export default function SettingsPage() {
-    const { settings, updateSetting, setSettings, resetSettings, hydrated } = useSettings();
+    const { settings, updateSetting, setSettings, resetSettings } = useSettings();
     const [geocodeStatus, setGeocodeStatus] = useState<GeocodeStatus>('idle');
     const [geocodeMessage, setGeocodeMessage] = useState<string | null>(null);
     const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
@@ -82,10 +78,6 @@ export default function SettingsPage() {
 
     // Try to get browser location on mount if coordinates are not set
     useEffect(() => {
-        if (!hydrated) {
-            return;
-        }
-
         const hasCoords =
             settings.latitude &&
             settings.longitude &&
@@ -113,7 +105,7 @@ export default function SettingsPage() {
                 { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
             );
         }
-    }, [hydrated, setSettings, settings.latitude, settings.longitude]);
+    }, [setSettings, settings.latitude, settings.longitude]);
 
     const handleChange = useCallback(
         (key: keyof Settings) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -231,10 +223,6 @@ export default function SettingsPage() {
 
         return JSON.stringify(display, null, 2);
     }, [settings]);
-
-    if (!hydrated) {
-        return null;
-    }
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-background px-4 py-6 md:px-6 md:py-10">
@@ -416,7 +404,7 @@ export default function SettingsPage() {
                                 onChange={handleMethodSelect}
                                 value={settings.method}
                             >
-                                {methodOptions.map((option) => (
+                                {CALCULATION_METHOD_OPTIONS.map((option) => (
                                     <option key={option.value} value={option.value}>
                                         {option.label}
                                     </option>

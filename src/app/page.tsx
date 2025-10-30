@@ -3,8 +3,7 @@
 import { IconSunMoon } from '@tabler/icons-react';
 import { Settings2Icon } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QuoteCard } from '@/components/prayer/quote-card';
 import { Button } from '@/components/ui/button';
@@ -18,17 +17,9 @@ import { methodLabelMap } from '@/lib/settings';
 import { formatCoordinate } from '@/lib/textUtils';
 
 export default function PrayerTimesPage() {
-    const { settings, hydrated, numeric } = useSettings();
+    const { settings, numeric } = useSettings();
     const [currentDate, setCurrentDate] = useState(new Date());
-    const router = useRouter();
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
-
-    // Redirect to settings if coordinates are not set
-    useEffect(() => {
-        if (hydrated && !hasValidCoordinates) {
-            router.push('/settings');
-        }
-    }, [hydrated, hasValidCoordinates, router]);
 
     const calculationArgs = useCalculationConfig();
 
@@ -65,7 +56,7 @@ export default function PrayerTimesPage() {
     const methodLabel = methodLabelMap[settings.method] ?? settings.method;
     const hijriLabel = `${hijri.day}, ${hijri.date} ${hijri.month} ${hijri.year} AH`;
 
-    if (!hydrated || !hasValidCoordinates) {
+    if (!hasValidCoordinates) {
         return null;
     }
 
