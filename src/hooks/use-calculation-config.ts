@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-
-import { useSettings, type MethodValue } from '@/lib/settings';
+import type { MethodValue } from '@/types/settings';
+import { useSettings } from './use-settings';
 
 export type CalculationConfig = {
     fajrAngle: number;
@@ -15,9 +15,7 @@ export type CalculationConfig = {
 };
 
 export const useCalculationConfig = () => {
-    const { hydrated, numeric, settings } = useSettings();
-
-    const timeZone = settings.timeZone?.trim() || 'UTC';
+    const { numeric, settings } = useSettings();
 
     const config = useMemo<CalculationConfig>(
         () => ({
@@ -27,7 +25,7 @@ export const useCalculationConfig = () => {
             latitude: settings.latitude || '0',
             longitude: settings.longitude || '0',
             method: settings.method,
-            timeZone,
+            timeZone: settings.timeZone,
         }),
         [
             numeric.fajrAngle,
@@ -36,9 +34,9 @@ export const useCalculationConfig = () => {
             settings.latitude,
             settings.longitude,
             settings.method,
-            timeZone,
+            settings.timeZone,
         ],
     );
 
-    return { config, hydrated, settings };
+    return { config, settings };
 };

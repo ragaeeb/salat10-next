@@ -6,60 +6,38 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
-import { QUOTE_WATERMARK, QuoteCard } from '@/components/prayer/quote-card';
+import { QuoteCard } from '@/components/prayer/quote-card';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { useCopyFeedback } from '@/hooks/use-copy-feedback';
-import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
+import { useCalculationConfig } from '@/hooks/use-calculation-config';
+import { useSettings } from '@/hooks/use-settings';
 import { daily } from '@/lib/calculator';
 import { writeIslamicDate } from '@/lib/hijri';
 import { salatLabels } from '@/lib/salat-labels';
-import { methodLabelMap, useSettings } from '@/lib/settings';
-
-const formatCoordinate = (value: number, positiveLabel: string, negativeLabel: string) =>
-    `${Math.abs(value).toFixed(4)}° ${value >= 0 ? positiveLabel : negativeLabel}`;
+import { methodLabelMap } from '@/lib/settings';
+import { formatCoordinate } from '@/lib/textUtils';
 
 export default function PrayerTimesPage() {
-    const { settings, hydrated, numeric } = useSettings();
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const { error: quoteError, loading: quoteLoading, quote } = useMotivationalQuote();
-    const { copy, status: copyStatus } = useCopyFeedback();
+    const { settings, numeric } = useSettings();
     const router = useRouter();
-
-    const timeZone = settings.timeZone?.trim() || 'UTC';
+    const [currentDate, setCurrentDate] = useState(new Date());
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
 
-    // Redirect to settings if coordinates are not set
-    useEffect(() => {
-        if (hydrated && !hasValidCoordinates) {
-            router.push('/settings');
-        }
-    }, [hydrated, hasValidCoordinates, router]);
+    const calculationArgs = useCalculationConfig();
 
-    const calculationArgs = useMemo(
-        () => ({
-            fajrAngle: Number.isFinite(numeric.fajrAngle) ? numeric.fajrAngle : 0,
-            ishaAngle: Number.isFinite(numeric.ishaAngle) ? numeric.ishaAngle : 0,
-            ishaInterval: Number.isFinite(numeric.ishaInterval) ? numeric.ishaInterval : 0,
-            latitude: settings.latitude || '0',
-            longitude: settings.longitude || '0',
-            method: settings.method,
-            timeZone,
-        }),
-        [
-            numeric.fajrAngle,
-            numeric.ishaAngle,
-            numeric.ishaInterval,
-            settings.latitude,
-            settings.longitude,
-            settings.method,
-            timeZone,
-        ],
+    const result = useMemo(
+        () => daily(salatLabels, calculationArgs.config, currentDate),
+        [calculationArgs, currentDate],
     );
 
-    const result = useMemo(() => daily(salatLabels, calculationArgs, currentDate), [calculationArgs, currentDate]);
-
     const hijri = useMemo(() => writeIslamicDate(0, currentDate), [currentDate]);
+
+    // Redirect to settings if no valid coordinates
+    useEffect(() => {
+        if (!hasValidCoordinates) {
+            router.push('/settings');
+        }
+    }, [hasValidCoordinates, router]);
 
     const handlePrevDay = () => {
         setCurrentDate((prev) => {
@@ -87,12 +65,8 @@ export default function PrayerTimesPage() {
     const methodLabel = methodLabelMap[settings.method] ?? settings.method;
     const hijriLabel = `${hijri.day}, ${hijri.date} ${hijri.month} ${hijri.year} AH`;
 
-    const onCopyQuote = async () => {
-        const sourceQuote = quote ?? { citation: 'Salat10', text: 'Remembrance keeps the heart alive.' };
-        await copy(`"${sourceQuote.text}" - [${sourceQuote.citation}]${QUOTE_WATERMARK}`);
-    };
-
-    if (!hydrated || !hasValidCoordinates) {
+    // Don't render if no valid coordinates (will redirect)
+    if (!hasValidCoordinates) {
         return null;
     }
 
@@ -122,20 +96,13 @@ export default function PrayerTimesPage() {
 
             <TooltipProvider>
                 <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pt-24 pb-16 sm:px-6 lg:px-8">
-                    <QuoteCard
-                        copyStatus={copyStatus}
-                        error={quoteError}
-                        loading={quoteLoading}
-                        onCopy={onCopyQuote}
-                        quote={quote}
-                    />
+                    <QuoteCard />
 
                     <PrayerTimesCard
                         activeEvent={result.activeEvent}
                         addressLabel={addressLabel}
                         dateLabel={result.date}
                         hijriLabel={hijriLabel}
-                        istijaba={result.istijaba}
                         locationDetail={locationDetail}
                         methodLabel={methodLabel}
                         onNextDay={handleNextDay}

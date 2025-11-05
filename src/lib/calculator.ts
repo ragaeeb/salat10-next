@@ -1,39 +1,14 @@
 import { Coordinates, PrayerTimes, SunnahTimes } from 'adhan';
+import type { MethodValue } from '@/types/settings';
+import { formatDate, formatTime } from './formatting';
+import { createParameters } from './settings';
 
-import { createParameters, type MethodValue } from './settings';
-
-const ONE_HOUR = 60 * 60 * 1000;
-const FRIDAY = 5;
-
-/**
- * Formats a JavaScript date into a localized 12-hour time string.
- */
-const formatTime = (t: Date, timeZone: string) => {
-    const time = new Date(t).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        hour12: true,
-        minute: '2-digit',
-        timeZone,
-    });
-    return time;
-};
-
-const formatDate = (fajr: Date) =>
-    new Date(fajr).toLocaleDateString('en-US', { day: 'numeric', month: 'long', weekday: 'long', year: 'numeric' });
-
-/**
- * Returns a list of formatted times ordered from earliest to latest.
- * @param {*} calculationResult The result of the calculation times (object).
- * @param {*} latitude
- * @param {*} longitude
- */
 /**
  * Formats raw prayer time objects into a sorted, display-friendly collection.
  */
 type FormattedTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
 
 const formatAsObject = (
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     { sunset, ...calculationResult }: Record<string, Date>,
     timeZone: string,
     salatLabels: Record<string, string>,
@@ -68,7 +43,7 @@ type Calculation = {
 export const daily = (
     salatLabels: Record<string, string>,
     { fajrAngle, ishaAngle, ishaInterval, latitude, longitude, method, timeZone }: Calculation,
-    now = new Date(),
+    now: Date,
 ) => {
     const params = createParameters({ fajrAngle, ishaAngle, ishaInterval, method });
     const fard = new PrayerTimes(new Coordinates(Number(latitude), Number(longitude)), now, params);
@@ -82,7 +57,6 @@ export const daily = (
 
     const result = formatAsObject(rest, timeZone, salatLabels);
     const currentPrayer = fard.currentPrayer(now);
-    const nextPrayer = fard.nextPrayer(now);
     const nowMs = now.getTime();
     const activeEntry = [...result.timings].reverse().find((timing) => nowMs >= timing.value.getTime());
     const fallbackEntry = result.timings[0];
@@ -93,21 +67,7 @@ export const daily = (
           activeEvent)
         : null;
 
-    const base = {
-        ...result,
-        activeEvent,
-        activeLabel,
-        currentPrayer: currentPrayer === 'none' ? null : currentPrayer,
-        istijaba: false,
-    };
-
-    if (nextPrayer === 'none') {
-        return base;
-    }
-
-    const diff = fard.timeForPrayer(nextPrayer)!.getTime() - now.getTime();
-
-    return { ...base, istijaba: now.getDay() === FRIDAY && nextPrayer === 'maghrib' && diff < ONE_HOUR };
+    return { ...result, activeEvent, activeLabel, currentPrayer: currentPrayer === 'none' ? null : currentPrayer };
 };
 
 /**

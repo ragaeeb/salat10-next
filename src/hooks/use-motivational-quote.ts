@@ -1,10 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-export type Quote = { citation: string; text: string };
-
-const QUOTE_ENDPOINT = '/api/quotes';
+import type { Quote } from '@/types/quote';
 
 export type MotivationalQuoteState = { error: boolean; loading: boolean; quote: Quote | null };
 
@@ -22,11 +19,12 @@ export const useMotivationalQuote = (): MotivationalQuoteState => {
 
         const loadQuote = async () => {
             try {
-                const response = await fetch(QUOTE_ENDPOINT);
+                const response = await fetch('/api/quotes');
                 if (!response.ok) {
                     throw new Error(`Failed to fetch quote: ${response.status}`);
                 }
-                const data = (await response.json()) as Quote;
+                const data: Quote = await response.json();
+
                 if (!cancelled) {
                     setState({ error: false, loading: false, quote: data });
                 }

@@ -6,12 +6,13 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { MultiStepLoader } from '@/components/aceternity/multi-step-loader';
 import { Button } from '@/components/ui/button';
+import { useSettings } from '@/hooks/use-settings';
 import { buildPrayerTimeExplanation } from '@/lib/explanation';
 import type { PrayerTimeExplanation } from '@/lib/explanation/types';
-import { createParameters, useSettings } from '@/lib/settings';
+import { createParameters } from '@/lib/settings';
 
 export default function ExplanationsPage() {
-    const { settings, hydrated, numeric } = useSettings();
+    const { settings, numeric } = useSettings();
     const [explanation, setExplanation] = useState<PrayerTimeExplanation | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export default function ExplanationsPage() {
     const currentDate = useMemo(() => new Date(), []);
 
     useEffect(() => {
-        if (!hydrated || !hasValidCoordinates) {
+        if (!hasValidCoordinates) {
             setLoading(false);
             return;
         }
@@ -52,7 +53,6 @@ export default function ExplanationsPage() {
             setLoading(false);
         }
     }, [
-        hydrated,
         hasValidCoordinates,
         numeric.fajrAngle,
         numeric.ishaAngle,
@@ -65,14 +65,10 @@ export default function ExplanationsPage() {
         currentDate,
     ]);
 
-    if (!hydrated) {
-        return null;
-    }
-
     return (
         <div className="min-h-screen bg-background">
             {!hasValidCoordinates ? (
-                <div className="flex min-h-screen flex-col items-center justify-center p-6">
+                <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-md space-y-4">
                         <div className="mb-6">
                             <Button asChild variant="ghost" size="sm">
@@ -82,8 +78,8 @@ export default function ExplanationsPage() {
                                 </Link>
                             </Button>
                         </div>
-                        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6">
-                            <p className="text-destructive">
+                        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 sm:p-6">
+                            <p className="text-destructive text-sm sm:text-base">
                                 Please set valid coordinates in{' '}
                                 <Link href="/settings" className="underline">
                                     settings
@@ -94,7 +90,7 @@ export default function ExplanationsPage() {
                     </div>
                 </div>
             ) : error ? (
-                <div className="flex min-h-screen flex-col items-center justify-center p-6">
+                <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-md space-y-4">
                         <div className="mb-6">
                             <Button asChild variant="ghost" size="sm">
@@ -104,8 +100,8 @@ export default function ExplanationsPage() {
                                 </Link>
                             </Button>
                         </div>
-                        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6">
-                            <p className="text-destructive">{error}</p>
+                        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 sm:p-6">
+                            <p className="text-destructive text-sm sm:text-base">{error}</p>
                         </div>
                     </div>
                 </div>
