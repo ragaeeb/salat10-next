@@ -1,0 +1,177 @@
+import { MapPin, Navigation } from 'lucide-react';
+import type React from 'react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
+import { TimezoneCombobox } from '@/components/timezone-combobox';
+import { Button } from '@/components/ui/button';
+import type { Settings } from '@/types/settings';
+
+type LocationSettingsProps = {
+    settings: Settings;
+    onSettingsChange: (updater: (prev: Settings) => Settings) => void;
+    onFieldChange: (key: keyof Settings, value: string) => void;
+};
+
+type GeocodeStatus = 'idle' | 'loading';
+type LocationStatus = 'idle' | 'loading';
+
+const DEFAULT_TZ = 'UTC';
+
+const getBrowserTimezone = (): string => {
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone ?? DEFAULT_TZ;
+    } catch {
+        return DEFAULT_TZ;
+    }
+};
+
+export function LocationSettings({ settings, onSettingsChange, onFieldChange }: LocationSettingsProps) {
+    const [geocodeStatus, setGeocodeStatus] = useState<GeocodeStatus>('idle');
+    const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
+
+    const handleChange = (key: keyof Settings) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        onFieldChange(key, event.target.value);
+    };
+
+    const requestBrowserLocation = () => {
+        if (!('geolocation' in navigator)) {
+            toast.error('Geolocation is not supported by your browser');
+            return;
+        }
+
+        setLocationStatus('loading');
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                onSettingsChange((prev) => ({
+                    ...prev,
+                    latitude: position.coords.latitude.toFixed(4),
+                    longitude: position.coords.longitude.toFixed(4),
+                    timeZone: getBrowserTimezone(),
+                }));
+                setLocationStatus('idle');
+                toast.success('Location updated from browser');
+            },
+            (error) => {
+                console.warn('Geolocation error:', error);
+                setLocationStatus('idle');
+                if (error.code === error.PERMISSION_DENIED) {
+                    toast.error('Location access denied. Please enable location permissions.');
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    toast.error('Location information unavailable.');
+                } else if (error.code === error.TIMEOUT) {
+                    toast.error('Timed out while retrieving location. Please try again.');
+                } else {
+                    toast.error('Unable to retrieve location. Please try again.');
+                }
+            },
+            { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
+        );
+    };
+
+    const lookupCoordinates = async () => {
+        if (!settings.address.trim()) {
+            toast.error('Please enter an address or city first.');
+            return;
+        }
+
+        setGeocodeStatus('loading');
+
+        try {
+            const response = await fetch(`/api/geocode?address=${encodeURIComponent(settings.address)}`);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to fetch coordinates');
+            }
+
+            const result = await response.json();
+
+            onSettingsChange((prev) => ({
+                ...prev,
+                address: result.label ?? prev.address,
+                latitude: result.latitude.toFixed(4),
+                longitude: result.longitude.toFixed(4),
+                timeZone: getBrowserTimezone(),
+            }));
+
+            setGeocodeStatus('idle');
+            toast.success(`Found coordinates near ${result.label ?? settings.address}.`);
+        } catch (error) {
+            console.warn('Geocode lookup failed', error);
+            setGeocodeStatus('idle');
+            toast.error('Unable to look up that location right now. Please try again later.');
+        }
+    };
+
+    return (
+        <div className="space-y-5">
+            <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
+                Address or label
+                <input
+                    className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground text-sm shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    onChange={handleChange('address')}
+                    placeholder="City, country"
+                    type="text"
+                    value={settings.address}
+                />
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 text-xs md:w-auto"
+                    disabled={geocodeStatus === 'loading'}
+                    onClick={lookupCoordinates}
+                >
+                    <MapPin className="h-3.5 w-3.5" />
+                    {geocodeStatus === 'loading' ? 'Looking up…' : 'Auto-fill coordinates'}
+                </Button>
+            </label>
+
+            <div className="flex flex-col gap-2 font-medium text-foreground text-sm">
+                <span id="timezone-label">Timezone</span>
+                <TimezoneCombobox
+                    ariaLabelledBy="timezone-label"
+                    value={settings.timeZone}
+                    onChange={(zone) => onFieldChange('timeZone', zone)}
+                />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+                <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
+                    Latitude (°)
+                    <input
+                        className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground text-sm shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        onChange={handleChange('latitude')}
+                        placeholder="45.3506"
+                        type="text"
+                        value={settings.latitude}
+                    />
+                </label>
+                <label className="flex flex-col gap-2 font-medium text-foreground text-sm">
+                    Longitude (°)
+                    <input
+                        className="rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-foreground text-sm shadow-sm transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        onChange={handleChange('longitude')}
+                        placeholder="-75.7930"
+                        type="text"
+                        value={settings.longitude}
+                    />
+                </label>
+            </div>
+
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full gap-2 text-xs md:w-auto"
+                disabled={locationStatus === 'loading'}
+                onClick={requestBrowserLocation}
+            >
+                <Navigation className="h-3.5 w-3.5" />
+                {locationStatus === 'loading' ? 'Getting location…' : 'Use my current location'}
+            </Button>
+        </div>
+    );
+}

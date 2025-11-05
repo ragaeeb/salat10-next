@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Footer } from '@/components/footer';
+import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 import { HydratedProvider } from '@/components/hydrated-provider';
 
@@ -27,6 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     </main>
                     <Footer />
                 </div>
+                <Toaster />
             </body>
         </html>
     );
