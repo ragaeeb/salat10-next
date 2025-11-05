@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/ragaeeb/salat10-next/compare/v1.2.0...v1.3.0) (2025-11-05)
+
+
+### Features
+
+* **refactor:** Refactor and enhancements ([#7](https://github.com/ragaeeb/salat10-next/issues/7)) ([1456dfb](https://github.com/ragaeeb/salat10-next/commit/1456dfbcf1e35f394a9a3c496e8f60b612545857))
+
 # [1.2.0](https://github.com/ragaeeb/salat10-next/compare/v1.1.0...v1.2.0) (2025-10-28)
 
 
