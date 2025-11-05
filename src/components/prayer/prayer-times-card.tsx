@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, SearchIcon, TableIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -189,13 +189,15 @@ export function PrayerTimesCard({
 
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <Button asChild size="sm" variant="outline" className="border-white/30">
-                        <Link href="/monthly">Monthly timetable</Link>
-                    </Button>
-                    <Button asChild size="sm" variant="outline" className="border-white/30">
-                        <Link href="/yearly">Yearly timetable</Link>
+                        <Link href="/timetable">
+                            <TableIcon />
+                            Timetable
+                        </Link>
                     </Button>
                     <Button asChild size="sm">
-                        <Link href="/explanations">Explain today's calculations</Link>
+                        <Link href="/explanations">
+                            <SearchIcon /> Explain
+                        </Link>
                     </Button>
                 </div>
             </div>

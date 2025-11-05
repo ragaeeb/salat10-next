@@ -1,19 +1,23 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { PrayerLineChart } from '@/components/graph/prayer-line-chart';
+import type { DateRange } from 'react-day-picker';
+import { PrayerLineChart } from '@/components/prayer-line-chart';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCalculationConfig } from '@/hooks/use-calculation-config';
-import { monthly } from '@/lib/calculator';
+import { daily } from '@/lib/calculator';
 import { salatLabels } from '@/lib/salat-labels';
-import { clampMonth, parseInteger } from '../utils';
+import { formatDateRangeDisplay, generateScheduleLabel, updateDateRangeParams } from '@/lib/time';
+import { cn } from '@/lib/utils';
 
-export type MonthlyGraphClientProps = { initialMonth: number; initialYear: number };
+export type GraphClientProps = { initialFrom: Date; initialTo: Date };
 
-export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphClientProps) {
+export function GraphClient({ initialFrom, initialTo }: GraphClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { config } = useCalculationConfig();
@@ -21,45 +25,41 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
     const [eventOptions, setEventOptions] = useState<{ event: string; label: string }[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<string | null>(() => searchParams.get('event'));
     const pendingEventRef = useRef<string | null>(null);
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: initialFrom, to: initialTo });
 
-    const monthParam = clampMonth(parseInteger(searchParams.get('month')) ?? initialMonth);
-    const yearParam = parseInteger(searchParams.get('year')) ?? initialYear;
     const eventParam = searchParams.get('event');
 
-    const month = monthParam ?? initialMonth;
-    const year = yearParam ?? initialYear;
-
-    const targetDate = useMemo(() => new Date(year, month - 1, 1), [month, year]);
-
     const schedule = useMemo(() => {
-        return monthly(salatLabels, config, targetDate);
-    }, [config, targetDate]);
+        if (!dateRange?.from || !dateRange?.to) {
+            return null;
+        }
 
-    const handleNavigate = useCallback(
-        (direction: 1 | -1) => {
-            let nextMonth = month + direction;
-            let nextYear = year;
-            if (nextMonth > 12) {
-                nextMonth = 1;
-                nextYear += 1;
-            } else if (nextMonth < 1) {
-                nextMonth = 12;
-                nextYear -= 1;
+        const times = [];
+        const current = new Date(dateRange.from);
+        const end = new Date(dateRange.to);
+
+        while (current <= end) {
+            const timings = daily(salatLabels, config, current);
+            times.push(timings);
+            current.setDate(current.getDate() + 1);
+        }
+
+        return { dates: times, label: generateScheduleLabel(dateRange.from, dateRange.to) };
+    }, [config, dateRange]);
+
+    const handleDateRangeChange = useCallback(
+        (newRange: DateRange | undefined) => {
+            if (!newRange?.from || !newRange?.to) {
+                return;
             }
-            const params = new URLSearchParams(searchParams.toString());
-            params.set('month', nextMonth.toString());
-            params.set('year', nextYear.toString());
-            router.push(`/monthly/graph?${params.toString()}`, { scroll: false });
-        },
-        [month, router, searchParams, year],
-    );
 
-    const timetableHref = useMemo(() => {
-        const params = new URLSearchParams();
-        params.set('month', month.toString());
-        params.set('year', year.toString());
-        return `/monthly?${params.toString()}`;
-    }, [month, year]);
+            setDateRange(newRange);
+
+            const params = updateDateRangeParams(searchParams, newRange.from, newRange.to);
+            router.replace(`/graph?${params.toString()}`, { scroll: false });
+        },
+        [router, searchParams],
+    );
 
     const handleOptionsChange = useCallback(
         (options: { event: string; label: string }[], _defaultEvent: string | null) => {
@@ -76,7 +76,7 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
             const params = new URLSearchParams(searchParams.toString());
             params.set('event', event);
             if (current !== event) {
-                router.replace(`/monthly/graph?${params.toString()}`, { scroll: false });
+                router.replace(`/graph?${params.toString()}`, { scroll: false });
             }
         },
         [router, searchParams],
@@ -90,7 +90,7 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
             if (eventParam) {
                 const params = new URLSearchParams(searchParams.toString());
                 params.delete('event');
-                router.replace(`/monthly/graph?${params.toString()}`, { scroll: false });
+                router.replace(`/graph?${params.toString()}`, { scroll: false });
             }
             return;
         }
@@ -121,7 +121,7 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
         if (eventParam !== fallback) {
             const params = new URLSearchParams(searchParams.toString());
             params.set('event', fallback);
-            router.replace(`/monthly/graph?${params.toString()}`, { scroll: false });
+            router.replace(`/graph?${params.toString()}`, { scroll: false });
         }
     }, [eventOptions, eventParam, router, searchParams, selectedEvent]);
 
@@ -146,9 +146,11 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
             </>
         ) : null;
 
+    const dateRangeDisplay = formatDateRangeDisplay(dateRange);
+
     return (
         <div className="flex h-screen flex-col gap-6 p-6">
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/80 p-3 shadow">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/80 p-3 shadow">
                 <div className="flex items-center gap-2">
                     <Button asChild size="sm" variant="outline">
                         <Link href="/">
@@ -156,21 +158,33 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
                             Home
                         </Link>
                     </Button>
-                    <Button asChild size="sm" variant="outline">
-                        <Link href={timetableHref}>Timetable</Link>
-                    </Button>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleNavigate(-1)} aria-label="Previous month">
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <p className="min-w-[180px] text-center font-semibold text-foreground text-lg sm:text-xl">
-                        {schedule?.label ?? ''}
-                    </p>
-                    <Button variant="ghost" size="icon" onClick={() => handleNavigate(1)} aria-label="Next month">
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className={cn(
+                                    'min-w-[240px] justify-start text-left font-normal',
+                                    !dateRange && 'text-muted-foreground',
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dateRangeDisplay}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="center">
+                            <Calendar
+                                autoFocus
+                                mode="range"
+                                defaultMonth={dateRange?.from ?? new Date()}
+                                selected={dateRange}
+                                onSelect={handleDateRangeChange}
+                                numberOfMonths={2}
+                            />
+                        </PopoverContent>
+                    </Popover>
                 </div>
 
                 {eventSelect}

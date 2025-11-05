@@ -12,24 +12,26 @@ type TimingEntry = Schedule['dates'][number]['timings'][number];
 type PrayerTimetableTableProps = {
     schedule: Schedule | null;
     timeZone: string;
+    dateFormat?: Intl.DateTimeFormatOptions;
 };
 
-type Column = {
-    event: TimingEntry['event'];
-    label: string;
-};
+type Column = { event: TimingEntry['event']; label: string };
 
-const formatDateLabel = (timings: TimingEntry[], timeZone: string) => {
+const formatDateLabel = (timings: TimingEntry[], timeZone: string, dateFormat?: Intl.DateTimeFormatOptions) => {
     if (!timings.length) {
         return '';
     }
     const base = timings[0]?.value ?? new Date();
-    return base.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        timeZone,
-    });
+
+    // Default format if none provided
+    const format = dateFormat ?? { day: 'numeric', month: 'short', weekday: 'short' };
+
+    // Handle ISO format specially
+    if (format.year === 'numeric' && format.month === '2-digit' && format.day === '2-digit' && !format.weekday) {
+        return base.toISOString().split('T')[0];
+    }
+
+    return base.toLocaleDateString('en-US', { ...format, timeZone });
 };
 
 const buildColumns = (schedule: Schedule | null) => {
@@ -45,7 +47,7 @@ const buildColumns = (schedule: Schedule | null) => {
 
 const findTiming = (timings: TimingEntry[], event: string) => timings.find((timing) => timing.event === event);
 
-export function PrayerTimetableTable({ schedule, timeZone }: PrayerTimetableTableProps) {
+export function PrayerTimetableTable({ schedule, timeZone, dateFormat }: PrayerTimetableTableProps) {
     const columns = useMemo(() => buildColumns(schedule), [schedule]);
 
     if (!schedule) {
@@ -65,7 +67,7 @@ export function PrayerTimetableTable({ schedule, timeZone }: PrayerTimetableTabl
                 </TableHeader>
                 <TableBody>
                     {schedule.dates.map((day) => {
-                        const dateLabel = formatDateLabel(day.timings, timeZone);
+                        const dateLabel = formatDateLabel(day.timings, timeZone, dateFormat);
                         const isoKey = day.timings[0]?.value.toISOString() ?? dateLabel;
                         return (
                             <TableRow key={isoKey}>
