@@ -12,10 +12,10 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useCalculationConfig } from '@/hooks/use-calculation-config';
 import { useSettings } from '@/hooks/use-settings';
 import { daily } from '@/lib/calculator';
+import { formatCoordinate, formatHijriDate } from '@/lib/formatting';
 import { writeIslamicDate } from '@/lib/hijri';
 import { salatLabels } from '@/lib/salat-labels';
 import { methodLabelMap } from '@/lib/settings';
-import { formatCoordinate } from '@/lib/textUtils';
 
 export default function PrayerTimesPage() {
     const { settings, numeric } = useSettings();
@@ -55,16 +55,6 @@ export default function PrayerTimesPage() {
         });
     };
 
-    const handleToday = () => setCurrentDate(new Date());
-
-    const addressLabel = settings.address?.trim() || 'Set your location';
-    const locationDetail = hasValidCoordinates
-        ? `${formatCoordinate(numeric.latitude, 'N', 'S')} · ${formatCoordinate(numeric.longitude, 'E', 'W')}`
-        : 'Add valid latitude and longitude in settings';
-
-    const methodLabel = methodLabelMap[settings.method] ?? settings.method;
-    const hijriLabel = `${hijri.day}, ${hijri.date} ${hijri.month} ${hijri.year} AH`;
-
     // Don't render if no valid coordinates (will redirect)
     if (!hasValidCoordinates) {
         return null;
@@ -100,14 +90,14 @@ export default function PrayerTimesPage() {
 
                     <PrayerTimesCard
                         activeEvent={result.activeEvent}
-                        addressLabel={addressLabel}
+                        addressLabel={settings.address?.trim()}
                         dateLabel={result.date}
-                        hijriLabel={hijriLabel}
-                        locationDetail={locationDetail}
-                        methodLabel={methodLabel}
+                        hijriLabel={formatHijriDate(hijri)}
+                        locationDetail={`${formatCoordinate(numeric.latitude, 'N', 'S')} · ${formatCoordinate(numeric.longitude, 'E', 'W')}`}
+                        methodLabel={methodLabelMap[settings.method] ?? settings.method}
                         onNextDay={handleNextDay}
                         onPrevDay={handlePrevDay}
-                        onToday={handleToday}
+                        onToday={() => setCurrentDate(new Date())}
                         timings={result.timings}
                     />
                 </div>

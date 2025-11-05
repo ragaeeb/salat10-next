@@ -36,7 +36,7 @@ export const useMotivationalQuote = (): MotivationalQuoteState => {
             }
         };
 
-        void loadQuote();
+        loadQuote();
 
         return () => {
             cancelled = true;

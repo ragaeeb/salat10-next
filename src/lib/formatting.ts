@@ -1,3 +1,4 @@
+import type { HijriDate } from '@/types/hijri';
 import type { DayData, Timeline } from '@/types/timeline';
 import { pick } from './utils';
 
@@ -21,6 +22,14 @@ export const formatDate = (date: Date) => {
         weekday: 'long',
         year: 'numeric',
     });
+};
+
+export const formatHijriDate = (hijri: HijriDate) => {
+    return `${hijri.day}, ${hijri.date} ${hijri.month} ${hijri.year} AH`;
+};
+
+export const formatCoordinate = (value: number, positiveLabel: string, negativeLabel: string) => {
+    return `${Math.abs(value).toFixed(4)}° ${value >= 0 ? positiveLabel : negativeLabel}`;
 };
 
 export function phaseLabelAndTime(p: number, tl: Timeline, timings: DayData['timings'], tz: string) {

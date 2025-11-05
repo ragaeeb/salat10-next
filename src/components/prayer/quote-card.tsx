@@ -1,12 +1,11 @@
 'use client';
 
-import { AlertCircle, Check, Copy } from 'lucide-react';
+import { CopyIcon } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useMemo } from 'react';
+import { toast } from 'sonner';
 import { TextAnimate } from '@/components/magicui/text-animate';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useCopyFeedback } from '@/hooks/use-copy-feedback';
 import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
 
 const QUOTE_WATERMARK = '\n\nShared from Salat10 [https://salat10.vercel.app]';
@@ -15,23 +14,16 @@ const QUOTE_WATERMARK = '\n\nShared from Salat10 [https://salat10.vercel.app]';
  * Renders the motivational quote card with copy and animation affordances.
  */
 export function QuoteCard() {
-    const { copy, status: copyStatus } = useCopyFeedback();
     const { quote } = useMotivationalQuote();
 
-    const copyLabel = useMemo(() => {
-        if (copyStatus === 'copied') {
-            return 'Copied!';
-        }
-        if (copyStatus === 'error') {
-            return 'Copy failed';
-        }
-        return 'Copy quote';
-    }, [copyStatus]);
-
-    const copyIcon = copyStatus === 'copied' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />;
-
     const copyQuote = async () => {
-        await copy(`"${quote!.text}" - [${quote!.citation}]${QUOTE_WATERMARK}`);
+        try {
+            await navigator.clipboard.writeText(`"${quote!.text}" - [${quote!.citation}]${QUOTE_WATERMARK}`);
+            toast.success('Copied');
+        } catch (error) {
+            console.warn('Clipboard copy failed', error);
+            toast.success('Error');
+        }
     };
 
     return (
@@ -57,21 +49,19 @@ export function QuoteCard() {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
-                            aria-label={copyLabel}
+                            aria-label="Copy"
                             className="rounded-full"
                             onClick={copyQuote}
                             size="icon"
                             variant="ghost"
                         >
-                            {copyStatus === 'error' ? <AlertCircle className="h-4 w-4" /> : copyIcon}
+                            <CopyIcon className="h-4 w-4" />
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{copyLabel}</TooltipContent>
+                    <TooltipContent>Copy</TooltipContent>
                 </Tooltip>
             </div>
-            <p className="mt-4 text-foreground/60 text-xs">
-                Tap the copy icon to share with friends. Copies include a small watermark: {QUOTE_WATERMARK}
-            </p>
+            <p className="mt-4 text-foreground/60 text-xs">Tap the copy icon to share with friends.</p>
         </motion.section>
     );
 }
