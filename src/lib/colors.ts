@@ -1,5 +1,5 @@
 import type { Timeline } from '@/types/timeline';
-import { FRAC } from './constants';
+import { FALLBACK_COLORS, FRAC, SERIES_COLORS } from './constants';
 import { invLerp, lerp } from './utils';
 
 /**
@@ -133,4 +133,9 @@ export const lightRaysOpacityAt = (p: number, tl: Timeline): number => {
         return (1 - invLerp(tl.sunrise, tl.sunrise + tail, p)) * 0.4;
     }
     return 0;
+};
+
+export const getColorFor = (event: string, index: number) => {
+    const fallbackColor = FALLBACK_COLORS[index % FALLBACK_COLORS.length] ?? FALLBACK_COLORS[0] ?? '#60a5fa';
+    return SERIES_COLORS[event] ?? fallbackColor;
 };

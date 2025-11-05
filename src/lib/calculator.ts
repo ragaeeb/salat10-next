@@ -75,22 +75,19 @@ export const daily = (
  */
 export const monthly = (salatLabels: Record<string, string>, calculation: Calculation, targetDate = new Date()) => {
     const times = [];
-    const now = new Date(targetDate.getTime());
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0); // https://stackoverflow.com/questions/222309/calculate-last-day-of-month-in-javascript
+    const year = targetDate.getFullYear();
+    const month = targetDate.getMonth();
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
 
-    for (let i = 1; i <= 31; i += 1) {
-        now.setDate(i);
+    for (let day = 1; day <= lastDayOfMonth; day += 1) {
+        const now = new Date(year, month, day);
         const timings = daily(salatLabels, calculation, now);
         times.push(timings);
-
-        if (now > lastDayOfMonth) {
-            break;
-        }
     }
 
-    const monthName = now.toLocaleDateString('en-US', { month: 'long' });
+    const monthName = targetDate.toLocaleDateString('en-US', { month: 'long' });
 
-    return { dates: times, label: `${monthName} ${targetDate.getFullYear()}` };
+    return { dates: times, label: `${monthName} ${year}` };
 };
 
 /**

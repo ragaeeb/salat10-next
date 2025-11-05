@@ -1,5 +1,6 @@
 import type { HijriDate } from '@/types/hijri';
 import type { DayData, Timeline } from '@/types/timeline';
+import { MINUTES_IN_DAY } from './constants';
 import { pick } from './utils';
 
 export const formatTime = (t: Date, timeZone: string) => {
@@ -22,6 +23,18 @@ export const formatDate = (date: Date) => {
         weekday: 'long',
         year: 'numeric',
     });
+};
+
+export const formatMinutesLabel = (value: number) => {
+    if (!Number.isFinite(value)) {
+        return '';
+    }
+    const normalized = ((Math.round(value) % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY;
+    const hours = Math.floor(normalized / 60);
+    const minutes = normalized % 60;
+    const suffix = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = ((hours + 11) % 12) + 1;
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${suffix}`;
 };
 
 export const formatHijriDate = (hijri: HijriDate) => {

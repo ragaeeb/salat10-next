@@ -4,13 +4,11 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-
-import { PrayerLineChart } from '@/components/timetable/graph/prayer-line-chart';
+import { PrayerLineChart } from '@/components/graph/prayer-line-chart';
 import { Button } from '@/components/ui/button';
 import { useCalculationConfig } from '@/hooks/use-calculation-config';
 import { yearly } from '@/lib/calculator';
 import { salatLabels } from '@/lib/salat-labels';
-
 import { parseInteger } from '../utils';
 
 export type YearlyGraphClientProps = { initialYear: number };

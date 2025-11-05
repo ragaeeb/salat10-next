@@ -59,3 +59,20 @@ export const FALLBACK_TIMELINE_VALUES = {
     midNight: 0.93,
     sunrise: 0.1,
 };
+
+export const MINUTES_IN_DAY = 24 * 60;
+
+export const SERIES_COLORS: Record<string, string> = {
+    asr: '#22c55e',
+    dhuhr: '#3b82f6',
+    fajr: '#60a5fa',
+    isha: '#a855f7',
+    lastThirdOfTheNight: '#ef4444',
+    maghrib: '#f97316',
+    middleOfTheNight: '#10b981',
+    sunrise: '#eab308',
+};
+
+export const FALLBACK_COLORS = ['#60a5fa', '#eab308', '#22c55e', '#a855f7', '#ec4899', '#3b82f6', '#f97316', '#ef4444'];
+
+export const IS_DEV = process.env.NODE_ENV !== 'production';
