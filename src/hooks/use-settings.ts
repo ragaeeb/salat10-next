@@ -1,57 +1,39 @@
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import packageJson from '@/../package.json';
 import { defaultSettings } from '@/lib/constants';
 import type { Settings } from '@/types/settings';
 
 const STORAGE_KEY = packageJson.name;
 
-const mergeSettings = (stored: Partial<Settings> | null): Settings => ({
-    ...defaultSettings,
-    ...stored,
-    ishaInterval: stored?.ishaInterval ?? defaultSettings.ishaInterval,
-});
+// Load once at module level
+const loadSettings = (): Settings => {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw) as Partial<Settings>;
+            return { ...defaultSettings, ...parsed };
+        }
+    } catch (error) {
+        console.warn('Failed to read stored settings', error);
+    }
+    return defaultSettings;
+};
 
 export const useSettings = () => {
-    const [settings, setSettings] = useState<Settings>(defaultSettings);
-    const router = useRouter();
+    const [settings, setSettings] = useState<Settings>(loadSettings);
+    const initialLoadRef = useRef(true);
 
-    const hasValidCoordinates = settings.latitude && settings.longitude;
-
-    // Redirect to settings if coordinates are not set
+    // Save to localStorage on changes (skip initial render)
     useEffect(() => {
-        if (!hasValidCoordinates) {
-            router.push('/settings');
+        if (initialLoadRef.current) {
+            initialLoadRef.current = false;
+            return;
         }
-    }, [hasValidCoordinates, router]);
-
-    useEffect(() => {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) {
-                const parsed = JSON.parse(raw) as Partial<Settings>;
-                setSettings(mergeSettings(parsed));
-            } else {
-                setSettings(defaultSettings);
-            }
-        } catch (error) {
-            console.warn('Failed to read stored settings', error);
-            setSettings(defaultSettings);
-        }
-    }, []);
-
-    useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     }, [settings]);
 
     const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
         setSettings((prev) => ({ ...prev, [key]: value }));
-    }, []);
-
-    const updateSettings = useCallback((updater: Settings | ((prev: Settings) => Settings)) => {
-        setSettings((prev) =>
-            typeof updater === 'function' ? (updater as (prev: Settings) => Settings)(prev) : updater,
-        );
     }, []);
 
     const resetSettings = useCallback(() => {
@@ -66,8 +48,8 @@ export const useSettings = () => {
             latitude: Number.parseFloat(settings.latitude),
             longitude: Number.parseFloat(settings.longitude),
         }),
-        [settings.fajrAngle, settings.ishaAngle, settings.ishaInterval, settings.latitude, settings.longitude],
+        [settings],
     );
 
-    return { numeric, resetSettings, setSettings: updateSettings, settings, updateSetting };
+    return { numeric, resetSettings, setSettings, settings, updateSetting };
 };

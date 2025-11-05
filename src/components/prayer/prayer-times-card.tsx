@@ -18,7 +18,6 @@ export type PrayerTimesCardProps = {
     addressLabel: string;
     dateLabel: string;
     hijriLabel: string;
-    istijaba?: boolean;
     locationDetail: string;
     methodLabel: string;
     onNextDay: () => void;
@@ -66,13 +65,9 @@ const PrayerTimeRow = ({
 
 const Countdown = () => {
     const [countdown, setCountdown] = useState('');
-    const { config, hydrated } = useCalculationConfig();
+    const { config } = useCalculationConfig();
 
     useEffect(() => {
-        if (!hydrated) {
-            return;
-        }
-
         const updateCountdown = () => {
             const now = new Date();
 
@@ -96,7 +91,7 @@ const Countdown = () => {
         updateCountdown();
         const interval = setInterval(updateCountdown, 1000);
         return () => clearInterval(interval);
-    }, [hydrated, config]);
+    }, [config]);
 
     if (!countdown) {
         return null;
@@ -114,7 +109,6 @@ export function PrayerTimesCard({
     addressLabel,
     dateLabel,
     hijriLabel,
-    istijaba,
     locationDetail,
     methodLabel,
     onNextDay,
@@ -142,11 +136,6 @@ export function PrayerTimesCard({
                             {methodLabel}
                         </span>
                     </div>
-                    {istijaba ? (
-                        <span className="inline-flex items-center rounded-full bg-emerald-500/20 px-4 py-1 font-medium text-emerald-100 text-sm">
-                            Special hour of Istijaba — make extra duʿāʾ
-                        </span>
-                    ) : null}
                 </header>
 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

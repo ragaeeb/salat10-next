@@ -15,7 +15,7 @@ export type CalculationConfig = {
 };
 
 export const useCalculationConfig = () => {
-    const { hydrated, numeric, settings } = useSettings();
+    const { numeric, settings } = useSettings();
 
     const config = useMemo<CalculationConfig>(
         () => ({
@@ -38,5 +38,5 @@ export const useCalculationConfig = () => {
         ],
     );
 
-    return { config, hydrated, settings };
+    return { config, settings };
 };

@@ -18,7 +18,7 @@ export type MonthlyGraphClientProps = { initialMonth: number; initialYear: numbe
 export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { config, hydrated } = useCalculationConfig();
+    const { config } = useCalculationConfig();
     const selectId = useId();
     const [eventOptions, setEventOptions] = useState<{ event: string; label: string }[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<string | null>(() => searchParams.get('event'));
@@ -34,11 +34,8 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
     const targetDate = useMemo(() => new Date(year, month - 1, 1), [month, year]);
 
     const schedule = useMemo(() => {
-        if (!hydrated) {
-            return null;
-        }
         return monthly(salatLabels, config, targetDate);
-    }, [hydrated, config, targetDate]);
+    }, [config, targetDate]);
 
     const handleNavigate = useCallback(
         (direction: 1 | -1) => {
@@ -129,15 +126,6 @@ export function MonthlyGraphClient({ initialMonth, initialYear }: MonthlyGraphCl
             router.replace(`/monthly/graph?${params.toString()}`, { scroll: false });
         }
     }, [eventOptions, eventParam, router, searchParams, selectedEvent]);
-
-    if (!hydrated) {
-        return (
-            <div className="flex h-screen flex-col gap-6 p-6">
-                <div className="h-12 w-full animate-pulse rounded-md bg-muted/60" />
-                <div className="h-full w-full flex-1 animate-pulse rounded-md bg-muted/40" />
-            </div>
-        );
-    }
 
     const eventSelect =
         eventOptions.length > 0 ? (

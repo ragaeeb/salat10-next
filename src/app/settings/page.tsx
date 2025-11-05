@@ -3,7 +3,7 @@
 import { ArrowLeft, Compass, MapPin, Navigation } from 'lucide-react';
 import Link from 'next/link';
 import type React from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { TimezoneCombobox } from '@/components/timezone-combobox';
 import { Button } from '@/components/ui/button';
@@ -75,37 +75,6 @@ export default function SettingsPage() {
     const [geocodeMessage, setGeocodeMessage] = useState<string | null>(null);
     const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
     const [locationMessage, setLocationMessage] = useState<string | null>(null);
-
-    // Try to get browser location on mount if coordinates are not set
-    useEffect(() => {
-        const hasCoords =
-            settings.latitude &&
-            settings.longitude &&
-            Number.isFinite(Number.parseFloat(settings.latitude)) &&
-            Number.isFinite(Number.parseFloat(settings.longitude));
-
-        if (!hasCoords && 'geolocation' in navigator) {
-            setLocationStatus('loading');
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setSettings((prev) => ({
-                        ...prev,
-                        latitude: position.coords.latitude.toFixed(4),
-                        longitude: position.coords.longitude.toFixed(4),
-                        timeZone: getBrowserTimezone(),
-                    }));
-                    setLocationStatus('success');
-                    setLocationMessage('Location detected from browser');
-                },
-                (error) => {
-                    console.warn('Geolocation failed:', error);
-                    setLocationStatus('error');
-                    setLocationMessage('Location access denied. Please enter manually.');
-                },
-                { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
-            );
-        }
-    }, [setSettings, settings.latitude, settings.longitude]);
 
     const handleChange = useCallback(
         (key: keyof Settings) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

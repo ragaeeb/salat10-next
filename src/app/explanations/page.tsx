@@ -6,12 +6,13 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { MultiStepLoader } from '@/components/aceternity/multi-step-loader';
 import { Button } from '@/components/ui/button';
+import { useSettings } from '@/hooks/use-settings';
 import { buildPrayerTimeExplanation } from '@/lib/explanation';
 import type { PrayerTimeExplanation } from '@/lib/explanation/types';
-import { createParameters, useSettings } from '@/lib/settings';
+import { createParameters } from '@/lib/settings';
 
 export default function ExplanationsPage() {
-    const { settings, hydrated, numeric } = useSettings();
+    const { settings, numeric } = useSettings();
     const [explanation, setExplanation] = useState<PrayerTimeExplanation | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export default function ExplanationsPage() {
     const currentDate = useMemo(() => new Date(), []);
 
     useEffect(() => {
-        if (!hydrated || !hasValidCoordinates) {
+        if (!hasValidCoordinates) {
             setLoading(false);
             return;
         }
@@ -52,7 +53,6 @@ export default function ExplanationsPage() {
             setLoading(false);
         }
     }, [
-        hydrated,
         hasValidCoordinates,
         numeric.fajrAngle,
         numeric.ishaAngle,
@@ -64,10 +64,6 @@ export default function ExplanationsPage() {
         timeZone,
         currentDate,
     ]);
-
-    if (!hydrated) {
-        return null;
-    }
 
     return (
         <div className="min-h-screen bg-background">

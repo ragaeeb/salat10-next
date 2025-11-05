@@ -18,7 +18,7 @@ export type YearlyGraphClientProps = { initialYear: number };
 export function YearlyGraphClient({ initialYear }: YearlyGraphClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { config, hydrated } = useCalculationConfig();
+    const { config } = useCalculationConfig();
     const selectId = useId();
     const [eventOptions, setEventOptions] = useState<{ event: string; label: string }[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<string | null>(() => searchParams.get('event'));
@@ -31,11 +31,8 @@ export function YearlyGraphClient({ initialYear }: YearlyGraphClientProps) {
     const targetDate = useMemo(() => new Date(year, 0, 1), [year]);
 
     const schedule = useMemo(() => {
-        if (!hydrated) {
-            return null;
-        }
         return yearly(salatLabels, config, targetDate);
-    }, [hydrated, config, targetDate]);
+    }, [config, targetDate]);
 
     const handleNavigate = useCallback(
         (direction: 1 | -1) => {
@@ -116,15 +113,6 @@ export function YearlyGraphClient({ initialYear }: YearlyGraphClientProps) {
             router.replace(`/yearly/graph?${params.toString()}`, { scroll: false });
         }
     }, [eventOptions, eventParam, router, searchParams, selectedEvent]);
-
-    if (!hydrated) {
-        return (
-            <div className="flex h-screen flex-col gap-6 p-6">
-                <div className="h-12 w-full animate-pulse rounded-md bg-muted/60" />
-                <div className="h-full w-full flex-1 animate-pulse rounded-md bg-muted/40" />
-            </div>
-        );
-    }
 
     const eventSelect =
         eventOptions.length > 0 ? (

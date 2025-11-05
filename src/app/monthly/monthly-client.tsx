@@ -18,7 +18,7 @@ export type MonthlyClientProps = { initialMonth: number; initialYear: number };
 export function MonthlyClient({ initialMonth, initialYear }: MonthlyClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { config, hydrated } = useCalculationConfig();
+    const { config } = useCalculationConfig();
 
     const monthParam = clampMonth(parseInteger(searchParams.get('month')) ?? initialMonth);
     const yearParam = parseInteger(searchParams.get('year')) ?? initialYear;
@@ -29,11 +29,8 @@ export function MonthlyClient({ initialMonth, initialYear }: MonthlyClientProps)
     const targetDate = useMemo(() => new Date(year, month - 1, 1), [month, year]);
 
     const schedule = useMemo(() => {
-        if (!hydrated) {
-            return null;
-        }
         return monthly(salatLabels, config, targetDate);
-    }, [hydrated, config, targetDate]);
+    }, [config, targetDate]);
 
     const handleNavigate = useCallback(
         (direction: 1 | -1) => {
@@ -60,15 +57,6 @@ export function MonthlyClient({ initialMonth, initialYear }: MonthlyClientProps)
         params.set('year', year.toString());
         return `/monthly/graph?${params.toString()}`;
     }, [month, year]);
-
-    if (!hydrated) {
-        return (
-            <div className="space-y-6">
-                <div className="h-12 w-full animate-pulse rounded-md bg-muted/60" />
-                <div className="h-[400px] w-full animate-pulse rounded-md bg-muted/40" />
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-6">

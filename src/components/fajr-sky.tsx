@@ -1,14 +1,18 @@
 import { type MotionValue, motion } from 'motion/react';
 import { memo } from 'react';
 
+/**
+ * Fajr gradient overlay - adds warm horizon glow on top of the dark base sky.
+ * Fades to transparent so the base sky color (single source of truth) shows through at the top.
+ */
 type FajrGradientProps = { opacity: number | MotionValue<number> };
 export const FajrGradient = memo<FajrGradientProps>(({ opacity }) => (
     <motion.div
         className="pointer-events-none absolute inset-0 z-20"
         style={{
-            /* Warmer, more immediate horizon glow */
+            /* Warm horizon glow that fades to transparent, letting the dark base sky show through */
             background:
-                'linear-gradient(to top, rgba(255, 210, 95, 0.95) 0%, rgba(255, 195, 95, 0.88) 12%, rgba(255, 175, 110, 0.78) 22%, rgba(242, 165, 120, 0.62) 32%, rgba(185, 155, 140, 0.48) 45%, rgba(128, 135, 160, 0.34) 60%, transparent 78%)',
+                'linear-gradient(to top, rgba(255, 210, 95, 0.95) 0%, rgba(255, 195, 95, 0.88) 12%, rgba(255, 175, 110, 0.78) 22%, rgba(242, 165, 120, 0.62) 32%, rgba(185, 155, 140, 0.48) 45%, rgba(128, 135, 160, 0.34) 60%, rgba(40, 50, 80, 0.15) 75%, transparent 88%)',
             opacity,
         }}
     />

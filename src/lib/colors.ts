@@ -2,11 +2,14 @@ import type { Timeline } from '@/types/timeline';
 import { FRAC } from './constants';
 import { invLerp, lerp } from './utils';
 
-/* Visual curves driven by the timeline */
+/**
+ * Base sky color - single source of truth for the background throughout the day.
+ * FajrGradient and SunsetGradient overlay on top to add dawn/dusk warmth.
+ */
 export const skyColorAt = (p: number, tl: Timeline): string => {
     if (p < tl.sunrise) {
-        // Night pre-dawn base (Fajr gradient will sit on top)
-        return 'rgba(26, 26, 46, 0.35)';
+        // Keep the same dark night base through Fajr - let FajrGradient overlay provide the dawn glow
+        return 'rgba(5, 7, 16, 0.98)';
     }
     if (p < tl.dhuhr) {
         return 'rgba(135, 206, 235, 0.30)';
@@ -27,6 +30,7 @@ export const skyColorAt = (p: number, tl: Timeline): string => {
     if (p < tl.lastThird) {
         return 'rgba(6, 8, 20, 0.95)';
     }
+    // Last third through pre-sunrise: single source of truth for night darkness
     return 'rgba(5, 7, 16, 0.98)';
 };
 

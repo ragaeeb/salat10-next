@@ -18,7 +18,7 @@ export type YearlyClientProps = { initialYear: number };
 export function YearlyClient({ initialYear }: YearlyClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { config, hydrated } = useCalculationConfig();
+    const { config } = useCalculationConfig();
 
     const yearParam = parseInteger(searchParams.get('year')) ?? initialYear;
     const year = yearParam ?? initialYear;
@@ -26,11 +26,8 @@ export function YearlyClient({ initialYear }: YearlyClientProps) {
     const targetDate = useMemo(() => new Date(year, 0, 1), [year]);
 
     const schedule = useMemo(() => {
-        if (!hydrated) {
-            return null;
-        }
         return yearly(salatLabels, config, targetDate);
-    }, [hydrated, config, targetDate]);
+    }, [config, targetDate]);
 
     const handleNavigate = useCallback(
         (direction: 1 | -1) => {
@@ -47,15 +44,6 @@ export function YearlyClient({ initialYear }: YearlyClientProps) {
         params.set('year', year.toString());
         return `/yearly/graph?${params.toString()}`;
     }, [year]);
-
-    if (!hydrated) {
-        return (
-            <div className="space-y-6">
-                <div className="h-12 w-full animate-pulse rounded-md bg-muted/60" />
-                <div className="h-[400px] w-full animate-pulse rounded-md bg-muted/40" />
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-6">

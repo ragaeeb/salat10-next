@@ -1,7 +1,7 @@
 import { type MotionValue, motion } from 'motion/react';
 import { memo } from 'react';
 
-/** Sunset gradient (similar to Fajr, reversed for dusk) */
+/** Sunset gradient (overlays warm dusk colors on top of base sky) */
 type SunsetGradientProps = { opacity: number | MotionValue<number> };
 export const SunsetGradient = memo<SunsetGradientProps>(({ opacity }) => (
     <motion.div

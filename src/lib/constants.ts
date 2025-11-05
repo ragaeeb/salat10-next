@@ -28,6 +28,7 @@ export const defaultSettings = {
    Data-driven layout (no brittle constants)
 ================================= */
 
+export const DISTANCE_FROM_TOP_BOTTOM = 2000;
 export const DAY_HEIGHT_PX = 10000;
 export const MAX_BUFFERED_DAYS = 5;
 

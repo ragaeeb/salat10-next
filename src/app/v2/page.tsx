@@ -1,55 +1,52 @@
 'use client';
 
-import { ArrowLeft, ChevronDown, ChevronUp, Settings2Icon } from 'lucide-react';
-import { AnimatePresence, motion, useScroll } from 'motion/react';
-import Link from 'next/link';
-import { useMemo, useRef, useState } from 'react';
-import { FajrGradient } from '@/components/fajr-sky';
-import { LightRays } from '@/components/light-rays';
-import { ShinyText } from '@/components/magicui/shiny-text';
-import { Moon } from '@/components/moon';
-import { RadialGradientOverlay } from '@/components/radial-gradient';
-import { SkyBackground } from '@/components/sky';
-import { StarsLayer } from '@/components/stars';
-import { Sun } from '@/components/sun';
-import { SunsetGradient } from '@/components/sunset-sky';
-import { Button } from '@/components/ui/button';
+import { useScroll } from 'motion/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { useCalculationConfig } from '@/hooks/use-calculation-config';
-import { useCrossFade } from '@/hooks/use-crossfade';
-import { useDayLoading } from '@/hooks/use-day-loading';
-import { useDaysData } from '@/hooks/use-days-data';
-import { useDevicePrefs } from '@/hooks/use-device';
-import { useInitialScroll } from '@/hooks/use-initial-scroll';
-import { useMoon } from '@/hooks/use-moon';
-import { usePhaseInfo } from '@/hooks/use-phase-info';
 import { useScrollProgress } from '@/hooks/use-scroll-progress';
-import { useSettings } from '@/hooks/use-settings';
-import { useSky } from '@/hooks/use-sky';
-import { useSun } from '@/hooks/use-sun';
-import { useTimeline } from '@/hooks/use-timeline';
-import { DAY_HEIGHT_PX } from '@/lib/constants';
-import { buildTimeline } from '@/lib/timeline';
+import { daily } from '@/lib/calculator';
+import { DAY_HEIGHT_PX, DISTANCE_FROM_TOP_BOTTOM, MAX_BUFFERED_DAYS } from '@/lib/constants';
+import { salatLabels } from '@/lib/salat-labels';
+import { buildTimeline, timeToScroll } from '@/lib/timeline';
+import type { DayData, Timing } from '@/types/timeline';
+import { Controls } from './controls';
+import { CurrentPhase } from './current-phase';
+import { Qamar } from './qamar';
+import { Samaa } from './samaa';
+import { Shams } from './shams';
 
 export default function ParallaxPage() {
-    const { hydrated } = useSettings();
-    if (!hydrated) {
-        return null;
-    }
-    return <ParallaxInner />;
-}
-
-function ParallaxInner() {
     const containerRef = useRef<HTMLDivElement>(null);
     const { scrollY } = useScroll();
     const calculationConfig = useCalculationConfig();
 
-    const { mounted, isMobile } = useDevicePrefs();
-    const { days, setDays, hasInitialized, setHasInitialized, lastScrollY, loadDay } = useDaysData(
-        calculationConfig.config,
+    const [days, setDays] = useState<DayData[]>([]);
+    const [hasInitialized, setHasInitialized] = useState(false);
+    const lastScrollY = useRef(0);
+    const dayIndexCounter = useRef(0);
+
+    const loadDay = useCallback(
+        (date: Date): DayData => {
+            const nextDate = new Date(date);
+            nextDate.setDate(nextDate.getDate() + 1);
+            const nextRes = daily(salatLabels, calculationConfig.config, nextDate);
+            const nextFajr = nextRes.timings.find((t: Timing) => t.event === 'fajr')?.value ?? null;
+            return {
+                date,
+                dayIndex: dayIndexCounter.current++,
+                nextFajr,
+                timings: daily(salatLabels, calculationConfig.config, date).timings,
+            };
+        },
+        [calculationConfig.config],
     );
 
-    const [showLoadPrev, setShowLoadPrev] = useState(false);
-    const [showLoadNext, setShowLoadNext] = useState(false);
+    useEffect(() => {
+        const today = new Date();
+        dayIndexCounter.current = 0;
+        setDays([loadDay(today)]);
+    }, [loadDay]);
     const [currentDayIndex, setCurrentDayIndex] = useState(0);
 
     const totalHeight = days.length * DAY_HEIGHT_PX;
@@ -58,190 +55,101 @@ function ParallaxInner() {
     const currentDay = days[currentDayIndex];
     const timeline = useMemo(() => (currentDay ? buildTimeline(currentDay) : null), [currentDay]);
 
-    // Custom hooks for cleaner component logic
-    useInitialScroll(hasInitialized, days, lastScrollY, setHasInitialized);
+    useEffect(() => {
+        if (hasInitialized || days.length === 0) {
+            return;
+        }
+        const today = days[0]!;
+        const initialP = timeToScroll(Date.now(), today);
+        const scrollTop = initialP * DAY_HEIGHT_PX;
+        window.history.scrollRestoration = 'manual';
+        window.scrollTo({ behavior: 'auto', left: 0, top: scrollTop });
+        lastScrollY.current = scrollTop;
+        setHasInitialized(true);
+        return () => {
+            window.history.scrollRestoration = 'auto';
+        };
+    }, [hasInitialized, days]);
+
+    const handleLoadPrev = useCallback(() => {
+        setDays((prev) => {
+            const firstDate = prev[0]!.date;
+            const newDate = new Date(firstDate);
+            newDate.setDate(newDate.getDate() - 1);
+            const newDay = loadDay(newDate);
+            const next = [newDay, ...prev].slice(0, MAX_BUFFERED_DAYS);
+            return next;
+        });
+        requestAnimationFrame(() => {
+            // keep visual position after prepending
+            window.scrollTo({ behavior: 'auto', left: 0, top: lastScrollY.current + DAY_HEIGHT_PX });
+        });
+    }, [loadDay]);
+
+    const handleLoadNext = useCallback(() => {
+        setDays((prev) => {
+            const lastDate = prev[prev.length - 1]!.date;
+            const newDate = new Date(lastDate);
+            newDate.setDate(newDate.getDate() + 1);
+            const newDay = loadDay(newDate);
+            const next = [...prev, newDay];
+            return next.length > MAX_BUFFERED_DAYS ? next.slice(next.length - MAX_BUFFERED_DAYS) : next;
+        });
+    }, [loadDay]);
 
     const { scrollProgress, pNow } = useScrollProgress(scrollY);
+    const [showLoadPrev, setShowLoadPrev] = useState(false);
+    const [showLoadNext, setShowLoadNext] = useState(false);
 
-    const { skyColor, starsOpacity, fajrGradientOpacity, sunsetGradientOpacity, lightRaysOpacity } = useSky(
-        scrollProgress,
-        timeline,
-    );
+    useEffect(() => {
+        if (!hasInitialized || days.length === 0) {
+            return;
+        }
 
-    const { sunX, sunY, sunOpacity, sunColorR, sunColorG, sunColorB } = useSun(scrollProgress, timeline);
+        const unsub = scrollY.on('change', (distanceFromTop) => {
+            lastScrollY.current = distanceFromTop;
+            const dayIndex = Math.floor(distanceFromTop / DAY_HEIGHT_PX);
+            if (dayIndex !== currentDayIndex) {
+                setCurrentDayIndex(dayIndex);
+            }
 
-    const { moonX, moonY, moonOpacity } = useMoon(scrollProgress, timeline);
+            const distanceFromBottom = totalHeight - distanceFromTop - window.innerHeight;
+            const nextPrev = distanceFromTop < DISTANCE_FROM_TOP_BOTTOM;
+            const nextNext = distanceFromBottom < DISTANCE_FROM_TOP_BOTTOM;
 
-    const phaseInfo = usePhaseInfo(scrollProgress, timeline, currentDay, calculationConfig.settings.timeZone);
-
-    const { handleLoadPrev, handleLoadNext } = useDayLoading(loadDay, setDays, lastScrollY);
-
-    const { hasPrev, hasNext, topSeamStarsOpacity, bottomSeamFajrOpacity } = useCrossFade(
-        pNow,
-        currentDayIndex,
-        days.length,
-    );
-
-    useTimeline(scrollY, {
-        currentDayIndex,
-        daysLen: days.length,
-        hasInitialized,
-        lastScrollY,
-        setCurrentDayIndex,
-        setShowLoadNext,
-        setShowLoadPrev,
-        totalHeight,
-    });
-
-    // Stars/comets controls:
-    // - Stars fade in from Isha to Midnight, fully on after (checklist #8, #9, #10)
-    // - Comets only during Last 1/3 (checklist #11)
-    const cometsEnabled = !!timeline && pNow >= timeline.lastThird;
-
-    const STAR_DENSITY = isMobile ? 0.00005 : 0.0002;
-    const SHOOT_MIN_DELAY = isMobile ? 2000 : 1200;
-    const SHOOT_MAX_DELAY = isMobile ? 6000 : 4200;
+            setShowLoadPrev((prev: boolean) => (prev !== nextPrev ? nextPrev : prev));
+            setShowLoadNext((prev: boolean) => (prev !== nextNext ? nextNext : prev));
+        });
+        return () => unsub();
+    }, [scrollY, currentDayIndex, days, hasInitialized, totalHeight]);
 
     return (
         <>
             <div ref={containerRef} style={totalHeightStyle} />
 
             <div className="fixed inset-0">
-                <SkyBackground skyColor={skyColor} />
-                {/* Fajr & Sunset gradients */}
-                <FajrGradient opacity={fajrGradientOpacity} />
-                <SunsetGradient opacity={sunsetGradientOpacity} />
-
-                {/* Star field (no comets until Last 1/3) */}
-                {mounted && (
-                    <StarsLayer
-                        opacity={starsOpacity}
-                        shooting={cometsEnabled}
-                        density={STAR_DENSITY}
-                        minDelay={SHOOT_MIN_DELAY}
-                        maxDelay={SHOOT_MAX_DELAY}
-                    />
-                )}
-
-                {/* Gentle rays near sunrise */}
-                <LightRays opacity={lightRaysOpacity} />
-
-                {/* Radial enhancement */}
-                <RadialGradientOverlay />
-
-                {/* Seam crossfades */}
-                {hasPrev && mounted && (
-                    <StarsLayer
-                        opacity={topSeamStarsOpacity}
-                        shooting
-                        density={STAR_DENSITY}
-                        minDelay={SHOOT_MIN_DELAY}
-                        maxDelay={SHOOT_MAX_DELAY}
-                    />
-                )}
-                {hasNext && <FajrGradient opacity={bottomSeamFajrOpacity * 0.8} />}
-
-                {/* Sun (RIGHT -> LEFT arc) */}
-                <Sun
-                    size={120}
-                    x={sunX}
-                    y={sunY}
-                    opacity={sunOpacity}
-                    color={{ b: sunColorB, g: sunColorG, r: sunColorR }}
+                <Samaa
+                    pNow={pNow}
+                    timeline={timeline}
+                    scrollProgress={scrollProgress}
+                    totalDays={days.length}
+                    currentDayIndex={currentDayIndex}
+                />
+                <Shams timeline={timeline} scrollProgress={scrollProgress} />
+                <Qamar timeline={timeline} scrollProgress={scrollProgress} />
+                <CurrentPhase
+                    timeZone={calculationConfig.settings.timeZone}
+                    scrollProgress={scrollProgress}
+                    currentDay={currentDay}
+                    timeline={timeline}
                 />
 
-                {/* Moon (LEFT -> RIGHT, straight line) */}
-                <Moon x={moonX} y={moonY} opacity={moonOpacity} color={{ b: 255, g: 255, r: 255 }} />
-
-                {/* Center title + time */}
-                <div className="-translate-x-1/2 -translate-y-1/2 pointer-events-none absolute top-1/2 left-1/2 z-25">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={phaseInfo.label}
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            transition={{ duration: 0.22, ease: 'easeOut' }}
-                        >
-                            <ShinyText className="block text-balance text-center font-extrabold text-[clamp(2rem,8vw,4.5rem)] text-foreground/60 leading-tight drop-shadow-sm">
-                                {phaseInfo.label}
-                            </ShinyText>
-                        </motion.div>
-                    </AnimatePresence>
-                    {!!phaseInfo.time && (
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={phaseInfo.time}
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 10 }}
-                                transition={{ duration: 0.18, ease: 'easeOut' }}
-                                className="mt-4 text-center font-semibold text-[clamp(1.5rem,4vw,2.5rem)] text-foreground/50"
-                            >
-                                {phaseInfo.time}
-                            </motion.div>
-                        </AnimatePresence>
-                    )}
-                </div>
-
-                {/* Load controls */}
-                {showLoadPrev && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="-translate-x-1/2 absolute top-20 left-1/2 z-60"
-                    >
-                        <Button
-                            onClick={handleLoadPrev}
-                            size="lg"
-                            className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90"
-                        >
-                            <ChevronUp className="mr-2 h-5 w-5" />
-                            Load Previous Day
-                        </Button>
-                    </motion.div>
-                )}
-
-                {showLoadNext && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="-translate-x-1/2 absolute bottom-20 left-1/2 z-60"
-                    >
-                        <Button
-                            onClick={handleLoadNext}
-                            size="lg"
-                            className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90"
-                        >
-                            Load Next Day
-                            <ChevronDown className="ml-2 h-5 w-5" />
-                        </Button>
-                    </motion.div>
-                )}
-
-                {/* Nav buttons */}
-                <div className="absolute top-4 right-4 z-60 flex items-center gap-2 sm:top-6 sm:right-6">
-                    <Button
-                        asChild
-                        className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90"
-                        size="sm"
-                        variant="default"
-                    >
-                        <Link href="/">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Card View
-                        </Link>
-                    </Button>
-                    <Button
-                        asChild
-                        className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90"
-                        size="icon"
-                    >
-                        <Link aria-label="Open settings" href="/settings">
-                            <Settings2Icon className="h-5 w-5" />
-                        </Link>
-                    </Button>
-                </div>
+                <Controls
+                    showLoadNext={showLoadNext}
+                    showLoadPrev={showLoadPrev}
+                    handleLoadNext={handleLoadNext}
+                    handleLoadPrev={handleLoadPrev}
+                />
             </div>
         </>
     );

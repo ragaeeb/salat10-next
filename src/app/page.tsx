@@ -3,7 +3,8 @@
 import { IconSunMoon } from '@tabler/icons-react';
 import { Settings2Icon } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QuoteCard } from '@/components/prayer/quote-card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import { formatCoordinate } from '@/lib/textUtils';
 
 export default function PrayerTimesPage() {
     const { settings, numeric } = useSettings();
+    const router = useRouter();
     const [currentDate, setCurrentDate] = useState(new Date());
     const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
 
@@ -29,6 +31,13 @@ export default function PrayerTimesPage() {
     );
 
     const hijri = useMemo(() => writeIslamicDate(0, currentDate), [currentDate]);
+
+    // Redirect to settings if no valid coordinates
+    useEffect(() => {
+        if (!hasValidCoordinates) {
+            router.push('/settings');
+        }
+    }, [hasValidCoordinates, router]);
 
     const handlePrevDay = () => {
         setCurrentDate((prev) => {
@@ -56,6 +65,7 @@ export default function PrayerTimesPage() {
     const methodLabel = methodLabelMap[settings.method] ?? settings.method;
     const hijriLabel = `${hijri.day}, ${hijri.date} ${hijri.month} ${hijri.year} AH`;
 
+    // Don't render if no valid coordinates (will redirect)
     if (!hasValidCoordinates) {
         return null;
     }
@@ -93,7 +103,6 @@ export default function PrayerTimesPage() {
                         addressLabel={addressLabel}
                         dateLabel={result.date}
                         hijriLabel={hijriLabel}
-                        istijaba={result.istijaba}
                         locationDetail={locationDetail}
                         methodLabel={methodLabel}
                         onNextDay={handleNextDay}
