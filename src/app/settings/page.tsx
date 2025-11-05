@@ -35,7 +35,9 @@ const buildAngleState = (
 };
 
 const fetchCoordinatesForAddress = async (address: string): Promise<GeocodeResult | null> => {
-    const response = await fetch(`https://geocode.maps.co/search?q=${encodeURIComponent(address)}&limit=1`);
+    const response = await fetch(
+        `https://geocode.maps.co/search?q=${encodeURIComponent(address)}&limit=1&api_key=asdf`,
+    );
     if (!response.ok) {
         throw new Error('Failed to fetch coordinates');
     }

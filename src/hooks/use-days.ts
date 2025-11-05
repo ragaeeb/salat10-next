@@ -6,6 +6,7 @@ import { salatLabels } from '@/lib/salat-labels';
 import type { DayData, Timing } from '@/types/timeline';
 
 export function useDayBuffer(config: CalculationConfig) {
+    const [days, setDays] = useState<DayData[]>([]);
     const dayIndexCounter = useRef(0);
 
     const loadDay = useCallback(
@@ -24,13 +25,24 @@ export function useDayBuffer(config: CalculationConfig) {
         [config],
     );
 
-    const [days, setDays] = useState<DayData[]>([loadDay(new Date())]);
-
-    // Initialize with today
+    // Initialize with the correct day for current prayer time
     useEffect(() => {
-        const today = new Date();
+        const now = new Date();
+        const today = new Date(now);
+
+        // If we're before Fajr, we need yesterday's day (since Islamic day is Fajr to Fajr)
+        const todayData = loadDay(today);
+        const fajrTime = todayData.timings.find((t) => t.event === 'fajr')?.value;
+
+        let initialDay = today;
+        if (fajrTime && now < fajrTime) {
+            // We're before today's Fajr, so load yesterday's data
+            initialDay = new Date(today);
+            initialDay.setDate(initialDay.getDate() - 1);
+        }
+
         dayIndexCounter.current = 0;
-        setDays([loadDay(today)]);
+        setDays([loadDay(initialDay)]);
     }, [loadDay]);
 
     const addPreviousDay = useCallback(() => {
