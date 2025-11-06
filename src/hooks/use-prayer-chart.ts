@@ -16,7 +16,7 @@ export const usePrayerChart = (
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<uPlot | null>(null);
 
-    const isControlled = selectedEvent !== null && selectedEvent !== undefined;
+    const isControlled = selectedEvent != null;
 
     useEffect(() => {
         if (!prepared?.series.length) {

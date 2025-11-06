@@ -28,9 +28,10 @@ const formatDateLabel = (timings: TimingEntry[], timeZone: string, dateFormat?: 
 
     // Handle ISO format specially
     if (format.year === 'numeric' && format.month === '2-digit' && format.day === '2-digit' && !format.weekday) {
-        return base.toISOString().split('T')[0];
+        return new Intl.DateTimeFormat('en-CA', { day: '2-digit', month: '2-digit', timeZone, year: 'numeric' }).format(
+            base,
+        );
     }
-
     return base.toLocaleDateString('en-US', { ...format, timeZone });
 };
 

@@ -133,17 +133,6 @@ export const yearly = (salatLabels: Record<string, string>, config: CalculationC
  * yesterday's night prayers. To handle this, we shift night prayer times back
  * by 24 hours to see if we're in yesterday's night prayer period.
  */
-// In src/lib/calculator.ts
-
-/**
- * Get the active event for a given time
- *
- * Finds the most recent event that has already started (event time <= current time).
- *
- * Special case: When before today's Fajr (early morning), we need to check
- * yesterday's night prayers. To handle this, we shift night prayer times back
- * by 24 hours to see if we're in yesterday's night prayer period.
- */
 export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): string | null => {
     if (!timings || timings.length === 0) {
         return null;

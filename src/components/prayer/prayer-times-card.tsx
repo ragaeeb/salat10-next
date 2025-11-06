@@ -159,13 +159,13 @@ export function PrayerTimesCard({
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <Button asChild size="sm" variant="outline" className="border-white/30">
                         <Link href="/timetable">
-                            <TableIcon />
+                            <TableIcon className="mr-1 h-4 w-4" />
                             Timetable
                         </Link>
                     </Button>
                     <Button asChild size="sm">
                         <Link href="/explanations">
-                            <SearchIcon /> Explain
+                            <SearchIcon className="mr-1 h-4 w-4" /> Explain
                         </Link>
                     </Button>
                 </div>

@@ -8,7 +8,7 @@ import { usePrayerStore } from '@/store/usePrayerStore';
  * Note: Initialization now happens automatically in onRehydrateStorage callback
  * This component only handles cleanup
  */
-export function StoreInitializer({ children }: { children: React.ReactNode }) {
+export function StoreCleanup({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // Cleanup scheduled updates on unmount
         return () => {

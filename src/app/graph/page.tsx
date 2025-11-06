@@ -1,5 +1,3 @@
-'use client';
-
 import { parseInitialDateRange } from '@/lib/time';
 import { GraphClient } from './graph-client';
 

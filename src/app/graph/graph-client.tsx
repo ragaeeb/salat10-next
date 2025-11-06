@@ -1,3 +1,5 @@
+'use client';
+
 import { Calendar as CalendarIcon, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';

@@ -119,9 +119,10 @@ describe('daily', () => {
     it('should calculates nextEventTime correctly during the day', () => {
         // Set time to 10:00 AM, should have next event (dhuhr or later)
         const result = daily(labels, defaultConfig, new Date('2024-03-11T10:00:00-05:00'));
-
         if (result.nextEventTime) {
-            expect(result.nextEventTime.getTime()).toBeGreaterThan(Date.now() - 24 * 60 * 60 * 1000);
+            const observationTime = new Date('2024-03-11T10:00:00-05:00').getTime();
+            expect(result.nextEventTime.getTime()).toBeGreaterThan(observationTime);
+            expect(result.nextEventTime.getTime()).toBeLessThan(observationTime + 24 * 60 * 60 * 1000);
         }
     });
 
