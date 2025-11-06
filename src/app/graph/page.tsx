@@ -1,5 +1,8 @@
+import { graphMetadata } from '@/config/seo';
 import { parseInitialDateRange } from '@/lib/time';
-import { GraphClient } from './graph-client';
+import { GraphClient } from './client';
+
+export const metadata = graphMetadata;
 
 export type GraphPageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 

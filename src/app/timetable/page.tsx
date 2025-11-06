@@ -1,5 +1,8 @@
+import { timetableMetadata } from '@/config/seo';
 import { parseInitialDateRange } from '@/lib/time';
-import { TimetableClient } from './timetable-client';
+import { TimetableClient } from './client';
+
+export const metadata = timetableMetadata;
 
 export type TimetablePageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
