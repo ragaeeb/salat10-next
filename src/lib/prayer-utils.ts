@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type CalculationConfig, daily, formatTimeRemaining, getActiveEvent, getTimeUntilNext } from '@/lib/calculator';
 import { salatLabels } from '@/lib/salat-labels';
-import { useCurrentData, usePrayerStore, useSettings } from '@/store/usePrayerStore';
+import { useCurrentData, useSettings } from '@/store/usePrayerStore';
 
 /**
  * Hook to get formatted timings for the current date from the store
  */
-export const useCurrentTimings = () => {
+const useCurrentTimings = () => {
     const currentData = useCurrentData();
     const settings = useSettings();
 
@@ -245,17 +245,4 @@ export const useCalculationConfig = (): CalculationConfig => {
         }),
         [settings],
     );
-};
-
-/**
- * Initialize the prayer store on app mount
- */
-export const useInitializePrayerStore = () => {
-    useEffect(() => {
-        const store = usePrayerStore.getState();
-
-        return () => {
-            store._clearScheduledUpdate();
-        };
-    }, []);
 };
