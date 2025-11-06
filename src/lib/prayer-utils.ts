@@ -67,9 +67,7 @@ export const useActiveEvent = () => {
 
         const updateActiveEvent = () => {
             const now = Date.now();
-            console.log('call getactive event with', JSON.stringify(timings), 'now', new Date());
             const event = getActiveEvent(timings, now);
-            console.log('active event received', event);
             setActiveEvent(event);
             return now;
         };

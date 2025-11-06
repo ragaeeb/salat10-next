@@ -38,7 +38,7 @@ describe('filterQuotesByPresent', () => {
 
             const filtered = filterQuotesByPresent(data, quotes);
             expect(filtered).toHaveLength(1);
-            expect(filtered[0].body).toBe('Ramadan quote');
+            expect(filtered[0]!.body).toBe('Ramadan quote');
         });
 
         it('should match quotes without hijri_months (generic)', () => {
@@ -48,7 +48,7 @@ describe('filterQuotesByPresent', () => {
 
             const filtered = filterQuotesByPresent(data, quotes);
             expect(filtered).toHaveLength(1);
-            expect(filtered[0].body).toBe('Generic quote');
+            expect(filtered[0]!.body).toBe('Generic quote');
         });
 
         it('should match quotes with multiple hijri_months (OR logic)', () => {
@@ -80,7 +80,7 @@ describe('filterQuotesByPresent', () => {
 
             const filtered = filterQuotesByPresent(data, quotes);
             expect(filtered).toHaveLength(1);
-            expect(filtered[0].body).toBe('First of Ramadan');
+            expect(filtered[0]!.body).toBe('First of Ramadan');
         });
 
         it('should match quotes with multiple hijri_dates (OR logic)', () => {
@@ -134,7 +134,7 @@ describe('filterQuotesByPresent', () => {
 
             const filtered = filterQuotesByPresent(data, quotes);
             expect(filtered).toHaveLength(1);
-            expect(filtered[0].body).toBe('Friday quote');
+            expect(filtered[0]!.body).toBe('Friday quote');
         });
 
         it('should match quotes with multiple days (OR logic)', () => {
@@ -269,7 +269,7 @@ describe('filterQuotesByPresent', () => {
             expect(filtered.some((q) => q.body === 'Before asr (no diff)')).toBe(false);
         });
 
-        it.skip('should not match before (no diff) when not in immediately preceding event', () => {
+        it('should not match before (no diff) when not in immediately preceding event', () => {
             // Create data during middleOfTheNight
             const initialData = createPrayerData(new Date(2022, 3, 1, 12, 0, 0));
             const middleTime = initialData.sunnahTimes.middleOfTheNight;
@@ -294,7 +294,6 @@ describe('filterQuotesByPresent', () => {
             ];
 
             const filtered = filterQuotesByPresent(testData, quotes);
-            console.log('filtered', filtered);
             expect(filtered.some((q) => q.body === 'Before dhuhr from middle of night')).toBe(false);
             expect(filtered.some((q) => q.body === 'Before last third')).toBe(true);
         });
@@ -393,7 +392,7 @@ describe('filterQuotesByPresent', () => {
 
             const filtered = filterQuotesByPresent(data, quotes);
             expect(filtered).toHaveLength(1);
-            expect(filtered[0].body).toBe('Generic quote');
+            expect(filtered[0]!.body).toBe('Generic quote');
         });
 
         it('should return all quotes when no matches and no generic quotes', () => {

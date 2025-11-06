@@ -35,11 +35,11 @@ const defaultConfig = {
 
 describe('isFard', () => {
     it('should return the true for five obligatory prayers', () => {
-        expect(isFard('fajr')).toBe(true);
-        expect(isFard('dhuhr')).toBe(true);
-        expect(isFard('asr')).toBe(true);
-        expect(isFard('maghrib')).toBe(true);
-        expect(isFard('isha')).toBe(true);
+        expect(isFard('fajr')).toBeTrue();
+        expect(isFard('dhuhr')).toBeTrue();
+        expect(isFard('asr')).toBeTrue();
+        expect(isFard('maghrib')).toBeTrue();
+        expect(isFard('isha')).toBeTrue();
     });
 
     it('should return the false for non-fard events', () => {
@@ -87,7 +87,7 @@ describe('daily', () => {
         const result = daily(labels, defaultConfig, new Date('2024-03-11T14:30:00-05:00'));
 
         const fajr = result.timings.find((t) => t.event === 'fajr');
-        expect(fajr?.isFard).toBe(true);
+        expect(fajr?.isFard).toBeTrue();
 
         const sunrise = result.timings.find((t) => t.event === 'sunrise');
         expect(sunrise?.isFard).toBe(false);
@@ -247,13 +247,19 @@ describe('getActiveEvent', () => {
         expect(active).toBe('fajr');
     });
 
-    it.skip('should return the last event when before first prayer (early morning)', () => {
-        // Set timestamp to 1:00 AM (before Fajr, which is around 5:43 AM)
+    // Replace the failing test in src/lib/calculator.test.ts
+
+    it('should return the last event when before first prayer (early morning)', () => {
         const fajr = timings.find((t) => t.event === 'fajr')!;
-        const earlyMorning = fajr.value.getTime() - 4 * 60 * 60 * 1000; // 4 hours before fajr
+
+        // We need to be AFTER yesterday's lastThirdOfTheNight started
+        // lastThird typically occurs a few hours before Fajr
+        // To ensure we're after it, let's use a time 30 minutes before Fajr
+        const earlyMorning = fajr.value.getTime() - 30 * 60 * 1000; // 30 minutes before fajr
+
         const active = getActiveEvent(timings, earlyMorning);
 
-        // Should return the last event (lastThirdOfTheNight from yesterday's cycle)
+        // Should return lastThirdOfTheNight from yesterday's cycle
         expect(active).toBe('lastThirdOfTheNight');
     });
 
@@ -263,7 +269,7 @@ describe('getActiveEvent', () => {
         const veryEarly = fajr.value.getTime() - 1000; // 1 second before fajr
         const active = getActiveEvent(timings, veryEarly);
 
-        expect(active).toBe(timings[timings.length - 1]?.event);
+        expect(active).toBe(timings[timings.length - 1]!.event);
     });
 
     it('should handles night prayers correctly', () => {
@@ -272,7 +278,7 @@ describe('getActiveEvent', () => {
 
         const active = getActiveEvent(timings, timestamp);
         // Should be isha or one of the night events
-        expect(['isha', 'middleOfTheNight', 'lastThirdOfTheNight']).toContain(active);
+        expect(['isha', 'middleOfTheNight', 'lastThirdOfTheNight']).toContain(active!);
     });
 
     it('should return the null for empty timings', () => {

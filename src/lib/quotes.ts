@@ -1,3 +1,5 @@
+// In src/lib/quotes.ts - complete fixed version
+
 import parseDuration from 'parse-duration';
 import type { ComputedPrayerData } from '@/store/usePrayerStore';
 import type { HijriDate } from '@/types/hijri';
@@ -34,7 +36,23 @@ const getCurrentEventName = (data: ComputedPrayerData): string | null => {
         return activeEvent.event;
     }
 
-    // If no event has occurred yet, we're in the last event from yesterday
+    // If no event has occurred yet today, check if we're in yesterday's night events
+    // This handles the case where we're after midnight but before today's Fajr
+    const nightEvents = ['isha', 'middleOfTheNight', 'lastThirdOfTheNight'];
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+    // Check night events as if they happened yesterday
+    for (let i = events.length - 1; i >= 0; i--) {
+        const event = events[i];
+        if (event && nightEvents.includes(event.event)) {
+            const yesterdayTime = event.time.getTime() - TWENTY_FOUR_HOURS_MS;
+            if (yesterdayTime <= now) {
+                return event.event;
+            }
+        }
+    }
+
+    // Fallback to last event
     return events[events.length - 1]?.event ?? null;
 };
 
@@ -42,7 +60,6 @@ const getCurrentEventName = (data: ComputedPrayerData): string | null => {
  * Get the time for a specific event
  */
 const getEventTime = (data: ComputedPrayerData, event: string): Date | null => {
-    // Direct lookup without normalization - event names should match exactly
     switch (event) {
         case 'fajr':
             return data.prayerTimes.fajr;
@@ -69,7 +86,6 @@ const matchesHijriMonth = (quote: Quote, hijri: HijriDate): boolean => {
     if (!quote.hijri_months) {
         return true;
     }
-    // hijri.monthIndex is 0-based, quote hijri_months is 1-based
     return quote.hijri_months.includes(hijri.monthIndex + 1);
 };
 
@@ -97,7 +113,6 @@ const matchesAfter = (quote: Quote, data: ComputedPrayerData): boolean => {
         return false;
     }
 
-    // Check if current event matches any of the specified events
     return quote.after.events.some((event) => event === currentEvent);
 };
 
@@ -128,26 +143,57 @@ const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
     }
 
     // If no diff specified, match only if we're in the event immediately before
-    // For example: before: {events: ['dhuhr']} should only match when current event is 'sunrise'
     if (!currentEvent) {
         return false;
     }
 
     const allEvents = getAllEvents(data);
-    const currentIndex = allEvents.findIndex((e) => e.event === currentEvent);
+
+    // Special handling for night events that span into the next day
+    // If we're in a night event (isha, middleOfTheNight, lastThirdOfTheNight),
+    // we need to check if we're actually in yesterday's event
+    const nightEvents = ['isha', 'middleOfTheNight', 'lastThirdOfTheNight'];
+    const isInNightEvent = nightEvents.includes(currentEvent);
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+    let currentIndex = -1;
+
+    if (isInNightEvent) {
+        // Check if we're actually in yesterday's version of this event
+        // by seeing if today's version hasn't happened yet
+        const todayEventTime = getEventTime(data, currentEvent);
+        if (todayEventTime && todayEventTime.getTime() > now) {
+            // We're in yesterday's event, so the next event is today's first event (fajr)
+            // unless we're looking for a specific night event that comes after current one
+
+            // Find which night event we're in
+            const nightEventOrder = ['isha', 'middleOfTheNight', 'lastThirdOfTheNight'];
+            const currentNightIndex = nightEventOrder.indexOf(currentEvent);
+
+            // If there's another night event after this one, check if quote is looking for it
+            if (currentNightIndex < nightEventOrder.length - 1) {
+                const nextNightEvent = nightEventOrder[currentNightIndex + 1];
+                if (quote.before.events.includes(nextNightEvent!)) {
+                    return true;
+                }
+            }
+
+            // Otherwise, next event is fajr
+            return quote.before.events.includes('fajr');
+        }
+    }
+
+    // Normal case - find current event in today's timeline
+    currentIndex = allEvents.findIndex((e) => e.event === currentEvent);
 
     if (currentIndex === -1) {
         return false;
     }
 
-    // Get the next event after current
     const nextIndex = currentIndex + 1;
 
-    // Check if we're at the last event - if so, next event wraps to tomorrow's first event
+    // If at end of day, next is tomorrow's fajr
     if (nextIndex >= allEvents.length) {
-        // We're in the last event of the day
-        // The next event is tomorrow's first event (fajr)
-        // Only match if the quote is asking about fajr
         return quote.before.events.includes('fajr');
     }
 
@@ -156,7 +202,6 @@ const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
         return false;
     }
 
-    // Check if the next event is one of the specified events
     return quote.before.events.includes(nextEvent.event);
 };
 
@@ -186,7 +231,6 @@ const calculateSpecificity = (quote: Quote): number => {
 export const filterQuotesByPresent = (data: ComputedPrayerData, quotes: Quote[]): Quote[] => {
     const hijri = writeIslamicDate(0, data.date);
 
-    // Filter quotes by all criteria
     const filtered = quotes.filter((quote) => {
         return (
             matchesHijriMonth(quote, hijri) &&
@@ -197,12 +241,10 @@ export const filterQuotesByPresent = (data: ComputedPrayerData, quotes: Quote[])
         );
     });
 
-    // If we have matches, sort by specificity (most specific first)
     if (filtered.length > 0) {
         return filtered.sort((a, b) => calculateSpecificity(b) - calculateSpecificity(a));
     }
 
-    // Fallback to generic quotes (no filters)
     const generic = quotes.filter((q) => !q.hijri_months && !q.hijri_dates && !q.days && !q.after && !q.before);
 
     return generic.length > 0 ? generic : quotes;

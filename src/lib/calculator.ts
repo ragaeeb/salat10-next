@@ -133,6 +133,17 @@ export const yearly = (salatLabels: Record<string, string>, config: CalculationC
  * yesterday's night prayers. To handle this, we shift night prayer times back
  * by 24 hours to see if we're in yesterday's night prayer period.
  */
+// In src/lib/calculator.ts
+
+/**
+ * Get the active event for a given time
+ *
+ * Finds the most recent event that has already started (event time <= current time).
+ *
+ * Special case: When before today's Fajr (early morning), we need to check
+ * yesterday's night prayers. To handle this, we shift night prayer times back
+ * by 24 hours to see if we're in yesterday's night prayer period.
+ */
 export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): string | null => {
     if (!timings || timings.length === 0) {
         return null;
@@ -157,11 +168,13 @@ export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): s
     // No events have started today yet - we're in early morning before Fajr
     // Check if we're in yesterday's night prayer period
 
-    // Get the last 3 events (isha, middleOfTheNight, lastThirdOfTheNight)
+    // Get the last three events (isha, middleOfTheNight, lastThirdOfTheNight)
+    // These are the only events that can span into the next calendar day
     const nightEvents = timings.slice(-3);
     const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
-    // Check these events as if they happened yesterday
+    // Check these events as if they happened yesterday, in reverse order
+    // This way we find the LATEST event that has already started
     for (let i = nightEvents.length - 1; i >= 0; i--) {
         const event = nightEvents[i];
         if (event) {
@@ -172,9 +185,8 @@ export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): s
         }
     }
 
-    // If we're before even yesterday's isha, just return isha
-    // (this shouldn't normally happen, but provides a fallback)
-    return 'isha';
+    // If we're before even yesterday's isha, return the last event
+    return timings[timings.length - 1]?.event ?? null;
 };
 
 /**
