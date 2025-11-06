@@ -28,14 +28,13 @@ const getCurrentEventName = (data: ComputedPrayerData): string | null => {
     const events = getAllEvents(data);
 
     // Find the last event that has already occurred
-    for (let i = events.length - 1; i >= 0; i--) {
-        if (events[i].time.getTime() <= now) {
-            return events[i].event;
-        }
+    const activeEvent = [...events].reverse().find((e) => e.time.getTime() <= now);
+
+    if (activeEvent) {
+        return activeEvent.event;
     }
 
-    // If no event has occurred yet today, we're in the last event from yesterday
-    // This would be lastThirdOfTheNight or after isha from previous day
+    // If no event has occurred yet, we're in the last event from yesterday
     return events[events.length - 1]?.event ?? null;
 };
 
@@ -142,8 +141,17 @@ const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
     }
 
     // Get the next event after current
-    const nextEvent = allEvents[currentIndex + 1];
+    const nextIndex = currentIndex + 1;
 
+    // Check if we're at the last event - if so, next event wraps to tomorrow's first event
+    if (nextIndex >= allEvents.length) {
+        // We're in the last event of the day
+        // The next event is tomorrow's first event (fajr)
+        // Only match if the quote is asking about fajr
+        return quote.before.events.includes('fajr');
+    }
+
+    const nextEvent = allEvents[nextIndex];
     if (!nextEvent) {
         return false;
     }

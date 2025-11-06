@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { type CalculationConfig, daily, getActiveEvent } from '@/lib/calculator';
+import { type CalculationConfig, daily, formatTimeRemaining, getActiveEvent, getTimeUntilNext } from '@/lib/calculator';
 import { salatLabels } from '@/lib/salat-labels';
 import { useCurrentData, usePrayerStore, useSettings } from '@/store/usePrayerStore';
 
@@ -52,57 +52,104 @@ export const useTimingsForDate = (date: Date) => {
 };
 
 /**
- * Hook to get the active event (updates every second)
+ * Hook to get the active event with efficient timeout-based updates
+ * Only recalculates when an event boundary is crossed
  */
 export const useActiveEvent = () => {
     const timings = useCurrentTimings();
     const [activeEvent, setActiveEvent] = useState<string | null>(null);
 
     useEffect(() => {
-        const updateActive = () => {
+        if (timings.length === 0) {
+            setActiveEvent(null);
+            return;
+        }
+
+        const updateActiveEvent = () => {
             const now = Date.now();
+            console.log('call getactive event with', JSON.stringify(timings), 'now', new Date());
             const event = getActiveEvent(timings, now);
+            console.log('active event received', event);
             setActiveEvent(event);
+            return now;
         };
 
-        updateActive();
-        const interval = setInterval(updateActive, 1000);
+        // Set initial active event
+        const currentTime = updateActiveEvent();
 
-        return () => clearInterval(interval);
+        // Find when the next event starts to schedule update
+        const nextTiming = timings.find((t) => t.value.getTime() > currentTime);
+
+        if (!nextTiming) {
+            // No more events today, will be updated when timings change
+            return;
+        }
+
+        const msUntilNext = nextTiming.value.getTime() - currentTime;
+
+        // Schedule update at the next event time
+        const timeoutId = setTimeout(() => {
+            updateActiveEvent();
+        }, msUntilNext);
+
+        return () => clearTimeout(timeoutId);
     }, [timings]);
 
     return activeEvent;
 };
 
 /**
- * Hook to get countdown to next prayer
+ * Hook to get countdown to next prayer with efficient updates
+ * Uses metadata from daily calculation to minimize computation
  */
 export const useCountdownToNext = () => {
     const timings = useCurrentTimings();
     const [countdown, setCountdown] = useState<string>('');
 
     useEffect(() => {
+        if (timings.length === 0) {
+            setCountdown('');
+            return;
+        }
+
         const updateCountdown = () => {
             const now = Date.now();
-            const nextTiming = timings.find((t) => t.value.getTime() > now);
+            const timeUntil = getTimeUntilNext(timings, now);
 
-            if (!nextTiming) {
+            if (!timeUntil || timeUntil <= 0) {
                 setCountdown('');
-                return;
+                return null;
             }
 
-            const diff = nextTiming.value.getTime() - now;
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            const nextTiming = timings.find((t) => t.value.getTime() > now);
+            if (!nextTiming) {
+                setCountdown('');
+                return null;
+            }
 
-            setCountdown(`${hours}h ${minutes}m ${seconds}s until ${nextTiming.label}`);
+            const formatted = formatTimeRemaining(timeUntil);
+            setCountdown(`${formatted} until ${nextTiming.label}`);
+
+            return { nextTiming, timeUntil };
         };
 
-        updateCountdown();
-        const interval = setInterval(updateCountdown, 1000);
+        // Initial update
+        const result = updateCountdown();
 
-        return () => clearInterval(interval);
+        if (!result) {
+            return;
+        }
+
+        // Update every second only while there's a countdown
+        // This is more efficient than checking every prayer time
+        const intervalId = setInterval(() => {
+            const result = updateCountdown();
+            if (!result) {
+                clearInterval(intervalId);
+            }
+        }, 1000);
+
+        return () => clearInterval(intervalId);
     }, [timings]);
 
     return countdown;

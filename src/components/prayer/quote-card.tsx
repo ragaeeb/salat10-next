@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
 import { formatCitation } from '@/lib/quotes';
 
-const QUOTE_WATERMARK = '\n\nShared from Salat10 [https://salat10.vercel.app]';
+const QUOTE_WATERMARK = '\n\nShared from Salat10 [https://salat10.app]';
 
 /**
  * Renders the motivational quote card with copy and animation affordances.

@@ -24,7 +24,7 @@ export type CalculationConfig = {
 /**
  * Daily prayer times result
  */
-export type DailyResult = { date: string; timings: FormattedTiming[] };
+export type DailyResult = { date: string; timings: FormattedTiming[]; nextEventTime: Date | null };
 
 /**
  * Determines whether the provided prayer event is one of the five obligatory prayers.
@@ -80,7 +80,11 @@ export const daily = (salatLabels: Record<string, string>, config: CalculationCo
 
     const timings = formatTimings(prayerTimes, sunnahTimes, timeZone, salatLabels);
 
-    return { date: formatDate(prayerTimes.fajr), timings };
+    // Find the next event time after current moment
+    const now = Date.now();
+    const nextEventTime = timings.find((t) => t.value.getTime() > now)?.value ?? null;
+
+    return { date: formatDate(prayerTimes.fajr), nextEventTime, timings };
 };
 
 /**
@@ -122,19 +126,86 @@ export const yearly = (salatLabels: Record<string, string>, config: CalculationC
 
 /**
  * Get the active event for a given time
+ *
+ * Finds the most recent event that has already started (event time <= current time).
+ *
+ * Special case: When before today's Fajr (early morning), we need to check
+ * yesterday's night prayers. To handle this, we shift night prayer times back
+ * by 24 hours to see if we're in yesterday's night prayer period.
  */
 export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): string | null => {
-    console.log('timings', timings);
-    console.log('now', timestamp, 'date value', new Date(timestamp));
-    console.log('[...timings].reverse()', [...timings].reverse());
-    const activeEntry = [...timings].reverse().find((timing) => timestamp >= timing.value.getTime());
-    return activeEntry?.event ?? timings[0]?.event ?? null;
+    if (!timings || timings.length === 0) {
+        return null;
+    }
+
+    // Find the most recent event that has already started (forward scan from today)
+    let activeEvent: string | null = null;
+
+    for (let i = timings.length - 1; i >= 0; i--) {
+        const timing = timings[i];
+        if (timing && timing.value.getTime() <= timestamp) {
+            activeEvent = timing.event;
+            break;
+        }
+    }
+
+    // If we found an active event today, return it
+    if (activeEvent) {
+        return activeEvent;
+    }
+
+    // No events have started today yet - we're in early morning before Fajr
+    // Check if we're in yesterday's night prayer period
+
+    // Get the last 3 events (isha, middleOfTheNight, lastThirdOfTheNight)
+    const nightEvents = timings.slice(-3);
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+    // Check these events as if they happened yesterday
+    for (let i = nightEvents.length - 1; i >= 0; i--) {
+        const event = nightEvents[i];
+        if (event) {
+            const yesterdayTime = event.value.getTime() - TWENTY_FOUR_HOURS_MS;
+            if (yesterdayTime <= timestamp) {
+                return event.event;
+            }
+        }
+    }
+
+    // If we're before even yesterday's isha, just return isha
+    // (this shouldn't normally happen, but provides a fallback)
+    return 'isha';
 };
 
 /**
  * Get the next event for a given time
  */
 export const getNextEvent = (timings: FormattedTiming[], timestamp: number): string | null => {
+    if (!timings || timings.length === 0) {
+        return null;
+    }
     const nextEntry = timings.find((timing) => timing.value.getTime() > timestamp);
     return nextEntry?.event ?? null;
+};
+
+/**
+ * Get time remaining until next event in milliseconds
+ */
+export const getTimeUntilNext = (timings: FormattedTiming[], timestamp: number): number | null => {
+    if (!timings || timings.length === 0) {
+        return null;
+    }
+    const nextEntry = timings.find((timing) => timing.value.getTime() > timestamp);
+    return nextEntry ? nextEntry.value.getTime() - timestamp : null;
+};
+
+/**
+ * Format time remaining as "Xh Ym Zs"
+ */
+export const formatTimeRemaining = (milliseconds: number): string => {
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
+
+    return `${hours}h ${minutes}m ${seconds}s`;
 };
