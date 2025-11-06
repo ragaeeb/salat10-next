@@ -1,17 +1,13 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, SearchIcon, TableIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { AuroraText } from '@/components/magicui/aurora-text';
 import { Meteors } from '@/components/magicui/meteors';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useCalculationConfig } from '@/hooks/use-calculation-config';
-import { daily } from '@/lib/calculator';
-import { salatLabels } from '@/lib/salat-labels';
+import type { FormattedTiming } from '@/lib/calculator';
+import { useCountdownToNext } from '@/lib/prayer-utils';
 import { cn } from '@/lib/utils';
-
-export type PrayerTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
 
 export type PrayerTimesCardProps = {
     activeEvent: string | null;
@@ -23,7 +19,7 @@ export type PrayerTimesCardProps = {
     onNextDay: () => void;
     onPrevDay: () => void;
     onToday: () => void;
-    timings: PrayerTiming[];
+    timings: FormattedTiming[];
 };
 
 const PrayerTimeRow = ({
@@ -64,34 +60,7 @@ const PrayerTimeRow = ({
 };
 
 const Countdown = () => {
-    const [countdown, setCountdown] = useState('');
-    const { config } = useCalculationConfig();
-
-    useEffect(() => {
-        const updateCountdown = () => {
-            const now = new Date();
-
-            // Calculate today's prayer times (always use current date, not the viewed date)
-            const result = daily(salatLabels, config, now);
-            const nextPrayer = result.timings.find((t) => t.value.getTime() > now.getTime());
-
-            if (!nextPrayer) {
-                setCountdown('');
-                return;
-            }
-
-            const diff = nextPrayer.value.getTime() - now.getTime();
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-            setCountdown(`${hours}h ${minutes}m ${seconds}s until ${nextPrayer.label}`);
-        };
-
-        updateCountdown();
-        const interval = setInterval(updateCountdown, 1000);
-        return () => clearInterval(interval);
-    }, [config]);
+    const countdown = useCountdownToNext();
 
     if (!countdown) {
         return null;
@@ -189,13 +158,15 @@ export function PrayerTimesCard({
 
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <Button asChild size="sm" variant="outline" className="border-white/30">
-                        <Link href="/monthly">Monthly timetable</Link>
-                    </Button>
-                    <Button asChild size="sm" variant="outline" className="border-white/30">
-                        <Link href="/yearly">Yearly timetable</Link>
+                        <Link href="/timetable">
+                            <TableIcon className="mr-1 h-4 w-4" />
+                            Timetable
+                        </Link>
                     </Button>
                     <Button asChild size="sm">
-                        <Link href="/explanations">Explain today's calculations</Link>
+                        <Link href="/explanations">
+                            <SearchIcon className="mr-1 h-4 w-4" /> Explain
+                        </Link>
                     </Button>
                 </div>
             </div>

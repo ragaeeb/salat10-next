@@ -1,3 +1,5 @@
+import type { HijriDate } from '@/types/hijri';
+
 const gmod = (n: number, m: number) => ((n % m) + m) % m;
 
 const weekdayNames = ['al-ʾAḥad', 'al-ʾIthnayn', 'ath-Thulāthāʾ', 'al-ʾArbiʿāʾ', 'al-Khamīs', 'al-Jumuʿah', 'al-Sabt'];
@@ -164,12 +166,13 @@ export const explainHijriConversion = (adjustment: number, today: Date): HijriEx
     };
 };
 
-export const writeIslamicDate = (adjustment: number, today: Date) => {
+export const writeIslamicDate = (adjustment: number, today: Date): HijriDate => {
     const explained = explainHijriConversion(adjustment, today);
     return {
         date: explained.islamic.day,
         day: explained.weekdayName,
         month: explained.islamic.monthName,
+        monthIndex: explained.islamic.monthIndex,
         year: explained.islamic.year,
     };
 };

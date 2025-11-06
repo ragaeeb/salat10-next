@@ -2,10 +2,11 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { useCalculationConfig } from '@/hooks/use-calculation-config';
 import { useDayBuffer } from '@/hooks/use-days';
 import { useScrollTracking } from '@/hooks/use-scroll-tracking';
+import { useCalculationConfig } from '@/lib/prayer-utils';
 import { buildTimeline } from '@/lib/timeline';
+import { useSettings } from '@/store/usePrayerStore';
 import { Controls } from './controls';
 import { CurrentPhase } from './current-phase';
 import { Qamar } from './qamar';
@@ -13,7 +14,8 @@ import { Samaa } from './samaa';
 import { Shams } from './shams';
 
 export default function ParallaxPage() {
-    const { config, settings } = useCalculationConfig();
+    const config = useCalculationConfig();
+    const settings = useSettings();
 
     // Day buffer management
     const { days, addPreviousDay, addNextDay } = useDayBuffer(config);

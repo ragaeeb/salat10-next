@@ -10,7 +10,7 @@ export const Footer = () => {
         <footer className="py-6">
             <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground text-sm sm:flex-row">
                 <p className="text-center">
-                    © {currentYear} {packageJson.author}. All Rights Reserved.{' '}
+                    © {currentYear} IlmTest. All Rights Reserved.{' '}
                     <a
                         href={versionUrl}
                         className="underline hover:text-foreground"

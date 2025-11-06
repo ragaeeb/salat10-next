@@ -1,54 +1,65 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-
-import { PrayerLineChart } from '@/components/timetable/graph/prayer-line-chart';
+import type { DateRange } from 'react-day-picker';
+import { PrayerLineChart } from '@/components/prayer-line-chart';
 import { Button } from '@/components/ui/button';
-import { useCalculationConfig } from '@/hooks/use-calculation-config';
-import { yearly } from '@/lib/calculator';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { daily } from '@/lib/calculator';
+import { useCalculationConfig } from '@/lib/prayer-utils';
 import { salatLabels } from '@/lib/salat-labels';
+import { formatDateRangeDisplay, generateScheduleLabel, updateDateRangeParams } from '@/lib/time';
+import { cn } from '@/lib/utils';
 
-import { parseInteger } from '../utils';
+export type GraphClientProps = { initialFrom: Date; initialTo: Date };
 
-export type YearlyGraphClientProps = { initialYear: number };
-
-export function YearlyGraphClient({ initialYear }: YearlyGraphClientProps) {
+export function GraphClient({ initialFrom, initialTo }: GraphClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { config } = useCalculationConfig();
+    const config = useCalculationConfig();
     const selectId = useId();
     const [eventOptions, setEventOptions] = useState<{ event: string; label: string }[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<string | null>(() => searchParams.get('event'));
     const pendingEventRef = useRef<string | null>(null);
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: initialFrom, to: initialTo });
 
-    const yearParam = parseInteger(searchParams.get('year')) ?? initialYear;
-    const year = yearParam ?? initialYear;
     const eventParam = searchParams.get('event');
 
-    const targetDate = useMemo(() => new Date(year, 0, 1), [year]);
-
     const schedule = useMemo(() => {
-        return yearly(salatLabels, config, targetDate);
-    }, [config, targetDate]);
+        if (!dateRange?.from || !dateRange?.to) {
+            return null;
+        }
 
-    const handleNavigate = useCallback(
-        (direction: 1 | -1) => {
-            const nextYear = year + direction;
-            const params = new URLSearchParams(searchParams.toString());
-            params.set('year', nextYear.toString());
-            router.push(`/yearly/graph?${params.toString()}`, { scroll: false });
+        const times = [];
+        const current = new Date(dateRange.from);
+        const end = new Date(dateRange.to);
+
+        while (current <= end) {
+            const result = daily(salatLabels, config, current);
+            times.push(result);
+            current.setDate(current.getDate() + 1);
+        }
+
+        return { dates: times, label: generateScheduleLabel(dateRange.from, dateRange.to) };
+    }, [config, dateRange]);
+
+    const handleDateRangeChange = useCallback(
+        (newRange: DateRange | undefined) => {
+            if (!newRange?.from || !newRange?.to) {
+                return;
+            }
+
+            setDateRange(newRange);
+
+            const params = updateDateRangeParams(searchParams, newRange.from, newRange.to);
+            router.replace(`/graph?${params.toString()}`, { scroll: false });
         },
-        [router, searchParams, year],
+        [router, searchParams],
     );
-
-    const timetableHref = useMemo(() => {
-        const params = new URLSearchParams();
-        params.set('year', year.toString());
-        return `/yearly?${params.toString()}`;
-    }, [year]);
 
     const handleOptionsChange = useCallback(
         (options: { event: string; label: string }[], _defaultEvent: string | null) => {
@@ -65,7 +76,7 @@ export function YearlyGraphClient({ initialYear }: YearlyGraphClientProps) {
             const params = new URLSearchParams(searchParams.toString());
             params.set('event', event);
             if (current !== event) {
-                router.replace(`/yearly/graph?${params.toString()}`, { scroll: false });
+                router.replace(`/graph?${params.toString()}`, { scroll: false });
             }
         },
         [router, searchParams],
@@ -79,7 +90,7 @@ export function YearlyGraphClient({ initialYear }: YearlyGraphClientProps) {
             if (eventParam) {
                 const params = new URLSearchParams(searchParams.toString());
                 params.delete('event');
-                router.replace(`/yearly/graph?${params.toString()}`, { scroll: false });
+                router.replace(`/graph?${params.toString()}`, { scroll: false });
             }
             return;
         }
@@ -110,7 +121,7 @@ export function YearlyGraphClient({ initialYear }: YearlyGraphClientProps) {
         if (eventParam !== fallback) {
             const params = new URLSearchParams(searchParams.toString());
             params.set('event', fallback);
-            router.replace(`/yearly/graph?${params.toString()}`, { scroll: false });
+            router.replace(`/graph?${params.toString()}`, { scroll: false });
         }
     }, [eventOptions, eventParam, router, searchParams, selectedEvent]);
 
@@ -135,9 +146,11 @@ export function YearlyGraphClient({ initialYear }: YearlyGraphClientProps) {
             </>
         ) : null;
 
+    const dateRangeDisplay = formatDateRangeDisplay(dateRange);
+
     return (
         <div className="flex h-screen flex-col gap-6 p-6">
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/80 p-3 shadow">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/80 p-3 shadow">
                 <div className="flex items-center gap-2">
                     <Button asChild size="sm" variant="outline">
                         <Link href="/">
@@ -145,21 +158,33 @@ export function YearlyGraphClient({ initialYear }: YearlyGraphClientProps) {
                             Home
                         </Link>
                     </Button>
-                    <Button asChild size="sm" variant="outline">
-                        <Link href={timetableHref}>Timetable</Link>
-                    </Button>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleNavigate(-1)} aria-label="Previous year">
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <p className="min-w-[120px] text-center font-semibold text-foreground text-lg sm:text-xl">
-                        Year {schedule?.label ?? year}
-                    </p>
-                    <Button variant="ghost" size="icon" onClick={() => handleNavigate(1)} aria-label="Next year">
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className={cn(
+                                    'min-w-[240px] justify-start text-left font-normal',
+                                    !dateRange && 'text-muted-foreground',
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dateRangeDisplay}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="center">
+                            <Calendar
+                                autoFocus
+                                mode="range"
+                                defaultMonth={dateRange?.from ?? new Date()}
+                                selected={dateRange}
+                                onSelect={handleDateRangeChange}
+                                numberOfMonths={2}
+                            />
+                        </PopoverContent>
+                    </Popover>
                 </div>
 
                 {eventSelect}

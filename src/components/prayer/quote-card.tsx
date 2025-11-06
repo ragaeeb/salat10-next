@@ -1,38 +1,43 @@
 'use client';
 
-import { AlertCircle, Check, Copy } from 'lucide-react';
+import { CopyIcon } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useMemo } from 'react';
+import Link from 'next/link';
+import { toast } from 'sonner';
 import { TextAnimate } from '@/components/magicui/text-animate';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useCopyFeedback } from '@/hooks/use-copy-feedback';
 import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
+import { formatCitation } from '@/lib/quotes';
 
-const QUOTE_WATERMARK = '\n\nShared from Salat10 [https://salat10.vercel.app]';
+const QUOTE_WATERMARK = '\n\nShared from Salat10 [https://salat10.app]';
 
 /**
  * Renders the motivational quote card with copy and animation affordances.
  */
 export function QuoteCard() {
-    const { copy, status: copyStatus } = useCopyFeedback();
     const { quote } = useMotivationalQuote();
 
-    const copyLabel = useMemo(() => {
-        if (copyStatus === 'copied') {
-            return 'Copied!';
-        }
-        if (copyStatus === 'error') {
-            return 'Copy failed';
-        }
-        return 'Copy quote';
-    }, [copyStatus]);
-
-    const copyIcon = copyStatus === 'copied' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />;
-
     const copyQuote = async () => {
-        await copy(`"${quote!.text}" - [${quote!.citation}]${QUOTE_WATERMARK}`);
+        if (!quote) {
+            return;
+        }
+
+        try {
+            const citation = formatCitation(quote);
+            await navigator.clipboard.writeText(`"${quote.body}" - [${citation}]${QUOTE_WATERMARK}`);
+            toast.success('Copied');
+        } catch (error) {
+            console.warn('Clipboard copy failed', error);
+            toast.error('Error');
+        }
     };
+
+    if (!quote) {
+        return null;
+    }
+
+    const citation = formatCitation(quote);
 
     return (
         <motion.section
@@ -41,37 +46,47 @@ export function QuoteCard() {
             initial={{ opacity: 0, y: 12 }}
         >
             <div className="flex items-start justify-between gap-4">
-                {quote && (
-                    <blockquote className="space-y-4 text-base md:text-lg">
-                        <TextAnimate
-                            animation="fadeIn"
-                            as="p"
-                            by="line"
-                            className="font-medium text-foreground leading-relaxed"
-                        >
-                            {`“${quote.text}”`}
-                        </TextAnimate>
-                        <footer className="text-foreground/80 text-sm italic">— {quote.citation}</footer>
-                    </blockquote>
-                )}
+                <blockquote className="flex-1 space-y-4 text-base md:text-lg">
+                    <TextAnimate
+                        animation="fadeIn"
+                        as="div"
+                        by="line"
+                        className="whitespace-pre-wrap font-medium text-foreground leading-relaxed"
+                    >
+                        {`"${quote.body}"`}
+                    </TextAnimate>
+                    <footer className="text-foreground/80 text-sm italic">
+                        —{' '}
+                        {quote.url ? (
+                            <Link
+                                href={quote.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline transition-colors hover:text-foreground"
+                            >
+                                {citation}
+                            </Link>
+                        ) : (
+                            citation
+                        )}
+                    </footer>
+                </blockquote>
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
-                            aria-label={copyLabel}
-                            className="rounded-full"
+                            aria-label="Copy"
+                            className="shrink-0 rounded-full"
                             onClick={copyQuote}
                             size="icon"
                             variant="ghost"
                         >
-                            {copyStatus === 'error' ? <AlertCircle className="h-4 w-4" /> : copyIcon}
+                            <CopyIcon className="h-4 w-4" />
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{copyLabel}</TooltipContent>
+                    <TooltipContent>Copy</TooltipContent>
                 </Tooltip>
             </div>
-            <p className="mt-4 text-foreground/60 text-xs">
-                Tap the copy icon to share with friends. Copies include a small watermark: {QUOTE_WATERMARK}
-            </p>
+            <p className="mt-4 text-foreground/60 text-xs">Tap the copy icon to share with friends.</p>
         </motion.section>
     );
 }

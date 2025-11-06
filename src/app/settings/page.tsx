@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { useSettings } from '@/hooks/use-settings';
+import { usePrayerStore } from '@/store/usePrayerStore';
 import { CalculationSettings } from './calculation-settings';
 import { LocationSettings } from './location-settings';
 
@@ -20,7 +20,10 @@ const getBrowserTimezone = (): string => {
 };
 
 export default function SettingsPage() {
-    const { settings, updateSetting, setSettings, resetSettings } = useSettings();
+    const settings = usePrayerStore((state) => state.settings);
+    const updateSettings = usePrayerStore((state) => state.updateSettings);
+    const updateSetting = usePrayerStore((state) => state.updateSetting);
+    const resetSettings = usePrayerStore((state) => state.resetSettings);
 
     const currentSettingsJson = useMemo(() => {
         const parse = (value: string) => {
@@ -90,13 +93,13 @@ export default function SettingsPage() {
 
                     <LocationSettings
                         settings={settings}
-                        onSettingsChange={setSettings}
+                        onSettingsChange={updateSettings}
                         onFieldChange={updateSetting}
                     />
 
                     <div className="my-8 border-border/40 border-t" />
 
-                    <CalculationSettings settings={settings} onSettingsChange={setSettings} />
+                    <CalculationSettings settings={settings} onSettingsChange={updateSettings} />
                 </section>
 
                 <footer className="rounded-2xl border border-border/60 bg-card/80 p-4 text-muted-foreground text-xs shadow-inner md:rounded-3xl md:p-6">
