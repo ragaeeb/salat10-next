@@ -47,8 +47,6 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
                 const lat = position.coords.latitude.toFixed(4);
                 const lon = position.coords.longitude.toFixed(4);
 
-                console.log('Browser location:', { lat, lon });
-
                 onSettingsChange((prev) => ({
                     ...prev,
                     latitude: lat,
@@ -93,8 +91,6 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
 
             const result = await response.json();
 
-            console.log('Geocode API result:', result);
-
             // Ensure we have valid numbers
             if (typeof result.latitude !== 'number' || typeof result.longitude !== 'number') {
                 throw new Error('Invalid coordinates received from API');
@@ -103,8 +99,6 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
             const lat = result.latitude.toFixed(4);
             const lon = result.longitude.toFixed(4);
             const label = result.label ?? settings.address;
-
-            console.log('Setting coordinates:', { label, lat, lon });
 
             onSettingsChange((prev) => ({
                 ...prev,

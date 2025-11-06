@@ -35,12 +35,10 @@ export default function PrayerTimesPage() {
 
     // Redirect to settings if no valid coordinates AFTER hydration
     useEffect(() => {
-        console.log('hasHydrated', hasHydrated);
-        console.log('settings', settings);
         if (hasHydrated && !hasValidCoordinates) {
             router.push('/settings');
         }
-    }, [hasHydrated, hasValidCoordinates, router, settings]);
+    }, [hasHydrated, hasValidCoordinates, router]);
 
     // Show loading state until hydration completes
     if (!hasHydrated) {

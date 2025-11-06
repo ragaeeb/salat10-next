@@ -55,6 +55,9 @@ const formatTimings = (
         middleOfTheNight: sunnahTimes.middleOfTheNight,
         sunrise: prayerTimes.sunrise,
     };
+    console.log('curr', prayerTimes.currentPrayer());
+    console.log('next', prayerTimes.nextPrayer());
+    console.log('allTimes', allTimes);
 
     return Object.entries(allTimes)
         .sort(([, a], [, b]) => a.getTime() - b.getTime())
