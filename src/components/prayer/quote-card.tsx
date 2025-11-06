@@ -7,10 +7,11 @@ import { toast } from 'sonner';
 import { TextAnimate } from '@/components/magicui/text-animate';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { SITE_NAME, SITE_URL } from '@/config/seo';
 import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
 import { formatCitation } from '@/lib/quotes';
 
-const QUOTE_WATERMARK = '\n\nShared from Salat10 [https://salat10.app]';
+const QUOTE_WATERMARK = `\n\nShared from ${SITE_NAME} [${SITE_URL}]`;
 
 /**
  * Renders the motivational quote card with copy and animation affordances.

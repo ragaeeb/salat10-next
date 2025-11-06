@@ -35,6 +35,8 @@ export function ExplanationsClient() {
             return;
         }
 
+        setError(null);
+        setLoading(true);
         setShowLoader(true);
 
         try {

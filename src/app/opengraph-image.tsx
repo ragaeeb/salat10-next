@@ -1,7 +1,5 @@
-// ============================================================================
-// src/app/opengraph-image.tsx - Dynamic OG image for home page
-// ============================================================================
 import { ImageResponse } from 'next/og';
+import { SITE_NAME } from '@/config/seo';
 
 export const runtime = 'edge';
 export const alt = 'Salat10 - Islamic Prayer Times';
@@ -47,7 +45,7 @@ export default async function Image() {
                         marginBottom: 20,
                     }}
                 >
-                    Salat10
+                    {SITE_NAME}
                 </div>
 
                 {/* Subtitle */}

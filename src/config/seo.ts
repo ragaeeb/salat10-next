@@ -5,8 +5,8 @@ import type { Metadata } from 'next';
  * Keeps metadata organized and maintainable in one place
  */
 
-const SITE_URL = 'https://salat10.app';
-const SITE_NAME = 'Salat10';
+export const SITE_URL = 'https://salat10.app';
+export const SITE_NAME = 'Salat10';
 const SITE_DESCRIPTION = 'Accurate Islamic prayer times with beautiful visualizations and motivational quotes';
 
 // Shared keywords across pages

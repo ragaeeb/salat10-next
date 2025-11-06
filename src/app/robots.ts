@@ -1,11 +1,12 @@
 import type { MetadataRoute } from 'next';
+import { SITE_URL } from '@/config/seo';
 
 /**
  * Generate robots.txt for search engine crawlers
  * Next.js automatically serves this at /robots.txt
  */
 export default function robots(): MetadataRoute.Robots {
-    const baseUrl = 'https://salat10.app';
+    const baseUrl = SITE_URL;
 
     return {
         host: baseUrl,
