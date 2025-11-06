@@ -1,5 +1,5 @@
 import type { MotionValue } from 'motion';
-import { Moon } from '@/components/moon';
+import { Moon } from '@/components/astro/moon';
 import { useMoon } from '@/hooks/use-moon';
 import type { Timeline } from '@/types/timeline';
 

@@ -1,6 +1,6 @@
 import type { MotionValue } from 'motion';
 import { useMemo } from 'react';
-import { Sun } from '@/components/sun';
+import { Sun } from '@/components/astro/sun';
 import { useSun } from '@/hooks/use-sun';
 import type { Timeline } from '@/types/timeline';
 

@@ -1,11 +1,11 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
-import { CurrentPhase } from '@/components/astro/current-phase';
-import { Qamar } from '@/components/astro/qamar';
 import { Samaa } from '@/components/astro/samaa';
-import { Shams } from '@/components/astro/shams';
 import { Controls } from '@/components/controls';
+import { CurrentPhase } from '@/components/current-phase';
+import { Qamar } from '@/components/qamar';
+import { Shams } from '@/components/shams';
 import { useDayBuffer } from '@/hooks/use-days';
 import { useScrollTracking } from '@/hooks/use-scroll-tracking';
 import { useCalculationConfig } from '@/lib/prayer-utils';
