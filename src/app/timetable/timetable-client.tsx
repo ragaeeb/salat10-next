@@ -9,11 +9,12 @@ import { PrayerTimetableTable } from '@/components/timetable/prayer-timetable-ta
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useCalculationConfig } from '@/hooks/use-calculation-config';
 import { daily } from '@/lib/calculator';
+import { useCalculationConfig } from '@/lib/prayer-utils';
 import { salatLabels } from '@/lib/salat-labels';
 import { formatDateRangeDisplay, generateScheduleLabel, updateDateRangeParams } from '@/lib/time';
 import { cn } from '@/lib/utils';
+import { useSettings } from '@/store/usePrayerStore';
 
 export type DateFormatOption = { value: string; label: string; format: Intl.DateTimeFormatOptions };
 
@@ -39,7 +40,8 @@ export type TimetableClientProps = { initialFrom: Date; initialTo: Date };
 export function TimetableClient({ initialFrom, initialTo }: TimetableClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { config } = useCalculationConfig();
+    const config = useCalculationConfig();
+    const settings = useSettings();
     const dateFormatId = useId();
     const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: initialFrom, to: initialTo });
     const [dateFormat, setDateFormat] = useState<string>(() => searchParams.get('dateFormat') ?? 'short');
@@ -54,8 +56,8 @@ export function TimetableClient({ initialFrom, initialTo }: TimetableClientProps
         const end = new Date(dateRange.to);
 
         while (current <= end) {
-            const timings = daily(salatLabels, config, current);
-            times.push(timings);
+            const result = daily(salatLabels, config, current);
+            times.push(result);
             current.setDate(current.getDate() + 1);
         }
 
@@ -160,7 +162,7 @@ export function TimetableClient({ initialFrom, initialTo }: TimetableClientProps
             </div>
             <PrayerTimetableTable
                 schedule={schedule}
-                timeZone={config.timeZone}
+                timeZone={settings.timeZone}
                 dateFormat={selectedFormatOption!.format}
             />
         </div>

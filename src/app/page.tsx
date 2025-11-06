@@ -4,33 +4,33 @@ import { IconSunMoon } from '@tabler/icons-react';
 import { Settings2Icon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QuoteCard } from '@/components/prayer/quote-card';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { useCalculationConfig } from '@/hooks/use-calculation-config';
-import { useSettings } from '@/hooks/use-settings';
-import { daily } from '@/lib/calculator';
 import { formatCoordinate, formatHijriDate } from '@/lib/formatting';
 import { writeIslamicDate } from '@/lib/hijri';
-import { salatLabels } from '@/lib/salat-labels';
+import { useActiveEvent, useDayNavigation, useInitializePrayerStore } from '@/lib/prayer-utils';
 import { methodLabelMap } from '@/lib/settings';
+import { useHasValidCoordinates, useNumericSettings, useSettings } from '@/store/usePrayerStore';
 
 export default function PrayerTimesPage() {
-    const { settings, numeric } = useSettings();
+    const settings = useSettings();
+    const numeric = useNumericSettings();
+    const hasValidCoordinates = useHasValidCoordinates();
     const router = useRouter();
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
 
-    const calculationArgs = useCalculationConfig();
+    // Initialize the store
+    useInitializePrayerStore();
 
-    const result = useMemo(
-        () => daily(salatLabels, calculationArgs.config, currentDate),
-        [calculationArgs, currentDate],
-    );
+    // Get active event from current timings
+    const activeEvent = useActiveEvent();
 
-    const hijri = useMemo(() => writeIslamicDate(0, currentDate), [currentDate]);
+    // Day navigation (local state for preview)
+    const { viewDate, timings, dateLabel, handlePrevDay, handleNextDay, handleToday } = useDayNavigation();
+
+    const hijri = useMemo(() => writeIslamicDate(0, viewDate), [viewDate]);
 
     // Redirect to settings if no valid coordinates
     useEffect(() => {
@@ -38,22 +38,6 @@ export default function PrayerTimesPage() {
             router.push('/settings');
         }
     }, [hasValidCoordinates, router]);
-
-    const handlePrevDay = () => {
-        setCurrentDate((prev) => {
-            const next = new Date(prev);
-            next.setDate(prev.getDate() - 1);
-            return next;
-        });
-    };
-
-    const handleNextDay = () => {
-        setCurrentDate((prev) => {
-            const next = new Date(prev);
-            next.setDate(prev.getDate() + 1);
-            return next;
-        });
-    };
 
     // Don't render if no valid coordinates (will redirect)
     if (!hasValidCoordinates) {
@@ -89,16 +73,16 @@ export default function PrayerTimesPage() {
                     <QuoteCard />
 
                     <PrayerTimesCard
-                        activeEvent={result.activeEvent}
+                        activeEvent={activeEvent}
                         addressLabel={settings.address?.trim()}
-                        dateLabel={result.date}
+                        dateLabel={dateLabel}
                         hijriLabel={formatHijriDate(hijri)}
                         locationDetail={`${formatCoordinate(numeric.latitude, 'N', 'S')} · ${formatCoordinate(numeric.longitude, 'E', 'W')}`}
                         methodLabel={methodLabelMap[settings.method] ?? settings.method}
                         onNextDay={handleNextDay}
                         onPrevDay={handlePrevDay}
-                        onToday={() => setCurrentDate(new Date())}
-                        timings={result.timings}
+                        onToday={handleToday}
+                        timings={timings}
                     />
                 </div>
             </TooltipProvider>

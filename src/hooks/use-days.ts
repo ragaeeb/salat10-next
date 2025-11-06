@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CalculationConfig } from '@/hooks/use-calculation-config';
-import { daily } from '@/lib/calculator';
+import { type CalculationConfig, daily } from '@/lib/calculator';
 import { MAX_BUFFERED_DAYS } from '@/lib/constants';
 import { salatLabels } from '@/lib/salat-labels';
 import type { DayData, Timing } from '@/types/timeline';

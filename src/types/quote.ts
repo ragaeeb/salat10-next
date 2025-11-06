@@ -1,1 +1,1 @@
-export type Quote = { citation: string; text: string };
+export type Quote = { author: string; body: string; dates: string; from_page: string };

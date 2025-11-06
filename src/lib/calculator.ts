@@ -4,30 +4,14 @@ import { formatDate, formatTime } from './formatting';
 import { createParameters } from './settings';
 
 /**
- * Formats raw prayer time objects into a sorted, display-friendly collection.
+ * Formatted timing entry for display
  */
-type FormattedTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
+export type FormattedTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
 
-const formatAsObject = (
-    { sunset, ...calculationResult }: Record<string, Date>,
-    timeZone: string,
-    salatLabels: Record<string, string>,
-) => {
-    const labelFor = (event: string) => salatLabels[event] ?? event;
-    const timings: FormattedTiming[] = Object.entries(calculationResult)
-        .sort(([, value], [, nextValue]) => value.getTime() - nextValue.getTime())
-        .map(([event, t]) => ({
-            event,
-            isFard: isFard(event),
-            label: labelFor(event),
-            time: formatTime(t, timeZone),
-            value: t,
-        }));
-
-    return { date: formatDate(calculationResult.fajr!), timings };
-};
-
-type Calculation = {
+/**
+ * Configuration for prayer time calculation
+ */
+export type CalculationConfig = {
     fajrAngle: number;
     ishaAngle: number;
     ishaInterval: number;
@@ -38,51 +22,80 @@ type Calculation = {
 };
 
 /**
- * Builds the daily prayer timetable along with metadata for the active prayer and istijaba reminder.
+ * Daily prayer times result
  */
-export const daily = (
+export type DailyResult = { date: string; timings: FormattedTiming[] };
+
+/**
+ * Determines whether the provided prayer event is one of the five obligatory prayers.
+ */
+export const isFard = (event: string): boolean => {
+    return ['asr', 'dhuhr', 'fajr', 'isha', 'maghrib'].includes(event);
+};
+
+/**
+ * Formats raw prayer time objects into a sorted, display-friendly collection.
+ */
+const formatTimings = (
+    prayerTimes: PrayerTimes,
+    sunnahTimes: SunnahTimes,
+    timeZone: string,
     salatLabels: Record<string, string>,
-    { fajrAngle, ishaAngle, ishaInterval, latitude, longitude, method, timeZone }: Calculation,
-    now: Date,
-) => {
+): FormattedTiming[] => {
+    const labelFor = (event: string) => salatLabels[event] ?? event;
+
+    // Combine all times except sunset (which is same as maghrib)
+    const allTimes: Record<string, Date> = {
+        asr: prayerTimes.asr,
+        dhuhr: prayerTimes.dhuhr,
+        fajr: prayerTimes.fajr,
+        isha: prayerTimes.isha,
+        lastThirdOfTheNight: sunnahTimes.lastThirdOfTheNight,
+        maghrib: prayerTimes.maghrib,
+        middleOfTheNight: sunnahTimes.middleOfTheNight,
+        sunrise: prayerTimes.sunrise,
+    };
+
+    return Object.entries(allTimes)
+        .sort(([, a], [, b]) => a.getTime() - b.getTime())
+        .map(([event, value]) => ({
+            event,
+            isFard: isFard(event),
+            label: labelFor(event),
+            time: formatTime(value, timeZone),
+            value,
+        }));
+};
+
+/**
+ * Builds the daily prayer timetable
+ */
+export const daily = (salatLabels: Record<string, string>, config: CalculationConfig, date: Date): DailyResult => {
+    const { fajrAngle, ishaAngle, ishaInterval, latitude, longitude, method, timeZone } = config;
+
     const params = createParameters({ fajrAngle, ishaAngle, ishaInterval, method });
-    const fard = new PrayerTimes(new Coordinates(Number(latitude), Number(longitude)), now, params);
-    const sunan = new SunnahTimes(fard);
-    const {
-        calculationParameters: _calcParameters,
-        coordinates: _coordinates,
-        date: _date,
-        ...rest
-    } = { ...fard, ...sunan };
+    const coords = new Coordinates(Number(latitude), Number(longitude));
+    const prayerTimes = new PrayerTimes(coords, date, params);
+    const sunnahTimes = new SunnahTimes(prayerTimes);
 
-    const result = formatAsObject(rest, timeZone, salatLabels);
-    const currentPrayer = fard.currentPrayer(now);
-    const nowMs = now.getTime();
-    const activeEntry = [...result.timings].reverse().find((timing) => nowMs >= timing.value.getTime());
-    const fallbackEntry = result.timings[0];
-    const activeEvent = activeEntry?.event ?? fallbackEntry?.event ?? null;
-    const activeLabel = activeEvent
-        ? (result.timings.find((timing) => timing.event === activeEvent)?.label ??
-          salatLabels[activeEvent] ??
-          activeEvent)
-        : null;
+    const timings = formatTimings(prayerTimes, sunnahTimes, timeZone, salatLabels);
 
-    return { ...result, activeEvent, activeLabel, currentPrayer: currentPrayer === 'none' ? null : currentPrayer };
+    return { date: formatDate(prayerTimes.fajr), timings };
 };
 
 /**
  * Generates a month of prayer times for the provided target date.
  */
-export const monthly = (salatLabels: Record<string, string>, calculation: Calculation, targetDate = new Date()) => {
-    const times = [];
+export const monthly = (salatLabels: Record<string, string>, config: CalculationConfig, targetDate = new Date()) => {
+    const times: DailyResult[] = [];
     const year = targetDate.getFullYear();
     const month = targetDate.getMonth();
     const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
 
     for (let day = 1; day <= lastDayOfMonth; day += 1) {
-        const now = new Date(year, month, day);
-        const timings = daily(salatLabels, calculation, now);
-        times.push(timings);
+        const date = new Date(year, month, day);
+        const result = daily(salatLabels, config, date);
+        times.push(result);
     }
 
     const monthName = targetDate.toLocaleDateString('en-US', { month: 'long' });
@@ -93,22 +106,32 @@ export const monthly = (salatLabels: Record<string, string>, calculation: Calcul
 /**
  * Generates a year-long calendar of prayer times for the given target date.
  */
-export const yearly = (salatLabels: Record<string, string>, calculation: Calculation, targetDate = new Date()) => {
-    const times = [];
-    const now = new Date(targetDate.getFullYear(), 0, 1);
-    const lastDayOfYear = new Date(now.getFullYear(), 11, 31);
+export const yearly = (salatLabels: Record<string, string>, config: CalculationConfig, targetDate = new Date()) => {
+    const times: DailyResult[] = [];
+    const current = new Date(targetDate.getFullYear(), 0, 1);
+    const lastDayOfYear = new Date(current.getFullYear(), 11, 31);
 
-    while (now <= lastDayOfYear) {
-        const timings = daily(salatLabels, calculation, now);
-        times.push(timings);
-
-        now.setDate(now.getDate() + 1);
+    while (current <= lastDayOfYear) {
+        const result = daily(salatLabels, config, current);
+        times.push(result);
+        current.setDate(current.getDate() + 1);
     }
 
     return { dates: times, label: targetDate.getFullYear() };
 };
 
 /**
- * Determines whether the provided prayer event is one of the five obligatory prayers.
+ * Get the active event for a given time
  */
-export const isFard = (event: string) => ['asr', 'dhuhr', 'fajr', 'isha', 'maghrib'].includes(event);
+export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): string | null => {
+    const activeEntry = [...timings].reverse().find((timing) => timestamp >= timing.value.getTime());
+    return activeEntry?.event ?? timings[0]?.event ?? null;
+};
+
+/**
+ * Get the next event for a given time
+ */
+export const getNextEvent = (timings: FormattedTiming[], timestamp: number): string | null => {
+    const nextEntry = timings.find((timing) => timing.value.getTime() > timestamp);
+    return nextEntry?.event ?? null;
+};

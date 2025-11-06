@@ -1,5 +1,3 @@
-'use client';
-
 import { Calendar as CalendarIcon, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,8 +7,8 @@ import { PrayerLineChart } from '@/components/prayer-line-chart';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useCalculationConfig } from '@/hooks/use-calculation-config';
 import { daily } from '@/lib/calculator';
+import { useCalculationConfig } from '@/lib/prayer-utils';
 import { salatLabels } from '@/lib/salat-labels';
 import { formatDateRangeDisplay, generateScheduleLabel, updateDateRangeParams } from '@/lib/time';
 import { cn } from '@/lib/utils';
@@ -20,7 +18,7 @@ export type GraphClientProps = { initialFrom: Date; initialTo: Date };
 export function GraphClient({ initialFrom, initialTo }: GraphClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { config } = useCalculationConfig();
+    const config = useCalculationConfig();
     const selectId = useId();
     const [eventOptions, setEventOptions] = useState<{ event: string; label: string }[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<string | null>(() => searchParams.get('event'));
@@ -39,8 +37,8 @@ export function GraphClient({ initialFrom, initialTo }: GraphClientProps) {
         const end = new Date(dateRange.to);
 
         while (current <= end) {
-            const timings = daily(salatLabels, config, current);
-            times.push(timings);
+            const result = daily(salatLabels, config, current);
+            times.push(result);
             current.setDate(current.getDate() + 1);
         }
 

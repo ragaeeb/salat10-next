@@ -6,20 +6,22 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { MultiStepLoader } from '@/components/aceternity/multi-step-loader';
 import { Button } from '@/components/ui/button';
-import { useSettings } from '@/hooks/use-settings';
 import { buildPrayerTimeExplanation } from '@/lib/explanation';
 import type { PrayerTimeExplanation } from '@/lib/explanation/types';
+import { useCalculationConfig } from '@/lib/prayer-utils';
 import { createParameters } from '@/lib/settings';
+import { useHasValidCoordinates, useNumericSettings, useSettings } from '@/store/usePrayerStore';
 
 export default function ExplanationsPage() {
-    const { settings, numeric } = useSettings();
+    const settings = useSettings();
+    const numeric = useNumericSettings();
+    const hasValidCoordinates = useHasValidCoordinates();
+    const config = useCalculationConfig();
+
     const [explanation, setExplanation] = useState<PrayerTimeExplanation | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showLoader, setShowLoader] = useState(false);
-
-    const timeZone = settings.timeZone?.trim() || 'UTC';
-    const hasValidCoordinates = Number.isFinite(numeric.latitude) && Number.isFinite(numeric.longitude);
 
     const currentDate = useMemo(() => new Date(), []);
 
@@ -43,7 +45,7 @@ export default function ExplanationsPage() {
                 coordinates: new Coordinates(numeric.latitude, numeric.longitude),
                 date: currentDate,
                 parameters,
-                timeZone,
+                timeZone: settings.timeZone,
             });
             setExplanation(story);
             setLoading(false);
@@ -61,7 +63,7 @@ export default function ExplanationsPage() {
         numeric.longitude,
         settings.address,
         settings.method,
-        timeZone,
+        settings.timeZone,
         currentDate,
     ]);
 
