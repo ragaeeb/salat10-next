@@ -5,47 +5,65 @@ import type { Quote } from '@/types/quote';
 import { writeIslamicDate } from './hijri';
 
 /**
- * Maps event names from quotes to prayer time keys
+ * Get all events with their times in chronological order
  */
-const normalizeEventName = (event: string): string => {
-    return event.toLowerCase().replace(/[^a-z]/g, '');
+const getAllEvents = (data: ComputedPrayerData): Array<{ event: string; time: Date }> => {
+    return [
+        { event: 'fajr', time: data.prayerTimes.fajr },
+        { event: 'sunrise', time: data.prayerTimes.sunrise },
+        { event: 'dhuhr', time: data.prayerTimes.dhuhr },
+        { event: 'asr', time: data.prayerTimes.asr },
+        { event: 'maghrib', time: data.prayerTimes.maghrib },
+        { event: 'isha', time: data.prayerTimes.isha },
+        { event: 'middleOfTheNight', time: data.sunnahTimes.middleOfTheNight },
+        { event: 'lastThirdOfTheNight', time: data.sunnahTimes.lastThirdOfTheNight },
+    ].sort((a, b) => a.time.getTime() - b.time.getTime());
 };
 
+/**
+ * Get the current active event based on the current time
+ */
 const getCurrentEventName = (data: ComputedPrayerData): string | null => {
-    const currentPrayer = data.prayerTimes.currentPrayer();
-    if (!currentPrayer) {
-        return null;
+    const now = data.date.getTime();
+    const events = getAllEvents(data);
+
+    // Find the last event that has already occurred
+    for (let i = events.length - 1; i >= 0; i--) {
+        if (events[i].time.getTime() <= now) {
+            return events[i].event;
+        }
     }
-    return normalizeEventName(currentPrayer);
+
+    // If no event has occurred yet today, we're in the last event from yesterday
+    // This would be lastThirdOfTheNight or after isha from previous day
+    return events[events.length - 1]?.event ?? null;
 };
 
+/**
+ * Get the time for a specific event
+ */
 const getEventTime = (data: ComputedPrayerData, event: string): Date | null => {
-    const normalized = normalizeEventName(event);
-
-    // Check sunnah times first
-    if (normalized === 'middleofthenight') {
-        return data.sunnahTimes.middleOfTheNight;
+    // Direct lookup without normalization - event names should match exactly
+    switch (event) {
+        case 'fajr':
+            return data.prayerTimes.fajr;
+        case 'sunrise':
+            return data.prayerTimes.sunrise;
+        case 'dhuhr':
+            return data.prayerTimes.dhuhr;
+        case 'asr':
+            return data.prayerTimes.asr;
+        case 'maghrib':
+            return data.prayerTimes.maghrib;
+        case 'isha':
+            return data.prayerTimes.isha;
+        case 'middleOfTheNight':
+            return data.sunnahTimes.middleOfTheNight;
+        case 'lastThirdOfTheNight':
+            return data.sunnahTimes.lastThirdOfTheNight;
+        default:
+            return null;
     }
-    if (normalized === 'lastthirdofthenight') {
-        return data.sunnahTimes.lastThirdOfTheNight;
-    }
-
-    // Map to prayer names
-    const prayerNameMap: Record<string, string> = {
-        asr: 'Asr',
-        dhuhr: 'Dhuhr',
-        fajr: 'Fajr',
-        isha: 'Isha',
-        maghrib: 'Maghrib',
-        sunrise: 'Sunrise',
-    };
-
-    const prayerName = prayerNameMap[normalized];
-    if (prayerName) {
-        return data.prayerTimes.timeForPrayer(prayerName);
-    }
-
-    return null;
 };
 
 const matchesHijriMonth = (quote: Quote, hijri: HijriDate): boolean => {
@@ -80,32 +98,58 @@ const matchesAfter = (quote: Quote, data: ComputedPrayerData): boolean => {
         return false;
     }
 
-    return quote.after.events.some((event) => normalizeEventName(event) === currentEvent);
+    // Check if current event matches any of the specified events
+    return quote.after.events.some((event) => event === currentEvent);
 };
 
 const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
     if (!quote.before) {
         return true;
     }
-    if (!quote.before.diff) {
-        return true; // No diff specified, match all
-    }
 
     const now = data.date.getTime();
-    const maxDiffMs = parseDuration(quote.before.diff);
-    if (!maxDiffMs) {
-        return false;
-    }
+    const currentEvent = getCurrentEventName(data);
 
-    return quote.before.events.some((event) => {
-        const eventTime = getEventTime(data, event);
-        if (!eventTime) {
+    // If diff is specified, check time window
+    if (quote.before.diff) {
+        const maxDiffMs = parseDuration(quote.before.diff);
+        if (!maxDiffMs) {
             return false;
         }
 
-        const diffMs = eventTime.getTime() - now;
-        return diffMs > 0 && diffMs <= maxDiffMs;
-    });
+        return quote.before.events.some((event) => {
+            const eventTime = getEventTime(data, event);
+            if (!eventTime) {
+                return false;
+            }
+
+            const diffMs = eventTime.getTime() - now;
+            return diffMs > 0 && diffMs <= maxDiffMs;
+        });
+    }
+
+    // If no diff specified, match only if we're in the event immediately before
+    // For example: before: {events: ['dhuhr']} should only match when current event is 'sunrise'
+    if (!currentEvent) {
+        return false;
+    }
+
+    const allEvents = getAllEvents(data);
+    const currentIndex = allEvents.findIndex((e) => e.event === currentEvent);
+
+    if (currentIndex === -1) {
+        return false;
+    }
+
+    // Get the next event after current
+    const nextEvent = allEvents[currentIndex + 1];
+
+    if (!nextEvent) {
+        return false;
+    }
+
+    // Check if the next event is one of the specified events
+    return quote.before.events.includes(nextEvent.event);
 };
 
 /**
@@ -158,6 +202,7 @@ export const filterQuotesByPresent = (data: ComputedPrayerData, quotes: Quote[])
 
 export const getRandomQuote = (current: ComputedPrayerData, quotes: Quote[]): Quote | null => {
     const filtered = filterQuotesByPresent(current, quotes);
+
     if (filtered.length === 0) {
         return null;
     }

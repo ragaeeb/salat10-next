@@ -55,9 +55,6 @@ const formatTimings = (
         middleOfTheNight: sunnahTimes.middleOfTheNight,
         sunrise: prayerTimes.sunrise,
     };
-    console.log('curr', prayerTimes.currentPrayer());
-    console.log('next', prayerTimes.nextPrayer());
-    console.log('allTimes', allTimes);
 
     return Object.entries(allTimes)
         .sort(([, a], [, b]) => a.getTime() - b.getTime())
@@ -127,6 +124,9 @@ export const yearly = (salatLabels: Record<string, string>, config: CalculationC
  * Get the active event for a given time
  */
 export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): string | null => {
+    console.log('timings', timings);
+    console.log('now', timestamp, 'date value', new Date(timestamp));
+    console.log('[...timings].reverse()', [...timings].reverse());
     const activeEntry = [...timings].reverse().find((timing) => timestamp >= timing.value.getTime());
     return activeEntry?.event ?? timings[0]?.event ?? null;
 };

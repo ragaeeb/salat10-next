@@ -8,7 +8,7 @@ describe('hijri', () => {
             const sample = new Date('2024-03-11T00:00:00Z');
             const written = writeIslamicDate(0, sample);
 
-            expect(written).toEqual({ date: 2, day: 'al-ʾIthnayn', month: 'Ramaḍān', year: 1445 });
+            expect(written).toEqual({ date: 2, day: 'al-ʾIthnayn', month: 'Ramaḍān', monthIndex: 8, year: 1445 });
         });
 
         it('should advance by one day when adjustment is +1', () => {

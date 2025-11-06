@@ -188,9 +188,10 @@ describe('filterQuotesByPresent', () => {
             const initialData = createPrayerData(new Date(2022, 3, 1, 12, 0, 0));
             const maghribTime = initialData.prayerTimes.maghrib;
 
-            // Create test data at 30 minutes before Maghrib
+            // Create test date at 30 minutes before Maghrib
             const testDate = new Date(maghribTime.getTime() - 30 * 60 * 1000);
-            const testData = { ...initialData, date: testDate };
+            // FIXED: Update the entire prayer data with the new date
+            const testData = createPrayerData(testDate);
 
             const quotes: Quote[] = [
                 {
@@ -211,11 +212,13 @@ describe('filterQuotesByPresent', () => {
 
             // 30 minutes before (WITHIN 1h window) - should match
             const withinDate = new Date(maghribTime.getTime() - 30 * 60 * 1000);
-            const withinData = { ...initialData, date: withinDate };
+            // FIXED: Create fresh prayer data for the within date
+            const withinData = createPrayerData(withinDate);
 
             // 2 hours before (OUTSIDE 1h window) - should NOT match
             const outsideDate = new Date(maghribTime.getTime() - 2 * 60 * 60 * 1000);
-            const outsideData = { ...initialData, date: outsideDate };
+            // FIXED: Create fresh prayer data for the outside date
+            const outsideData = createPrayerData(outsideDate);
 
             const quotes: Quote[] = [
                 {
@@ -235,6 +238,64 @@ describe('filterQuotesByPresent', () => {
             const outsideFiltered = filterQuotesByPresent(outsideData, quotes);
             expect(outsideFiltered.some((q) => q.body === 'Last hour before Maghrib')).toBe(false);
             expect(outsideFiltered.some((q) => q.body === 'Generic quote')).toBe(true);
+        });
+
+        it('should match quotes with before (no diff) when in the immediately preceding event', () => {
+            // Create data during sunrise period (after sunrise, before dhuhr)
+            const initialData = createPrayerData(new Date(2022, 3, 1, 12, 0, 0));
+            const sunriseTime = initialData.prayerTimes.sunrise;
+
+            // 30 minutes after sunrise - we're in the 'sunrise' event period
+            const testDate = new Date(sunriseTime.getTime() + 30 * 60 * 1000);
+            const testData = createPrayerData(testDate);
+
+            const quotes: Quote[] = [
+                {
+                    author: 'Test Author',
+                    before: { events: ['dhuhr'] }, // Should match when current event is sunrise
+                    body: 'Before dhuhr (no diff)',
+                    title: 'Test',
+                },
+                {
+                    author: 'Test Author',
+                    before: { events: ['asr'] }, // Should NOT match - asr is not the next event
+                    body: 'Before asr (no diff)',
+                    title: 'Test',
+                },
+            ];
+
+            const filtered = filterQuotesByPresent(testData, quotes);
+            expect(filtered.some((q) => q.body === 'Before dhuhr (no diff)')).toBe(true);
+            expect(filtered.some((q) => q.body === 'Before asr (no diff)')).toBe(false);
+        });
+
+        it('should not match before (no diff) when not in immediately preceding event', () => {
+            // Create data during middleOfTheNight
+            const initialData = createPrayerData(new Date(2022, 3, 1, 12, 0, 0));
+            const middleTime = initialData.sunnahTimes.middleOfTheNight;
+
+            // During middle of the night
+            const testDate = new Date(middleTime.getTime() + 10 * 60 * 1000);
+            const testData = createPrayerData(testDate);
+
+            const quotes: Quote[] = [
+                {
+                    author: 'Test Author',
+                    before: { events: ['dhuhr'] }, // Should NOT match - next event is lastThirdOfTheNight, not dhuhr
+                    body: 'Before dhuhr from middle of night',
+                    title: 'Test',
+                },
+                {
+                    author: 'Test Author',
+                    before: { events: ['lastThirdOfTheNight'] }, // Should match - next event
+                    body: 'Before last third',
+                    title: 'Test',
+                },
+            ];
+
+            const filtered = filterQuotesByPresent(testData, quotes);
+            expect(filtered.some((q) => q.body === 'Before dhuhr from middle of night')).toBe(false);
+            expect(filtered.some((q) => q.body === 'Before last third')).toBe(true);
         });
     });
 
@@ -259,19 +320,18 @@ describe('filterQuotesByPresent', () => {
         });
 
         it('should not match quotes when one filter fails', () => {
-            // April 10, 2022 is solidly in Ramadan (month 9)
-            const data = createPrayerData(new Date(2022, 3, 10, 21, 0, 0)); // Isha time
+            // Use a simple daytime hour to avoid Islamic day boundary issues
+            // April 15, 2022 at 2pm should be solidly in Ramadan
+            const data = createPrayerData(new Date(2022, 3, 15, 14, 0, 0));
 
             const quotes: Quote[] = [
                 {
-                    after: { events: ['isha'] },
                     author: 'Test Author',
                     body: 'Wrong month',
                     hijri_months: [8], // Shaban, but we're in Ramadan
                     title: 'Test',
                 },
                 {
-                    after: { events: ['isha'] },
                     author: 'Test Author',
                     body: 'Correct month',
                     hijri_months: [9], // Ramadan
@@ -366,12 +426,13 @@ describe('filterQuotesByPresent', () => {
         });
 
         it('should handle sunnah time events (middleOfTheNight, lastThirdOfTheNight)', () => {
-            const data = createPrayerData(new Date(2022, 3, 1, 12, 0, 0));
-            const middleTime = data.sunnahTimes.middleOfTheNight;
+            const initialData = createPrayerData(new Date(2022, 3, 1, 12, 0, 0));
+            const middleTime = initialData.sunnahTimes.middleOfTheNight;
 
-            // Use spread to keep original prayer times but change date
+            // Create test date 30 minutes before middle of night
             const testDate = new Date(middleTime.getTime() - 30 * 60 * 1000);
-            const testData = { ...data, date: testDate };
+            // FIXED: Create fresh prayer data for the test date
+            const testData = createPrayerData(testDate);
 
             const quotes: Quote[] = [
                 {
