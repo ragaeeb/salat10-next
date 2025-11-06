@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { type CalculationConfig, daily, type FormattedTiming, getActiveEvent } from '@/lib/calculator';
+import { type CalculationConfig, daily, getActiveEvent } from '@/lib/calculator';
 import { salatLabels } from '@/lib/salat-labels';
 import { useCurrentData, usePrayerStore, useSettings } from '@/store/usePrayerStore';
 
@@ -109,33 +109,77 @@ export const useCountdownToNext = () => {
 };
 
 /**
- * Hook for day navigation (prev/next/today) - returns local state and handlers
+ * Helper to check if two dates are the same day (ignoring time)
+ */
+const isSameDay = (date1: Date, date2: Date): boolean => {
+    return (
+        date1.getFullYear() === date2.getFullYear() &&
+        date1.getMonth() === date2.getMonth() &&
+        date1.getDate() === date2.getDate()
+    );
+};
+
+/**
+ * Hook for day navigation (prev/next/today)
+ * - Uses precomputed store data for current day
+ * - Only calculates on-demand for prev/next days
  */
 export const useDayNavigation = () => {
-    const [viewDate, setViewDate] = useState<Date>(new Date());
-    const result = useTimingsForDate(viewDate);
+    const currentData = useCurrentData();
+    const currentTimings = useCurrentTimings();
+
+    // Track which date we're viewing (null = today/current)
+    const [viewDate, setViewDate] = useState<Date | null>(null);
+
+    // Calculate timings only when viewing a different day
+    const previewResult = useTimingsForDate(viewDate ?? new Date());
+
+    // Determine if we're viewing "today" based on store's current date
+    const isViewingToday = useMemo(() => {
+        if (!currentData || viewDate === null) {
+            return true;
+        }
+        return isSameDay(viewDate, currentData.date);
+    }, [viewDate, currentData]);
+
+    // Use store timings for today, calculated timings for other days
+    const timings = isViewingToday ? currentTimings : previewResult.timings;
+    const dateLabel =
+        isViewingToday && currentData
+            ? currentData.date.toLocaleDateString('en-US', {
+                  day: 'numeric',
+                  month: 'long',
+                  weekday: 'long',
+                  year: 'numeric',
+              })
+            : previewResult.date;
+
+    const effectiveDate = viewDate ?? (currentData?.date || new Date());
 
     const handlePrevDay = useCallback(() => {
         setViewDate((prev) => {
-            const next = new Date(prev);
-            next.setDate(prev.getDate() - 1);
+            const base = prev ?? new Date();
+            const next = new Date(base);
+            next.setDate(base.getDate() - 1);
             return next;
         });
     }, []);
 
     const handleNextDay = useCallback(() => {
         setViewDate((prev) => {
-            const next = new Date(prev);
-            next.setDate(prev.getDate() + 1);
+            const base = prev ?? new Date();
+            const next = new Date(base);
+            next.setDate(base.getDate() + 1);
             return next;
         });
     }, []);
 
     const handleToday = useCallback(() => {
-        setViewDate(new Date());
+        // Reset to null to use store's precomputed data
+        setViewDate(null);
     }, []);
 
-    return { dateLabel: result.date, handleNextDay, handlePrevDay, handleToday, timings: result.timings, viewDate };
+    return { dateLabel, handleNextDay, handlePrevDay, handleToday, timings, viewDate: effectiveDate };
 };
 
 /**

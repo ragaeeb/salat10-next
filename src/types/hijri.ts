@@ -1,1 +1,1 @@
-export type HijriDate = { date: number; day: string; month: string; year: number };
+export type HijriDate = { date: number; day: string; month: string; year: number; monthIndex: number };
