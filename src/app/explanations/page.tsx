@@ -10,12 +10,13 @@ import { buildPrayerTimeExplanation } from '@/lib/explanation';
 import type { PrayerTimeExplanation } from '@/lib/explanation/types';
 import { useCalculationConfig } from '@/lib/prayer-utils';
 import { createParameters } from '@/lib/settings';
-import { useHasValidCoordinates, useNumericSettings, useSettings } from '@/store/usePrayerStore';
+import { useHasHydrated, useHasValidCoordinates, useNumericSettings, useSettings } from '@/store/usePrayerStore';
 
 export default function ExplanationsPage() {
     const settings = useSettings();
     const numeric = useNumericSettings();
     const hasValidCoordinates = useHasValidCoordinates();
+    const hasHydrated = useHasHydrated();
     const config = useCalculationConfig();
 
     const [explanation, setExplanation] = useState<PrayerTimeExplanation | null>(null);
@@ -26,6 +27,11 @@ export default function ExplanationsPage() {
     const currentDate = useMemo(() => new Date(), []);
 
     useEffect(() => {
+        // Wait for hydration before processing
+        if (!hasHydrated) {
+            return;
+        }
+
         if (!hasValidCoordinates) {
             setLoading(false);
             return;
@@ -55,6 +61,7 @@ export default function ExplanationsPage() {
             setLoading(false);
         }
     }, [
+        hasHydrated,
         hasValidCoordinates,
         numeric.fajrAngle,
         numeric.ishaAngle,
@@ -66,6 +73,17 @@ export default function ExplanationsPage() {
         settings.timeZone,
         currentDate,
     ]);
+
+    // Show loading state until hydration completes
+    if (!hasHydrated) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-background">
+                <div className="text-center">
+                    <div className="mb-4 text-lg text-muted-foreground">Loading...</div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-background">

@@ -1,12 +1,7 @@
-import type { Metadata } from 'next';
+'use client';
 
 import { parseInitialDateRange } from '@/lib/time';
 import { TimetableClient } from './timetable-client';
-
-export const metadata: Metadata = {
-    description: 'View prayer timetables for any date range with detailed schedules.',
-    title: 'Prayer Timetable',
-};
 
 export type TimetablePageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 

@@ -13,12 +13,13 @@ import { formatCoordinate, formatHijriDate } from '@/lib/formatting';
 import { writeIslamicDate } from '@/lib/hijri';
 import { useActiveEvent, useDayNavigation, useInitializePrayerStore } from '@/lib/prayer-utils';
 import { methodLabelMap } from '@/lib/settings';
-import { useHasValidCoordinates, useNumericSettings, useSettings } from '@/store/usePrayerStore';
+import { useHasHydrated, useHasValidCoordinates, useNumericSettings, useSettings } from '@/store/usePrayerStore';
 
 export default function PrayerTimesPage() {
     const settings = useSettings();
     const numeric = useNumericSettings();
     const hasValidCoordinates = useHasValidCoordinates();
+    const hasHydrated = useHasHydrated();
     const router = useRouter();
 
     // Initialize the store
@@ -32,12 +33,25 @@ export default function PrayerTimesPage() {
 
     const hijri = useMemo(() => writeIslamicDate(0, viewDate), [viewDate]);
 
-    // Redirect to settings if no valid coordinates
+    // Redirect to settings if no valid coordinates AFTER hydration
     useEffect(() => {
-        if (!hasValidCoordinates) {
+        console.log('hasHydrated', hasHydrated);
+        console.log('settings', settings);
+        if (hasHydrated && !hasValidCoordinates) {
             router.push('/settings');
         }
-    }, [hasValidCoordinates, router]);
+    }, [hasHydrated, hasValidCoordinates, router, settings]);
+
+    // Show loading state until hydration completes
+    if (!hasHydrated) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-background">
+                <div className="text-center">
+                    <div className="mb-4 text-lg text-muted-foreground">Loading...</div>
+                </div>
+            </div>
+        );
+    }
 
     // Don't render if no valid coordinates (will redirect)
     if (!hasValidCoordinates) {

@@ -1,6 +1,7 @@
 import { Coordinates, PrayerTimes, SunnahTimes } from 'adhan';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 import packageJson from '@/../package.json';
 import { defaultSettings } from '@/lib/constants';
 import { createParameters } from '@/lib/settings';
@@ -21,8 +22,12 @@ type PrayerStore = {
     // Timeout ID for auto-recomputation
     _timeoutId: NodeJS.Timeout | null;
 
+    // Hydration status
+    _hasHydrated: boolean;
+    setHasHydrated: (state: boolean) => void;
+
     // Actions
-    updateSettings: (updates: Partial<Settings>) => void;
+    updateSettings: (updates: Partial<Settings> | ((prev: Settings) => Settings)) => void;
     updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
     resetSettings: () => void;
     computePrayerTimes: (forDate?: Date) => void;
@@ -113,6 +118,8 @@ export const usePrayerStore = create<PrayerStore>()(
                     set({ _timeoutId: null });
                 }
             },
+            // Track hydration status
+            _hasHydrated: false,
 
             // Schedule the next automatic update
             _scheduleNextUpdate: () => {
@@ -169,7 +176,8 @@ export const usePrayerStore = create<PrayerStore>()(
             // Initialize the store (compute initial prayer times)
             initialize: () => {
                 const state = get();
-                if (hasValidCoordinates(state.settings)) {
+                // Only initialize if we have valid coordinates AND we've hydrated
+                if (state._hasHydrated && hasValidCoordinates(state.settings)) {
                     state.computePrayerTimes();
                     state._scheduleNextUpdate();
                 }
@@ -189,6 +197,9 @@ export const usePrayerStore = create<PrayerStore>()(
 
                 get()._scheduleNextUpdate();
             },
+            setHasHydrated: (state: boolean) => {
+                set({ _hasHydrated: state });
+            },
             // Initial state
             settings: defaultSettings,
 
@@ -200,7 +211,9 @@ export const usePrayerStore = create<PrayerStore>()(
             // Update multiple settings at once
             updateSettings: (updates) => {
                 set((state) => {
-                    const newSettings = { ...state.settings, ...updates };
+                    // Support both object and function updater
+                    const newSettings =
+                        typeof updates === 'function' ? updates(state.settings) : { ...state.settings, ...updates };
                     const newData = computeForDate(newSettings, new Date());
 
                     // Clear and reschedule
@@ -217,6 +230,18 @@ export const usePrayerStore = create<PrayerStore>()(
         }),
         {
             name: STORAGE_KEY,
+            onRehydrateStorage: () => {
+                return (state) => {
+                    if (state) {
+                        state.setHasHydrated(true);
+                        // After hydration, initialize if we have valid coordinates
+                        if (hasValidCoordinates(state.settings)) {
+                            state.computePrayerTimes();
+                            state._scheduleNextUpdate();
+                        }
+                    }
+                };
+            },
             // Only persist settings, not computed data
             partialize: (state) => ({ settings: state.settings }),
         },
@@ -227,16 +252,28 @@ export const usePrayerStore = create<PrayerStore>()(
 export const useSettings = () => usePrayerStore((state) => state.settings);
 export const useCurrentData = () => usePrayerStore((state) => state.currentData);
 export const useHasValidCoordinates = () => usePrayerStore((state) => hasValidCoordinates(state.settings));
+export const useHasHydrated = () => usePrayerStore((state) => state._hasHydrated);
 
-// Get numeric values from settings
+// FIXED: Use useShallow for object return to prevent infinite loop
+// This returns a new object on each call, so we need useShallow
 export const useNumericSettings = () =>
-    usePrayerStore((state) => ({
-        fajrAngle: Number.parseFloat(state.settings.fajrAngle),
-        ishaAngle: Number.parseFloat(state.settings.ishaAngle),
-        ishaInterval: Number.parseFloat(state.settings.ishaInterval),
-        latitude: Number.parseFloat(state.settings.latitude),
-        longitude: Number.parseFloat(state.settings.longitude),
-    }));
+    usePrayerStore(
+        useShallow((state) => ({
+            fajrAngle: Number.parseFloat(state.settings.fajrAngle),
+            ishaAngle: Number.parseFloat(state.settings.ishaAngle),
+            ishaInterval: Number.parseFloat(state.settings.ishaInterval),
+            latitude: Number.parseFloat(state.settings.latitude),
+            longitude: Number.parseFloat(state.settings.longitude),
+        })),
+    );
+
+// ALTERNATIVE: Granular selectors (best practice - use these instead if possible)
+// These return primitive values and don't need useShallow
+export const useFajrAngle = () => usePrayerStore((state) => Number.parseFloat(state.settings.fajrAngle));
+export const useIshaAngle = () => usePrayerStore((state) => Number.parseFloat(state.settings.ishaAngle));
+export const useIshaInterval = () => usePrayerStore((state) => Number.parseFloat(state.settings.ishaInterval));
+export const useLatitude = () => usePrayerStore((state) => Number.parseFloat(state.settings.latitude));
+export const useLongitude = () => usePrayerStore((state) => Number.parseFloat(state.settings.longitude));
 
 // Get current prayer (what prayer time is active right now)
 export const useCurrentPrayer = () =>

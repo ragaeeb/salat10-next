@@ -44,10 +44,15 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
+                const lat = position.coords.latitude.toFixed(4);
+                const lon = position.coords.longitude.toFixed(4);
+
+                console.log('Browser location:', { lat, lon });
+
                 onSettingsChange((prev) => ({
                     ...prev,
-                    latitude: position.coords.latitude.toFixed(4),
-                    longitude: position.coords.longitude.toFixed(4),
+                    latitude: lat,
+                    longitude: lon,
                     timeZone: getBrowserTimezone(),
                 }));
                 setLocationStatus('idle');
@@ -88,18 +93,31 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
 
             const result = await response.json();
 
+            console.log('Geocode API result:', result);
+
+            // Ensure we have valid numbers
+            if (typeof result.latitude !== 'number' || typeof result.longitude !== 'number') {
+                throw new Error('Invalid coordinates received from API');
+            }
+
+            const lat = result.latitude.toFixed(4);
+            const lon = result.longitude.toFixed(4);
+            const label = result.label ?? settings.address;
+
+            console.log('Setting coordinates:', { label, lat, lon });
+
             onSettingsChange((prev) => ({
                 ...prev,
-                address: result.label ?? prev.address,
-                latitude: result.latitude.toFixed(4),
-                longitude: result.longitude.toFixed(4),
+                address: label,
+                latitude: lat,
+                longitude: lon,
                 timeZone: getBrowserTimezone(),
             }));
 
             setGeocodeStatus('idle');
-            toast.success(`Found coordinates near ${result.label ?? settings.address}.`);
+            toast.success(`Found coordinates near ${label}.`);
         } catch (error) {
-            console.warn('Geocode lookup failed', error);
+            console.error('Geocode lookup failed:', error);
             setGeocodeStatus('idle');
             toast.error('Unable to look up that location right now. Please try again later.');
         }

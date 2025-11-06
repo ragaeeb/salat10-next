@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Footer } from '@/components/footer';
-import { HydratedProvider } from '@/components/hydrated-provider';
 import { StoreInitializer } from '@/components/store-initializer';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
@@ -13,6 +12,7 @@ export const metadata: Metadata = { description: 'Salat10', title: 'Salat10' };
 
 /**
  * Root layout with global fonts/styles.
+ * Store hydration is handled per-page using useHasHydrated() where needed.
  */
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
@@ -24,9 +24,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
                 <StoreInitializer>
                     <div className="flex min-h-screen flex-col">
-                        <main className="flex-1">
-                            <HydratedProvider>{children}</HydratedProvider>
-                        </main>
+                        <main className="flex-1">{children}</main>
                         <Footer />
                     </div>
                 </StoreInitializer>
