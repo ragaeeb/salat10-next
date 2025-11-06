@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/ragaeeb/salat10-next/compare/v1.3.0...v1.4.0) (2025-11-06)
+
+
+### Features
+
+* **quotes:** Add quote fetching based on time ([#8](https://github.com/ragaeeb/salat10-next/issues/8)) ([0efe174](https://github.com/ragaeeb/salat10-next/commit/0efe1740792947a43b8dac66f640dc64018a0fc2))
+
 # [1.3.0](https://github.com/ragaeeb/salat10-next/compare/v1.2.0...v1.3.0) (2025-11-05)
 
 
