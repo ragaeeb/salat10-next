@@ -9,12 +9,31 @@ interface CameraState {
 /**
  * Hook to manage device camera access
  * Requests rear-facing camera for AR experience
+ * Includes feature detection for older iOS Safari
  */
 export function useCamera() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [state, setState] = useState<CameraState>({ error: null, isReady: false, stream: null });
 
     const startCamera = useCallback(async () => {
+        // Feature detection - check if getUserMedia exists
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            // Try older API as fallback for some browsers
+            const legacyGetUserMedia =
+                (navigator as any).getUserMedia ||
+                (navigator as any).webkitGetUserMedia ||
+                (navigator as any).mozGetUserMedia;
+
+            if (!legacyGetUserMedia) {
+                setState({
+                    error: 'Camera access requires permission. Please allow camera access when prompted by your browser.',
+                    isReady: false,
+                    stream: null,
+                });
+                return;
+            }
+        }
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: false,
@@ -27,11 +46,20 @@ export function useCamera() {
                 setState({ error: null, isReady: true, stream });
             }
         } catch (err) {
-            setState({
-                error: `Camera access denied: ${err instanceof Error ? err.message : 'Unknown error'}`,
-                isReady: false,
-                stream: null,
-            });
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+
+            // Provide more helpful error messages
+            let userFriendlyMessage = `Camera access denied: ${errorMessage}`;
+
+            if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission denied')) {
+                userFriendlyMessage = 'Camera permission denied. Please allow camera access in your browser settings.';
+            } else if (errorMessage.includes('NotFoundError')) {
+                userFriendlyMessage = 'No camera found on this device.';
+            } else if (errorMessage.includes('NotReadableError')) {
+                userFriendlyMessage = 'Camera is already in use by another application.';
+            }
+
+            setState({ error: userFriendlyMessage, isReady: false, stream: null });
         }
     }, []);
 

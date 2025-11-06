@@ -1,7 +1,8 @@
 'use client';
 
 import { AlertCircle } from 'lucide-react';
-import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo } from 'react';
 import { QiblaArrow } from '@/components/qibla/arrow';
 import { QiblaInfoCard } from '@/components/qibla/info-card';
 import { PermissionsCard } from '@/components/qibla/permissions-card';
@@ -9,24 +10,40 @@ import { useCamera } from '@/hooks/use-camera';
 import { useQiblaCompass } from '@/hooks/use-qibla-compass';
 import {
     calculateHeadingStability,
+    calculateQibla,
     calculateRelativeRotation,
     getIOSCompassQuality,
     isPointingAtQibla,
 } from '@/lib/qibla';
-
-interface QiblaFinderClientProps {
-    qiblaBearing: number;
-    latitude: number;
-    longitude: number;
-}
+import { useHasHydrated, useHasValidCoordinates, useNumericSettings } from '@/store/usePrayerStore';
 
 /**
  * Client-side Qibla AR finder component
- * Manages camera, compass, and AR overlay
+ * Loads coordinates from store and manages camera/compass
  */
-export function QiblaFinderClient({ qiblaBearing, latitude, longitude }: QiblaFinderClientProps) {
+export function QiblaFinderClient() {
+    const hasHydrated = useHasHydrated();
+    const hasValidCoordinates = useHasValidCoordinates();
+    const { latitude, longitude } = useNumericSettings();
+    const router = useRouter();
+
     const camera = useCamera();
     const compass = useQiblaCompass();
+
+    // Redirect to settings if no valid coordinates AFTER hydration
+    useEffect(() => {
+        if (hasHydrated && !hasValidCoordinates) {
+            router.push('/settings');
+        }
+    }, [hasHydrated, hasValidCoordinates, router]);
+
+    // Calculate Qibla bearing
+    const qiblaBearing = useMemo(() => {
+        if (!hasValidCoordinates) {
+            return 0;
+        }
+        return calculateQibla(latitude, longitude);
+    }, [hasValidCoordinates, latitude, longitude]);
 
     // Calculate relative rotation and alignment
     const relativeRotation = useMemo(() => {
@@ -58,6 +75,22 @@ export function QiblaFinderClient({ qiblaBearing, latitude, longitude }: QiblaFi
 
     // Combined error from camera or compass
     const error = camera.error || compass.error;
+
+    // Show loading state until hydration completes
+    if (!hasHydrated) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-black">
+                <div className="text-center text-white">
+                    <div className="mb-4 text-lg">Loading...</div>
+                </div>
+            </div>
+        );
+    }
+
+    // Don't render if no valid coordinates (will redirect)
+    if (!hasValidCoordinates) {
+        return null;
+    }
 
     return (
         <>
@@ -92,7 +125,7 @@ export function QiblaFinderClient({ qiblaBearing, latitude, longitude }: QiblaFi
                     />
                 )}
 
-                {/* Error message - inline since it's so simple */}
+                {/* Error message */}
                 {error && (
                     <div className="rounded-lg bg-red-900/70 p-4 text-sm text-white backdrop-blur-md">
                         <div className="flex items-center gap-2">
@@ -103,7 +136,7 @@ export function QiblaFinderClient({ qiblaBearing, latitude, longitude }: QiblaFi
                 )}
             </div>
 
-            {/* Calibration instructions - inline since it's so simple */}
+            {/* Calibration instructions */}
             {showCalibration && (
                 <div className="absolute right-4 bottom-24 left-4 rounded-lg bg-yellow-900/70 p-4 text-sm text-white backdrop-blur-md">
                     <div className="mb-1 font-semibold">Compass Calibration Needed</div>
