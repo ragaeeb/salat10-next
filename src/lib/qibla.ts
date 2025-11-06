@@ -107,7 +107,7 @@ export function calculateHeadingStability(headingHistory: number[]): { text: str
             if (i === 0) {
                 return 0;
             }
-            let diff = Math.abs(val - arr[i - 1]);
+            let diff = Math.abs(val - arr[i - 1]!);
             if (diff > 180) {
                 diff = 360 - diff; // Handle wrap-around
             }

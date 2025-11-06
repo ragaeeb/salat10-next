@@ -11,6 +11,11 @@ interface CompassState {
     error: string | null;
 }
 
+// Type for iOS DeviceOrientationEvent with requestPermission
+interface DeviceOrientationEventiOS extends DeviceOrientationEvent {
+    requestPermission?: () => Promise<PermissionState>;
+}
+
 /**
  * Hook to manage device compass/orientation sensor
  * Handles iOS and Android differences in DeviceOrientation API
@@ -80,14 +85,14 @@ export function useQiblaCompass() {
     // Request orientation permission (primarily for iOS)
     const requestPermission = useCallback(async () => {
         try {
+            // Check if requestPermission exists (iOS 13+)
+            const DeviceOrientationEventTyped = DeviceOrientationEvent as unknown as DeviceOrientationEventiOS;
+
             if (
-                typeof DeviceOrientationEvent !== 'undefined' &&
-                typeof (DeviceOrientationEvent as { requestPermission?: () => Promise<PermissionState> })
-                    .requestPermission === 'function'
+                typeof DeviceOrientationEventTyped !== 'undefined' &&
+                typeof DeviceOrientationEventTyped.requestPermission === 'function'
             ) {
-                const response = await (
-                    DeviceOrientationEvent as { requestPermission: () => Promise<PermissionState> }
-                ).requestPermission();
+                const response = await DeviceOrientationEventTyped.requestPermission();
 
                 if (response === 'granted') {
                     setState((prev) => ({ ...prev, error: null, permissionState: 'granted' }));

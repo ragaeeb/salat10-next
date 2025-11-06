@@ -253,7 +253,6 @@ export const useCalculationConfig = (): CalculationConfig => {
 export const useInitializePrayerStore = () => {
     useEffect(() => {
         const store = usePrayerStore.getState();
-        store.initialize();
 
         return () => {
             store._clearScheduledUpdate();
