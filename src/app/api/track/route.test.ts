@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { NextRequest } from 'next/server';
 import { POST, processAnalyticsEvents, updatePresenceData, validatePresenceData } from './route';
 
-// Mock redis
+// Mock redis module
 const mockRedis = {
     exec: mock(async () => []),
     expire: mock((key: string, ttl: number) => mockRedis),
@@ -12,14 +12,28 @@ const mockRedis = {
     zadd: mock((key: string, data: { member: string; score: number }) => mockRedis),
 };
 
-let originalRedis: any;
+mock.module('@/lib/redis', () => ({
+    REDIS_KEYS: {
+        activePresence: 'presence:active',
+        pageView: (path: string) => `analytics:pageviews:${path}`,
+        presence: (sessionId: string) => `presence:${sessionId}`,
+    },
+    REDIS_TTL: { presence: 300 },
+    redis: mockRedis,
+}));
 
-describe('track route', () => {
-    beforeEach(async () => {
-        const redisModule = await import('@/lib/redis');
-        originalRedis = redisModule.redis;
-        (redisModule as any).redis = mockRedis;
+describe('route', () => {
+    const originalConsoleError = console.error;
 
+    beforeAll(() => {
+        console.error = mock(() => {});
+    });
+
+    afterAll(() => {
+        console.error = originalConsoleError;
+    });
+
+    beforeEach(() => {
         // Reset mocks
         mockRedis.exec.mockClear();
         mockRedis.expire.mockClear();
@@ -27,11 +41,6 @@ describe('track route', () => {
         mockRedis.incr.mockClear();
         mockRedis.pipeline.mockClear();
         mockRedis.zadd.mockClear();
-    });
-
-    afterEach(async () => {
-        const redisModule = await import('@/lib/redis');
-        (redisModule as any).redis = originalRedis;
     });
 
     describe('validatePresenceData', () => {
@@ -133,6 +142,26 @@ describe('track route', () => {
             expect(mockRedis.zadd).toHaveBeenCalled();
             expect(mockRedis.exec).toHaveBeenCalled();
         });
+
+        it('should include optional location fields', async () => {
+            const presence = {
+                city: 'Toronto',
+                country: 'Canada',
+                lastSeen: Date.now(),
+                lat: 43.65,
+                lon: -79.38,
+                page: '/home',
+                sessionId: 'test-123',
+                state: 'Ontario',
+            };
+
+            await updatePresenceData(presence);
+
+            expect(mockRedis.hset).toHaveBeenCalledWith(
+                expect.stringContaining('test-123'),
+                expect.objectContaining({ city: 'Toronto', country: 'Canada', state: 'Ontario' }),
+            );
+        });
     });
 
     describe('POST', () => {
@@ -210,7 +239,7 @@ describe('track route', () => {
         });
 
         it('should return 500 on server error', async () => {
-            mockRedis.exec.mockRejectedValueOnce(new Error('Redis error'));
+            mockRedis.exec.mockRejectedValueOnce('Redis error');
 
             const request = new NextRequest('http://localhost:3000/api/track', {
                 body: JSON.stringify({ events: [{ path: '/home', timestamp: Date.now(), type: 'pageview' }] }),

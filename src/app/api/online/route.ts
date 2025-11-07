@@ -2,9 +2,37 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { REDIS_KEYS, REDIS_TTL, redis } from '@/lib/redis';
 import { createCorsHeaders, validateOrigin } from '@/lib/security';
 
-type OnlineUser = { lat: number; lon: number; page: string; lastSeen: number };
-type PresenceRecord = { lat: string; lon: string; page?: string; lastSeen: string };
+/**
+ * Online user data with location information
+ */
+type OnlineUser = {
+    lat: number;
+    lon: number;
+    page: string;
+    lastSeen: number;
+    city?: string;
+    state?: string;
+    country?: string;
+};
 
+/**
+ * Presence record structure from Redis
+ */
+type PresenceRecord = {
+    lat: string;
+    lon: string;
+    page?: string;
+    lastSeen: string;
+    city?: string;
+    state?: string;
+    country?: string;
+};
+
+/**
+ * Get active session IDs from Redis sorted set
+ *
+ * @returns Array of session IDs active within TTL window
+ */
 export async function getActiveSessionIds(): Promise<string[]> {
     const cutoff = Date.now() - REDIS_TTL.presence * 1000;
 
@@ -14,6 +42,12 @@ export async function getActiveSessionIds(): Promise<string[]> {
     return sessionIds || [];
 }
 
+/**
+ * Fetch presence data for given session IDs
+ *
+ * @param sessionIds - Array of session IDs to fetch
+ * @returns Array of online user data
+ */
 export async function fetchPresenceData(sessionIds: string[]): Promise<OnlineUser[]> {
     if (sessionIds.length === 0) {
         return [];
@@ -35,6 +69,9 @@ export async function fetchPresenceData(sessionIds: string[]): Promise<OnlineUse
                 lat: Number.parseFloat(user.lat),
                 lon: Number.parseFloat(user.lon),
                 page: user.page || 'unknown',
+                ...(user.city && { city: user.city }),
+                ...(user.state && { state: user.state }),
+                ...(user.country && { country: user.country }),
             });
         }
     }
@@ -42,6 +79,15 @@ export async function fetchPresenceData(sessionIds: string[]): Promise<OnlineUse
     return users;
 }
 
+/**
+ * GET /api/online
+ * Returns list of currently online users with location data
+ *
+ * Returns:
+ * - 200: { users: OnlineUser[], ttl: number }
+ * - 403: Access denied (invalid origin)
+ * - 500: Server error
+ */
 export async function GET(request: NextRequest) {
     const origin = request.headers.get('origin');
     const referer = request.headers.get('referer');
@@ -54,7 +100,7 @@ export async function GET(request: NextRequest) {
         const sessionIds = await getActiveSessionIds();
         const users = await fetchPresenceData(sessionIds);
 
-        return NextResponse.json({ users }, { headers: createCorsHeaders(origin) });
+        return NextResponse.json({ ttl: REDIS_TTL.presence, users }, { headers: createCorsHeaders(origin) });
     } catch (error) {
         console.error('Online users fetch error:', error);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });

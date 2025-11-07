@@ -56,6 +56,13 @@ Beautiful, accurate Islamic prayer times with visual astronomy and Hijri calenda
 - iOS and Android support
 - **Requires HTTPS** for camera/sensor access
 
+### 🌍 Online Users Map
+- **Real-time presence tracking** showing active users worldwide
+- Interactive world map with user locations
+- City/state/country labels when available
+- Shows users active within last 5 minutes
+- Privacy-focused: only location data (no personal info)
+
 ### 📅 Hijri Calendar
 - Accurate Gregorian to Hijri conversion
 - Kuwaiti algorithm implementation
@@ -111,9 +118,31 @@ bun run start
 Create a `.env.local` file:
 
 ```bash
-# Optional: For address geocoding
+# Optional: For address geocoding (geocode.maps.co API)
 GEOCODE_API_KEY=your_geocode_maps_co_api_key
+
+# Required: Upstash Redis for analytics and presence tracking
+UPSTASH_REDIS_REST_URL=your_upstash_redis_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
+
+# Optional: Analytics configuration
+NEXT_PUBLIC_ANALYTICS_STORAGE_KEY=salat10_analytics
+NEXT_PUBLIC_ANALYTICS_BATCH_SIZE=10
+NEXT_PUBLIC_SESSION_ID_KEY=salat10_session_id
+NEXT_PUBLIC_ANALYTICS_FLUSH_INTERVAL=3600000  # 1 hour in ms
 ```
+
+#### Setting up Upstash Redis
+
+1. Create a free account at [Upstash](https://upstash.com/)
+2. Create a new Redis database
+3. Copy the REST URL and REST TOKEN from the database details
+4. Add them to your `.env.local` file
+
+The Redis database is used for:
+- Page view analytics
+- Real-time user presence tracking
+- Online users map data
 
 ### Calculation Methods
 
@@ -178,6 +207,8 @@ bun test src/lib/calculator.test.ts
 - **Prayer Calculations**: Adhan 4.4.3
 - **Charts**: uPlot
 - **UI Components**: shadcn/ui + custom
+- **Analytics**: Upstash Redis
+- **Maps**: dotted-map (world-map)
 
 ### Key Directories
 ```text
@@ -186,9 +217,14 @@ src/
 │   ├── page.tsx      # Home (card view)
 │   ├── v2/           # Parallax view
 │   ├── qibla/        # AR Qibla finder
+│   ├── online/       # Online users map
 │   ├── settings/     # Location & method config
 │   ├── timetable/    # Monthly/yearly tables
-│   └── graph/        # Time-series charts
+│   ├── graph/        # Time-series charts
+│   └── api/          # API routes
+│       ├── geocode/  # Address → coordinates
+│       ├── track/    # Analytics & presence
+│       └── online/   # Online users data
 ├── components/       # React components
 │   ├── ui/           # shadcn/ui primitives
 │   ├── prayer/       # Prayer-specific UI
@@ -202,6 +238,9 @@ src/
 │   ├── qibla.ts      # Qibla direction & compass
 │   ├── hijri.ts      # Hijri calendar
 │   ├── quotes.ts     # Quote filtering
+│   ├── analytics.ts  # Client-side analytics
+│   ├── redis.ts      # Redis configuration
+│   ├── security.ts   # CORS & validation
 │   ├── store-utils.ts# Store utilities (testable)
 │   └── *.test.ts     # Unit tests
 ├── store/            # Zustand state management
@@ -217,6 +256,7 @@ src/
 - **Composition**: Small, focused components
 - **Hooks**: Custom hooks for reusable logic
 - **Persistence**: Zustand with localStorage sync
+- **Analytics**: Client-side batching with Redis backend
 
 ## 🎯 SEO
 
@@ -250,6 +290,7 @@ MIT © [Ragaeeb Haq](https://github.com/ragaeeb)
 
 - [Adhan library](https://github.com/batoulapps/adhan-js) for accurate prayer calculations
 - [shadcn/ui](https://ui.shadcn.com/) for beautiful components
+- [Upstash](https://upstash.com/) for serverless Redis
 - Islamic scholars and sources for authentic quotes
 
 ## 🔗 Links
@@ -260,4 +301,4 @@ MIT © [Ragaeeb Haq](https://github.com/ragaeeb)
 
 ---
 
-## Built with ❤️ for the Muslim community
+Built with ❤️ for the Muslim community

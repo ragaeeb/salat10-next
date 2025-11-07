@@ -6,11 +6,48 @@ import { useEffect, useState } from 'react';
 import WorldMap from '@/components/aceternity/world-map';
 import { Button } from '@/components/ui/button';
 
-type OnlineUser = { lat: number; lon: number; page: string; lastSeen: number };
+/**
+ * Online user data with optional location labels
+ */
+type OnlineUser = {
+    lat: number;
+    lon: number;
+    page: string;
+    lastSeen: number;
+    city?: string;
+    state?: string;
+    country?: string;
+};
+
+/**
+ * Get display label for user based on available location data
+ * Priority: City > State > Country
+ */
+function getUserLabel(user: OnlineUser): string | undefined {
+    if (user.city) {
+        return user.city;
+    }
+    if (user.state) {
+        return user.state;
+    }
+    if (user.country) {
+        return user.country;
+    }
+    return undefined;
+}
+
+/**
+ * Format time window display text
+ */
+function formatTimeWindow(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    return minutes === 1 ? '1 min' : `${minutes} mins`;
+}
 
 export function OnlineClient() {
     const [users, setUsers] = useState<OnlineUser[]>([]);
     const [loading, setLoading] = useState(true);
+    const [ttl, setTtl] = useState<number>(300); // Default 5 minutes
 
     useEffect(() => {
         const fetchOnlineUsers = async () => {
@@ -19,6 +56,9 @@ export function OnlineClient() {
                 if (response.ok) {
                     const data = await response.json();
                     setUsers(data.users || []);
+                    if (data.ttl) {
+                        setTtl(data.ttl);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to fetch online users', error);
@@ -30,9 +70,16 @@ export function OnlineClient() {
         fetchOnlineUsers();
     }, []);
 
-    // Create dots for world map (connections from Mecca to each user)
-    const mecca = { lat: 21.4225, lng: 39.8262 };
-    const dots = users.map((user) => ({ end: { lat: user.lat, lng: user.lon }, start: mecca }));
+    // Create dots for world map - one for each user
+    const dots = users.map((user) => ({
+        end: { lat: user.lat, lng: user.lon }, // Same point = just a dot
+        label: getUserLabel(user),
+        start: { lat: user.lat, lng: user.lon },
+    }));
+
+    const timeWindow = formatTimeWindow(ttl);
+    const userCount = users.length;
+    const userText = userCount === 1 ? 'user' : 'users';
 
     return (
         <div className="min-h-screen bg-background p-6">
@@ -41,7 +88,7 @@ export function OnlineClient() {
                     <div>
                         <h1 className="font-bold text-3xl">Users Online Now</h1>
                         <p className="text-muted-foreground">
-                            {loading ? 'Loading...' : `${users.length} user${users.length === 1 ? '' : 's'} online`}
+                            {loading ? 'Loading...' : `${userCount} ${userText} online in the last ${timeWindow}`}
                         </p>
                     </div>
                     <Button asChild size="sm" variant="outline">
@@ -58,7 +105,7 @@ export function OnlineClient() {
                             <p className="text-muted-foreground">Loading map...</p>
                         </div>
                     ) : users.length > 0 ? (
-                        <WorldMap dots={dots} lineColor="#3b82f6" />
+                        <WorldMap dots={dots} />
                     ) : (
                         <div className="flex h-96 items-center justify-center">
                             <p className="text-muted-foreground">No users online at the moment</p>
@@ -68,8 +115,8 @@ export function OnlineClient() {
 
                 <div className="rounded-lg border border-border bg-card p-4 text-muted-foreground text-sm">
                     <p>
-                        Lines connect from Mecca to each online user's location. User presence is updated every 2
-                        minutes and expires after 5 minutes of inactivity.
+                        Each dot represents an online user's location. Labels show the city, state, or country when
+                        available. Presence data expires after {timeWindow} of inactivity.
                     </p>
                 </div>
             </div>
