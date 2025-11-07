@@ -1,11 +1,11 @@
 import type { MotionValue } from 'motion';
 import { useEffect, useState } from 'react';
-import { FajrGradient } from '@/components/fajr-sky';
-import { LightRays } from '@/components/light-rays';
-import { RadialGradientOverlay } from '@/components/radial-gradient';
-import { SkyBackground } from '@/components/sky';
-import { StarsLayer } from '@/components/stars';
-import { SunsetGradient } from '@/components/sunset-sky';
+import { FajrGradient } from '@/components/astro/fajr-sky';
+import { LightRays } from '@/components/astro/light-rays';
+import { RadialGradientOverlay } from '@/components/astro/radial-gradient';
+import { SkyBackground } from '@/components/astro/sky';
+import { StarsLayer } from '@/components/astro/stars';
+import { SunsetGradient } from '@/components/astro/sunset-sky';
 import { useSky } from '@/hooks/use-sky';
 import { crossFade } from '@/lib/utils';
 import type { Timeline } from '@/types/timeline';

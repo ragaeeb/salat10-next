@@ -1,5 +1,3 @@
-'use client';
-
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
 
@@ -14,7 +12,7 @@ const TooltipTrigger = TooltipPrimitive.Trigger;
 const TooltipPortal = TooltipPrimitive.Portal;
 
 const TooltipContent = React.forwardRef<
-    React.ElementRef<typeof TooltipPrimitive.Content>,
+    React.ComponentRef<typeof TooltipPrimitive.Content>,
     React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 4, ...props }, ref) => (
     <TooltipPrimitive.Portal>
@@ -22,7 +20,7 @@ const TooltipContent = React.forwardRef<
             ref={ref}
             sideOffset={sideOffset}
             className={cn(
-                'z-50 overflow-hidden rounded-xl bg-[var(--tooltip-bg)] px-3 py-2 text-xs text-[var(--tooltip-foreground)] shadow-lg ring-1 ring-[var(--tooltip-ring)]',
+                'z-50 overflow-hidden rounded-xl bg-[var(--tooltip-bg)] px-3 py-2 text-[var(--tooltip-foreground)] text-xs shadow-lg ring-1 ring-[var(--tooltip-ring)]',
                 'data-[state=delayed-open]:data-[side=top]:fade-in data-[state=delayed-open]:data-[side=top]:animate-in',
                 'data-[state=delayed-open]:data-[side=top]:zoom-in-95',
                 'data-[state=closed]:fade-out data-[state=closed]:animate-out',
