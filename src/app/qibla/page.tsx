@@ -2,7 +2,7 @@ import { IconArrowLeft } from '@tabler/icons-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { QiblaFinderClient } from './client';
+import QiblaLazy from './lazy';
 
 export const metadata: Metadata = { description: 'Find the Qibla direction using AR', title: 'Qibla Finder - Salat10' };
 
@@ -21,7 +21,7 @@ export default function QiblaPage() {
                 </Button>
             </div>
 
-            <QiblaFinderClient />
+            <QiblaLazy />
         </div>
     );
 }
