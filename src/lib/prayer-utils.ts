@@ -190,8 +190,8 @@ export const useDayNavigation = () => {
 
     // Use store timings for today, calculated timings for other days
     const timings = isViewingToday ? currentTimings : previewResult.timings;
-    const dateLabel = isViewingToday && currentData ? formatDate(currentData.date) : previewResult.date;
-
+    const dateLabel =
+        isViewingToday && currentData ? formatDate(currentData.date) : formatDate(previewResult.date);
     const effectiveDate = viewDate ?? (currentData?.date || new Date());
 
     const handlePrevDay = useCallback(() => {
