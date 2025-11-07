@@ -10,7 +10,16 @@ export const Footer = () => {
         <footer className="py-6">
             <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground text-sm sm:flex-row">
                 <p className="text-center">
-                    © {currentYear} IlmTest. All Rights Reserved.{' '}
+                    © {currentYear}{' '}
+                    <a
+                        className="underline hover:text-foreground"
+                        href="https://ilmtest.io"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        IlmTest
+                    </a>
+                    . All Rights Reserved.{' '}
                     <a
                         href={versionUrl}
                         className="underline hover:text-foreground"

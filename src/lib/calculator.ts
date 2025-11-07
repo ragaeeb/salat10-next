@@ -1,12 +1,13 @@
 import { Coordinates, PrayerTimes, SunnahTimes } from 'adhan';
 import type { MethodValue } from '@/types/settings';
+import type { SalatEvent } from './constants';
 import { formatDate, formatTime } from './formatting';
 import { createParameters } from './settings';
 
 /**
  * Formatted timing entry for display
  */
-export type FormattedTiming = { event: string; isFard: boolean; label: string; time: string; value: Date };
+export type FormattedTiming = { event: SalatEvent; isFard: boolean; label: string; time: string; value: Date };
 
 /**
  * Configuration for prayer time calculation
@@ -42,10 +43,10 @@ const formatTimings = (
     timeZone: string,
     salatLabels: Record<string, string>,
 ): FormattedTiming[] => {
-    const labelFor = (event: string) => salatLabels[event] ?? event;
+    const labelFor = (event: SalatEvent) => salatLabels[event] ?? event;
 
     // Combine all times except sunset (which is same as maghrib)
-    const allTimes: Record<string, Date> = {
+    const allTimes: Record<SalatEvent, Date> = {
         asr: prayerTimes.asr,
         dhuhr: prayerTimes.dhuhr,
         fajr: prayerTimes.fajr,
@@ -59,9 +60,9 @@ const formatTimings = (
     return Object.entries(allTimes)
         .sort(([, a], [, b]) => a.getTime() - b.getTime())
         .map(([event, value]) => ({
-            event,
+            event: event as SalatEvent,
             isFard: isFard(event),
-            label: labelFor(event),
+            label: labelFor(event as SalatEvent),
             time: formatTime(value, timeZone),
             value,
         }));
@@ -133,13 +134,13 @@ export const yearly = (salatLabels: Record<string, string>, config: CalculationC
  * yesterday's night prayers. To handle this, we shift night prayer times back
  * by 24 hours to see if we're in yesterday's night prayer period.
  */
-export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): string | null => {
+export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): SalatEvent | null => {
     if (!timings || timings.length === 0) {
         return null;
     }
 
     // Find the most recent event that has already started (forward scan from today)
-    let activeEvent: string | null = null;
+    let activeEvent: SalatEvent | null = null;
 
     for (let i = timings.length - 1; i >= 0; i--) {
         const timing = timings[i];

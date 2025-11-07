@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type CalculationConfig, daily, formatTimeRemaining, getActiveEvent, getTimeUntilNext } from '@/lib/calculator';
-import { salatLabels } from '@/lib/salat-labels';
 import { useCurrentData, useSettings } from '@/store/usePrayerStore';
+import { type SalatEvent, salatLabels } from './constants';
+import { formatDate } from './formatting';
 
 /**
  * Hook to get formatted timings for the current date from the store
@@ -57,7 +58,7 @@ export const useTimingsForDate = (date: Date) => {
  */
 export const useActiveEvent = () => {
     const timings = useCurrentTimings();
-    const [activeEvent, setActiveEvent] = useState<string | null>(null);
+    const [activeEvent, setActiveEvent] = useState<SalatEvent | null>(null);
 
     useEffect(() => {
         if (timings.length === 0) {
@@ -189,16 +190,7 @@ export const useDayNavigation = () => {
 
     // Use store timings for today, calculated timings for other days
     const timings = isViewingToday ? currentTimings : previewResult.timings;
-    const dateLabel =
-        isViewingToday && currentData
-            ? currentData.date.toLocaleDateString('en-US', {
-                  day: 'numeric',
-                  month: 'long',
-                  weekday: 'long',
-                  year: 'numeric',
-              })
-            : previewResult.date;
-
+    const dateLabel = isViewingToday && currentData ? formatDate(currentData.date) : previewResult.date;
     const effectiveDate = viewDate ?? (currentData?.date || new Date());
 
     const handlePrevDay = useCallback(() => {

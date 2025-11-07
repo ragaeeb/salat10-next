@@ -6,11 +6,12 @@ import { Meteors } from '@/components/magicui/meteors';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { FormattedTiming } from '@/lib/calculator';
+import type { SalatEvent } from '@/lib/constants';
 import { useCountdownToNext } from '@/lib/prayer-utils';
 import { cn } from '@/lib/utils';
 
 export type PrayerTimesCardProps = {
-    activeEvent: string | null;
+    activeEvent: SalatEvent | null;
     addressLabel: string;
     dateLabel: string;
     hijriLabel: string;
@@ -91,7 +92,7 @@ export function PrayerTimesCard({
             className="relative w-full overflow-hidden rounded-3xl border border-white/15 bg-background/90 p-6 shadow-2xl backdrop-blur"
             initial={{ opacity: 0, y: 16 }}
         >
-            <Meteors className="pointer-events-none" number={18} />
+            {activeEvent === 'lastThirdOfTheNight' && <Meteors className="pointer-events-none" number={18} />}
             <div className="relative z-10 space-y-6">
                 <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex flex-wrap items-center gap-2 text-foreground/80 text-xs uppercase tracking-wide">

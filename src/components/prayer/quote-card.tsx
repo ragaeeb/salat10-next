@@ -26,7 +26,7 @@ export function QuoteCard() {
 
         try {
             const citation = formatCitation(quote);
-            await navigator.clipboard.writeText(`"${quote.body}" - [${citation}]${QUOTE_WATERMARK}`);
+            await navigator.clipboard.writeText(`${quote.body} - [${citation}]${QUOTE_WATERMARK}`);
             toast.success('Copied');
         } catch (error) {
             console.warn('Clipboard copy failed', error);
@@ -54,7 +54,7 @@ export function QuoteCard() {
                         by="line"
                         className="whitespace-pre-wrap font-medium text-foreground leading-relaxed"
                     >
-                        {`"${quote.body}"`}
+                        {quote.body}
                     </TextAnimate>
                     <footer className="text-foreground/80 text-sm italic">
                         —{' '}

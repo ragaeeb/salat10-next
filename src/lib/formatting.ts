@@ -17,12 +17,7 @@ export const formatTime = (t: Date, timeZone: string) => {
  * Formats a JavaScript date into a localized 12-hour time string.
  */
 export const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'long',
-        weekday: 'long',
-        year: 'numeric',
-    });
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', weekday: 'long', year: 'numeric' });
 };
 
 export const formatMinutesLabel = (value: number) => {
