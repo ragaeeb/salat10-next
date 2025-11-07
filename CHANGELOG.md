@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/ragaeeb/salat10-next/compare/v1.4.0...v1.5.0) (2025-11-07)
+
+
+### Features
+
+* **qibla:** SEO and Qibla direction ([#9](https://github.com/ragaeeb/salat10-next/issues/9)) ([5c0b003](https://github.com/ragaeeb/salat10-next/commit/5c0b0032acf9cc70963d3da89b2def6c73222269)), closes [/github.com/ragaeeb/salat10-next/pull/9#discussion_r2501352982](https://github.com//github.com/ragaeeb/salat10-next/pull/9/issues/discussion_r2501352982)
+
 # [1.4.0](https://github.com/ragaeeb/salat10-next/compare/v1.3.0...v1.4.0) (2025-11-06)
 
 
