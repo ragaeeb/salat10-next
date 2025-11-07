@@ -1,8 +1,9 @@
 'use client';
 
-const STORAGE_KEY = 'salat10_analytics';
-const BATCH_SIZE = 10; // Send after 10 events
-const SESSION_ID_KEY = 'salat10_session_id';
+const STORAGE_KEY = process.env.NEXT_PUBLIC_ANALYTICS_STORAGE_KEY ?? 'salat10_analytics';
+const BATCH_SIZE = Number.parseInt(process.env.NEXT_PUBLIC_ANALYTICS_BATCH_SIZE ?? '10', 10);
+const SESSION_ID_KEY = process.env.NEXT_PUBLIC_SESSION_ID_KEY ?? 'salat10_session_id';
+const FLUSH_INTERVAL = Number.parseInt(process.env.NEXT_PUBLIC_ANALYTICS_FLUSH_INTERVAL ?? '3600000', 10); // 1 hour
 
 type AnalyticsEvent = { type: 'pageview' | 'event'; path: string; timestamp: number; data?: Record<string, unknown> };
 
@@ -31,7 +32,7 @@ export function getOrCreateSessionId(): string {
 /**
  * Get pending analytics events from localStorage
  */
-function getPendingEvents(): AnalyticsEvent[] {
+export function getPendingEvents(): AnalyticsEvent[] {
     if (typeof window === 'undefined') {
         return [];
     }
@@ -47,7 +48,7 @@ function getPendingEvents(): AnalyticsEvent[] {
 /**
  * Save pending analytics events to localStorage
  */
-function setPendingEvents(events: AnalyticsEvent[]): void {
+export function setPendingEvents(events: AnalyticsEvent[]): void {
     if (typeof window === 'undefined') {
         return;
     }
@@ -62,7 +63,7 @@ function setPendingEvents(events: AnalyticsEvent[]): void {
 /**
  * Send batched events to server
  */
-async function flushEvents(events: AnalyticsEvent[]): Promise<void> {
+export async function flushEvents(events: AnalyticsEvent[]): Promise<void> {
     if (events.length === 0) {
         return;
     }
@@ -74,13 +75,25 @@ async function flushEvents(events: AnalyticsEvent[]): Promise<void> {
             method: 'POST',
         });
 
-        // Clear flushed events from storage
-        const remaining = getPendingEvents();
-        const flushedTimestamps = new Set(events.map((e) => e.timestamp));
-        const updated = remaining.filter((e) => !flushedTimestamps.has(e.timestamp));
-        setPendingEvents(updated);
+        // Clear ALL events from storage after successful flush
+        setPendingEvents([]);
     } catch (error) {
         console.error('Failed to send analytics', error);
+        // Keep events in storage on failure for retry
+    }
+}
+
+/**
+ * Add event to queue and optionally flush
+ */
+async function queueEvent(event: AnalyticsEvent): Promise<void> {
+    const pending = getPendingEvents();
+    pending.push(event);
+    setPendingEvents(pending);
+
+    // Only flush if we've reached batch size
+    if (pending.length >= BATCH_SIZE) {
+        await flushEvents(pending);
     }
 }
 
@@ -89,31 +102,20 @@ async function flushEvents(events: AnalyticsEvent[]): Promise<void> {
  */
 export async function trackPageView(path: string): Promise<void> {
     const event: AnalyticsEvent = { path, timestamp: Date.now(), type: 'pageview' };
-
-    const pending = getPendingEvents();
-    pending.push(event);
-    setPendingEvents(pending);
-
-    // Flush if we've reached batch size
-    if (pending.length >= BATCH_SIZE) {
-        await flushEvents(pending);
-    }
+    await queueEvent(event);
 }
 
 /**
  * Track custom event (batched)
  */
 export async function trackEvent(name: string, data?: Record<string, unknown>): Promise<void> {
-    const event: AnalyticsEvent = { data, path: name, timestamp: Date.now(), type: 'event' };
-
-    const pending = getPendingEvents();
-    pending.push(event);
-    setPendingEvents(pending);
-
-    // Flush if we've reached batch size
-    if (pending.length >= BATCH_SIZE) {
-        await flushEvents(pending);
-    }
+    const event: AnalyticsEvent = {
+        path: name,
+        timestamp: Date.now(),
+        type: 'event',
+        ...(data !== undefined && { data }),
+    };
+    await queueEvent(event);
 }
 
 /**
@@ -134,11 +136,35 @@ export async function updatePresence(lat: number, lon: number, page: string): Pr
 }
 
 /**
- * Force flush all pending events (e.g., on page unload)
+ * Force flush all pending events (e.g., on page unload or init)
  */
 export async function flushPendingEvents(): Promise<void> {
     const pending = getPendingEvents();
     if (pending.length > 0) {
         await flushEvents(pending);
     }
+}
+
+/**
+ * Initialize analytics - flush old events on app load
+ * Call this once on app mount
+ */
+export function initAnalytics(): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    // Flush any pending events from previous sessions
+    const pending = getPendingEvents();
+    if (pending.length > 0) {
+        flushEvents(pending).catch(console.error);
+    }
+
+    // Set up periodic flush
+    setInterval(() => {
+        const events = getPendingEvents();
+        if (events.length > 0) {
+            flushEvents(events).catch(console.error);
+        }
+    }, FLUSH_INTERVAL);
 }
