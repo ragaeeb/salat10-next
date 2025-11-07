@@ -10,7 +10,7 @@ export const contentType = 'image/png';
  * Generate Open Graph image dynamically
  * This creates a beautiful card that shows when sharing on social media
  */
-export default async function Image() {
+export default function Image() {
     return new ImageResponse(
         <div
             style={{

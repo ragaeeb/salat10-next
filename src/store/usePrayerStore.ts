@@ -145,7 +145,6 @@ export const useCurrentData = () => usePrayerStore((state) => state.currentData)
 export const useHasValidCoordinates = () => usePrayerStore((state) => hasValidCoordinates(state.settings));
 export const useHasHydrated = () => usePrayerStore((state) => state.hasHydrated);
 
-// Use useShallow for object returns to prevent unnecessary re-renders
 export const useNumericSettings = () =>
     usePrayerStore(
         useShallow((state) => ({
@@ -157,7 +156,6 @@ export const useNumericSettings = () =>
         })),
     );
 
-// Granular selectors (return primitive values - don't need useShallow)
 export const useFajrAngle = () => usePrayerStore((state) => Number.parseFloat(state.settings.fajrAngle));
 export const useIshaAngle = () => usePrayerStore((state) => Number.parseFloat(state.settings.ishaAngle));
 export const useIshaInterval = () => usePrayerStore((state) => Number.parseFloat(state.settings.ishaInterval));

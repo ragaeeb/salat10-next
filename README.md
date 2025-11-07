@@ -180,7 +180,7 @@ bun test src/lib/calculator.test.ts
 - **UI Components**: shadcn/ui + custom
 
 ### Key Directories
-```
+```text
 src/
 ├── app/              # Next.js pages & routes
 │   ├── page.tsx      # Home (card view)
@@ -260,4 +260,4 @@ MIT © [Ragaeeb Haq](https://github.com/ragaeeb)
 
 ---
 
-**Built with ❤️ for the Muslim community**
+## Built with ❤️ for the Muslim community
