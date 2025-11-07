@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { Samaa } from '@/components/astro/samaa';
 import { Controls } from '@/components/controls';
 import { CurrentPhase } from '@/components/current-phase';
+import { HijriDateBadge } from '@/components/hijri-date-badge';
 import { Qamar } from '@/components/qamar';
 import { Shams } from '@/components/shams';
 import { useDayBuffer } from '@/hooks/use-days';
@@ -33,6 +34,8 @@ export function ParallaxClient() {
     return (
         <>
             <div style={{ height: totalHeight }} />
+
+            {currentDay && <HijriDateBadge date={currentDay.date} />}
 
             <div className="fixed inset-0">
                 <Samaa
