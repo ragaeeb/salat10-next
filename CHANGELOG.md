@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/ragaeeb/salat10-next/compare/v1.5.0...v1.5.1) (2025-11-07)
+
+
+### Bug Fixes
+
+* **parallax:** Add security for endpoint and hijri date in v2 ([#10](https://github.com/ragaeeb/salat10-next/issues/10)) ([e88d1c7](https://github.com/ragaeeb/salat10-next/commit/e88d1c7fb354b058420b20bc0b1804899dac23f9))
+
 # [1.5.0](https://github.com/ragaeeb/salat10-next/compare/v1.4.0...v1.5.0) (2025-11-07)
 
 
