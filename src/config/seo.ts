@@ -1,150 +1,114 @@
 import type { Metadata } from 'next';
 
-/**
- * Centralized SEO configuration
- * Keeps metadata organized and maintainable in one place
- */
-
 export const SITE_URL = 'https://salat10.app';
 export const SITE_NAME = 'Salat10';
-const SITE_DESCRIPTION = 'Accurate Islamic prayer times with beautiful visualizations and motivational quotes';
 
-// Shared keywords across pages
-const COMMON_KEYWORDS = [
-    'prayer times',
-    'salat',
-    'islamic',
-    'muslim',
-    'fajr',
-    'dhuhr',
-    'asr',
-    'maghrib',
-    'isha',
-    'adhan',
-    'namaz',
-] as const;
-
-// Base Open Graph image
-const DEFAULT_OG_IMAGE = { alt: 'Salat10 - Islamic Prayer Times', height: 630, url: '/og-image.jpg', width: 1200 };
-
-/**
- * Generate metadata for a specific page
- */
-export const generatePageMetadata = (config: {
-    title: string;
-    description: string;
-    path: string;
-    keywords?: string[];
-    ogImage?: { url: string; alt: string };
-}): Metadata => {
-    const { title, description, path, keywords = [], ogImage } = config;
-    const url = `${SITE_URL}${path}`;
-    const fullTitle = path === '/' ? title : `${title} | ${SITE_NAME}`;
-
-    return {
-        alternates: { canonical: url },
-        description,
-        keywords: [...COMMON_KEYWORDS, ...keywords],
-        metadataBase: new URL(SITE_URL),
-        openGraph: {
-            description,
-            images: [ogImage ?? DEFAULT_OG_IMAGE],
-            locale: 'en_US',
-            siteName: SITE_NAME,
-            title: fullTitle,
-            type: 'website',
-            url,
+// Default metadata shared across all pages
+export const defaultMetadata: Metadata = {
+    applicationName: 'Salat10',
+    authors: [{ name: 'IlmTest', url: 'https://ilmtest.io' }],
+    category: 'Lifestyle',
+    creator: 'Ragaeeb Haq',
+    description:
+        'Accurate Islamic prayer times with beautiful visualizations. Get Fajr, Dhuhr, Asr, Maghrib, and Isha times with Hijri calendar integration.',
+    icons: { icon: '/favicon.ico' },
+    keywords: [
+        'prayer times',
+        'salat',
+        'namaz',
+        'Islamic prayer',
+        'Fajr',
+        'Dhuhr',
+        'Asr',
+        'Maghrib',
+        'Isha',
+        'Qibla',
+        'Hijri calendar',
+        'Muslim prayer',
+        'adhan',
+    ],
+    manifest: '/site.webmanifest',
+    metadataBase: new URL(SITE_URL),
+    openGraph: {
+        description:
+            'Accurate Islamic prayer times with beautiful visualizations. Get Fajr, Dhuhr, Asr, Maghrib, and Isha times with Hijri calendar integration.',
+        images: [{ alt: 'Salat10 Prayer Times', height: 630, url: `${SITE_URL}/og-image.png`, width: 1200 }],
+        locale: 'en_US',
+        siteName: 'Salat10',
+        title: 'Salat10 - Islamic Prayer Times',
+        type: 'website',
+        url: SITE_URL,
+    },
+    publisher: 'Salat10',
+    robots: {
+        follow: true,
+        googleBot: {
+            follow: true,
+            index: true,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+            'max-video-preview': -1,
         },
-        title: fullTitle,
-        twitter: {
-            card: 'summary_large_image',
-            description,
-            images: [ogImage?.url ?? DEFAULT_OG_IMAGE.url],
-            title: fullTitle,
-        },
-    };
+        index: true,
+    },
+    title: { default: 'Salat10 - Islamic Prayer Times', template: '%s | Salat10' },
+    twitter: {
+        card: 'summary_large_image',
+        description:
+            'Accurate Islamic prayer times with beautiful visualizations. Get Fajr, Dhuhr, Asr, Maghrib, and Isha times with Hijri calendar integration.',
+        images: [`${SITE_URL}/og-image.png`],
+        title: 'Salat10 - Islamic Prayer Times',
+    },
 };
 
-/**
- * Home page metadata
- */
-export const homeMetadata = generatePageMetadata({
-    description:
-        'View accurate Islamic prayer times (Salat) for your location with beautiful visualizations. Get Fajr, Dhuhr, Asr, Maghrib, and Isha times with countdown reminders and motivational quotes.',
-    keywords: ['qibla', 'hijri calendar', 'islamic calendar'],
-    path: '/',
-    title: 'Salat10 - Islamic Prayer Times & Reminders',
-});
+// Home page metadata
+export const homeMetadata: Metadata = {
+    ...defaultMetadata,
+    alternates: { canonical: SITE_URL },
+    title: 'Salat10 - Islamic Prayer Times',
+};
 
-/**
- * Parallax view metadata (v2)
- */
-export const parallaxMetadata = generatePageMetadata({
+// Parallax view metadata
+export const parallaxMetadata: Metadata = {
+    alternates: { canonical: `${SITE_URL}/v2` },
     description:
-        'Experience prayer times through an immersive parallax sky animation. Watch the sun and moon move across a dynamic sky that transitions from night to day, marking each prayer time beautifully.',
-    keywords: ['parallax', 'sky animation', 'sun moon tracker', 'visual prayer times'],
-    path: '/v2',
-    title: 'Parallax Sky View - Interactive Prayer Times',
-});
+        'Experience prayer times with an immersive parallax view showing sun, moon, and sky transitions throughout the day.',
+    title: 'Parallax View - Prayer Times Visualization',
+};
 
-/**
- * Settings page metadata
- */
-export const settingsMetadata = generatePageMetadata({
+// Settings page metadata
+export const settingsMetadata: Metadata = {
+    alternates: { canonical: `${SITE_URL}/settings` },
     description:
-        'Configure your location coordinates and Islamic calculation methods. Choose from multiple madhabs and high-latitude rules for accurate prayer times tailored to your region.',
-    keywords: ['calculation methods', 'madhab', 'hanafi', 'shafi', 'coordinates', 'timezone'],
-    path: '/settings',
-    title: 'Settings - Location & Calculation Methods',
-});
+        'Configure your location coordinates and prayer time calculation method for accurate Islamic prayer times.',
+    title: 'Settings - Location & Calculation Method',
+};
 
-/**
- * Timetable page metadata
- */
-export const timetableMetadata = generatePageMetadata({
+// Timetable page metadata
+export const timetableMetadata: Metadata = {
+    alternates: { canonical: `${SITE_URL}/timetable` },
+    description: 'View Islamic prayer times in a comprehensive monthly or yearly timetable format.',
+    title: 'Prayer Timetable - Monthly & Yearly View',
+};
+
+// Graph page metadata
+export const graphMetadata: Metadata = {
+    alternates: { canonical: `${SITE_URL}/graph` },
+    description: 'Visualize Islamic prayer times with interactive charts and graphs showing patterns over time.',
+    title: 'Prayer Times Graph - Visual Analytics',
+};
+
+// Qibla finder metadata
+export const qiblaMetadata: Metadata = {
+    alternates: { canonical: `${SITE_URL}/qibla` },
+    description: 'Find the Qibla direction using augmented reality. Point your camera and see the direction to Kaaba.',
+    title: 'Qibla Finder - AR Compass',
+};
+
+// Explanations page metadata
+export const explanationsMetadata: Metadata = {
+    alternates: { canonical: `${SITE_URL}/explanations` },
     description:
-        'View comprehensive prayer timetables for any date range. Display monthly or yearly prayer schedules in a clean table format, perfect for printing or planning ahead.',
-    keywords: ['timetable', 'schedule', 'monthly', 'yearly', 'print', 'calendar'],
-    path: '/timetable',
-    title: 'Prayer Timetable - Monthly & Yearly Schedules',
-});
-
-/**
- * Graph page metadata
- */
-export const graphMetadata = generatePageMetadata({
-    description:
-        'Visualize prayer times with interactive charts and graphs. Analyze patterns in prayer times throughout the year and see how they shift with the seasons.',
-    keywords: ['charts', 'graphs', 'visualization', 'analytics', 'trends', 'data'],
-    path: '/graph',
-    title: 'Prayer Time Graphs - Visual Analytics',
-});
-
-/**
- * Explanations page metadata
- */
-export const explanationsMetadata = generatePageMetadata({
-    description:
-        'Understand the astronomical and Islamic principles behind prayer time calculations. Learn about Julian days, solar coordinates, twilight angles, and the mathematics of determining accurate salat times.',
-    keywords: [
-        'astronomical calculation',
-        'julian day',
-        'solar coordinates',
-        'twilight angles',
-        'equation of time',
-        'hadith',
-    ],
-    path: '/explanations',
-    title: 'How Prayer Times Are Calculated - Step-by-Step Guide',
-});
-
-/**
- * Export centralized config
- */
-export const seoConfig = {
-    defaultOgImage: DEFAULT_OG_IMAGE,
-    description: SITE_DESCRIPTION,
-    keywords: COMMON_KEYWORDS,
-    siteName: SITE_NAME,
-    siteUrl: SITE_URL,
-} as const;
+        'Learn about Islamic prayer time calculations, astronomical methods, and the significance of different calculation methods.',
+    title: 'Explanations - Understanding Prayer Times',
+};

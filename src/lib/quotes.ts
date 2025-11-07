@@ -1,8 +1,6 @@
-// In src/lib/quotes.ts - complete fixed version
-
 import parseDuration from 'parse-duration';
-import type { ComputedPrayerData } from '@/store/usePrayerStore';
 import type { HijriDate } from '@/types/hijri';
+import type { ComputedPrayerData } from '@/types/prayer';
 import type { Quote } from '@/types/quote';
 import { writeIslamicDate } from './hijri';
 

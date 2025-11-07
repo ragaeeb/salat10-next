@@ -6,14 +6,9 @@ import { QiblaFinderClient } from './client';
 
 export const metadata: Metadata = { description: 'Find the Qibla direction using AR', title: 'Qibla Finder - Salat10' };
 
-/**
- * Qibla finder page
- * Client-side only - coordinates loaded from localStorage
- */
 export default function QiblaPage() {
     return (
         <div className="relative h-screen w-full overflow-hidden bg-black">
-            {/* Back button */}
             <div className="absolute top-4 left-4 z-50">
                 <Button
                     asChild
@@ -26,7 +21,6 @@ export default function QiblaPage() {
                 </Button>
             </div>
 
-            {/* Client-side AR finder */}
             <QiblaFinderClient />
         </div>
     );

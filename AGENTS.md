@@ -10,6 +10,7 @@ Salat10 is a Next.js 16 application that displays Islamic prayer times with:
 - Hijri calendar integration
 - Contextual Islamic quotes
 - Visual sky animations
+- **Qibla finder with AR compass**
 
 **Tech Stack**: Next.js 16, React 19, Bun, TypeScript, Tailwind CSS, Zustand, Framer Motion
 
@@ -23,6 +24,19 @@ Salat10 is a Next.js 16 application that displays Islamic prayer times with:
   - Uses Adhan library for astronomical calculations
   - Returns formatted prayer times with labels and timestamps
   - **Key concept**: Handles day boundaries (midnight) - night prayers from yesterday can be active in early morning
+
+#### Qibla Calculations
+- **`qibla.ts`** + **`qibla.test.ts`**
+  - Functions: `calculateQibla()`, `calculateRelativeRotation()`, `smoothHeading()`, `isPointingAtQibla()`
+  - Compass utilities: `calculateHeadingStability()`, `getIOSCompassQuality()`, `formatDirectionInstruction()`
+  - Uses great circle formula to calculate bearing from user location to Kaaba
+  - Handles iOS/Android differences in DeviceOrientation API
+
+#### Store Utilities
+- **`store-utils.ts`** + **`store-utils.test.ts`**
+  - Functions: `hasValidCoordinates()`, `computePrayerTimesForDate()`, `findNextEventTime()`, `getMillisecondsUntilNextUpdate()`
+  - Extracted from Zustand store for testability
+  - Pure functions without side effects
 
 #### Hijri Calendar
 - **`hijri.ts`** + **`hijri.test.ts`**
@@ -42,14 +56,26 @@ Salat10 is a Next.js 16 application that displays Islamic prayer times with:
   - Handles day boundary: when in `lastThirdOfTheNight`, next event is tomorrow's `fajr`
 
 #### Settings & Configuration
-- **`settings.ts`**: Calculation method presets (angles for different madhabs/regions)
+- **`settings.ts`** + **`settings.test.ts`**: Calculation method presets (angles for different madhabs/regions)
 - **`constants.ts`**: App-wide constants (default coordinates, method options)
 - **`prayer-utils.ts`**: Helper hooks for active prayer, countdowns, day navigation
 
 #### Time & Formatting
-- **`formatting.ts`**: Date/time formatting with timezone support
-- **`time.ts`**: Date range parsing, URL params, schedule labels
-- **`timeline.ts`**: Normalize prayer times to [0..1] range for parallax scrolling
+- **`formatting.ts`** + **`formatting.test.ts`**: Date/time formatting with timezone support, coordinate formatting
+- **`time.ts`** + **`time.test.ts`**: Date range parsing, URL params, schedule labels
+- **`timeline.ts`** + **`timeline.test.ts`**: Normalize prayer times to [0..1] range for parallax scrolling
+
+#### Visual Utilities
+- **`colors.ts`** + **`colors.test.ts`**: Color interpolation, RGB/hex conversion, sky color calculations
+- **`utils.ts`** + **`utils.test.ts`**: Class name merger using `clsx` and `tailwind-merge`
+
+### SEO Configuration (`src/config/`)
+
+- **`seo.ts`**: Centralized SEO metadata configuration
+  - `BASE_URL`: App base URL (from env or default)
+  - `defaultMetadata`: Shared metadata with OpenGraph, Twitter cards
+  - Page-specific metadata exports: `homeMetadata`, `parallaxMetadata`, `qiblaMetadata`, etc.
+  - **Important**: Always set `metadataBase` to avoid build warnings
 
 ### State Management (`src/store/`)
 
@@ -58,6 +84,16 @@ Salat10 is a Next.js 16 application that displays Islamic prayer times with:
   - Manages: settings, computed prayer times, auto-recomputation
   - **Key concept**: Automatically recalculates when settings change or at each prayer time
   - Exports selector hooks: `useSettings()`, `useCurrentData()`, `useHasValidCoordinates()`
+  - **Testing**: Core logic extracted to `store-utils.ts` for unit testing
+
+### Type Definitions (`src/types/`)
+
+- **`settings.ts`**: Settings, MethodValue
+- **`hijri.ts`**: HijriDate
+- **`quote.ts`**: Quote with filtering fields
+- **`timeline.ts`**: Timeline, DayData, Timing
+- **`graph.ts`**: Chart-related types
+- **`prayer.ts`**: ComputedPrayerData (extracted from store)
 
 ### UI Components (`src/components/`)
 
@@ -68,6 +104,11 @@ Salat10 is a Next.js 16 application that displays Islamic prayer times with:
 #### Prayer-Specific (`src/components/prayer/`)
 - **`prayer-times-card.tsx`**: Main card view with prayer times and countdown
 - **`quote-card.tsx`**: Displays filtered motivational quote with copy functionality
+
+#### Qibla Components (`src/components/qibla/`)
+- **`arrow.tsx`**: AR compass arrow that rotates to point at Qibla
+- **`info-card.tsx`**: Shows bearing, heading, accuracy, and direction instructions
+- **`permissions-card.tsx`**: Handles camera/motion sensor permission requests with browser-specific instructions
 
 #### Visual Effects (`src/components/`)
 - **`sky.tsx`**: Background color transitions (night → dawn → day → sunset)
@@ -92,26 +133,34 @@ Salat10 is a Next.js 16 application that displays Islamic prayer times with:
 ### App Routes (`src/app/`)
 
 #### Main Pages
-- **`page.tsx`**: Card view (home) - shows daily times with countdown
+- **`page.tsx`** + **`client.tsx`**: Card view (home) - shows daily times with countdown
 - **`v2/page.tsx`**: Parallax view - scrollable sky with sun/moon animations
-- **`settings/page.tsx`**: Location and calculation settings
+- **`settings/page.tsx`** + **`settings/client.tsx`**: Location and calculation settings
 - **`timetable/page.tsx`**: Monthly/yearly table view
 - **`graph/page.tsx`**: Prayer time visualization charts
+- **`qibla/page.tsx`** + **`qibla/client.tsx`**: AR Qibla finder with camera and compass
+- **`explanations/page.tsx`**: Documentation about prayer time calculations
 
 #### Page Structure Pattern
 Most pages follow this pattern:
 ```typescript
 // page.tsx - Server Component
-export default async function Page({ searchParams }) {
-  const resolvedParams = await searchParams;
-  return <ClientComponent params={resolvedParams} />;
+export const metadata = pageMetadata; // Import from src/config/seo.ts
+
+export default function Page() {
+  return <ClientComponent />;
 }
 
-// client-component.tsx - Client Component with hooks
+// client.tsx - Client Component with hooks
 'use client';
-export function ClientComponent({ params }) {
+export function ClientComponent() {
   // Hooks and state here
 }
+```
+
+**Critical for Qibla page**: Use `dynamic` import with `ssr: false` to avoid `navigator is not defined` errors during build:
+```typescript
+const QiblaFinderClient = dynamic(() => import('./client'), { ssr: false });
 ```
 
 #### API Routes
@@ -126,14 +175,8 @@ export function ClientComponent({ params }) {
 - **`use-sky.ts`**: Calculates sky color and gradient opacities
 - **`use-motivational-quote.ts`**: Loads and filters quotes based on current prayer data
 - **`use-prayer-chart.ts`**: Prepares data for uPlot charts
-
-### Type Definitions (`src/types/`)
-
-- **`settings.ts`**: Settings, MethodValue
-- **`hijri.ts`**: HijriDate
-- **`quote.ts`**: Quote with filtering fields
-- **`timeline.ts`**: Timeline, DayData, Timing
-- **`graph.ts`**: Chart-related types
+- **`use-camera.ts`**: Manages camera access with feature detection for getUserMedia
+- **`use-qibla-compass.ts`**: Handles DeviceOrientation API with iOS/Android differences
 
 ## Common Patterns
 
@@ -167,7 +210,39 @@ export function MyComponent() {
 }
 ```
 
-### 2. Adding a New Quote Filter
+### 2. Adding SEO Metadata
+
+Always import from `src/config/seo.ts`:
+```typescript
+import { myPageMetadata } from '@/config/seo';
+
+export const metadata = myPageMetadata;
+```
+
+Add new page metadata to `src/config/seo.ts`:
+```typescript
+export const myPageMetadata: Metadata = {
+  title: 'My Page Title',
+  description: 'My page description',
+  alternates: {
+    canonical: `${BASE_URL}/my-page`,
+  },
+};
+```
+
+### 3. Creating Client-Only Components (Camera, Sensors, Browser APIs)
+
+Use dynamic import to prevent SSR errors:
+```typescript
+import dynamic from 'next/dynamic';
+
+const BrowserOnlyComponent = dynamic(
+  () => import('./browser-component'),
+  { ssr: false, loading: () => <div>Loading...</div> }
+);
+```
+
+### 4. Adding a New Quote Filter
 
 Edit `src/lib/quotes.ts` and add a new matcher function:
 ```typescript
@@ -190,7 +265,7 @@ const filtered = quotes.filter((quote) => {
 });
 ```
 
-### 3. Adding a New Calculation Method
+### 5. Adding a New Calculation Method
 
 Edit `src/lib/constants.ts`:
 ```typescript
@@ -208,7 +283,7 @@ export const methodPresets: Record<MethodValue, MethodConfig> = {
 };
 ```
 
-### 4. Adding Animation to Parallax View
+### 6. Adding Animation to Parallax View
 
 Edit `src/app/v2/samaa.tsx` (sky), `shams.tsx` (sun), or `qamar.tsx` (moon):
 
@@ -233,7 +308,7 @@ const myEffect = useMySunEffect(scrollProgress, timeline);
 
 ### Unit Tests Location
 - Co-located with source: `src/lib/calculator.ts` → `src/lib/calculator.test.ts`
-- Use descriptive `describe` blocks: `describe('daily', () => { ... })`
+- Use descriptive `describe` and `it` blocks
 - Use `it.only` for focused debugging (remove before commit)
 
 ### Common Test Patterns
@@ -263,6 +338,16 @@ const filtered = filterQuotesByPresent(data, quotes);
 expect(filtered.length).toBeGreaterThanOrEqual(1);
 ```
 
+**Store Utility Tests:**
+```typescript
+import { computePrayerTimesForDate, hasValidCoordinates } from '@/lib/store-utils';
+
+it('should validate coordinates', () => {
+  expect(hasValidCoordinates(validSettings)).toBe(true);
+  expect(hasValidCoordinates({ ...validSettings, latitude: 'invalid' })).toBe(false);
+});
+```
+
 ## Important Concepts
 
 ### Day Boundaries (Midnight)
@@ -289,11 +374,26 @@ expect(filtered.length).toBeGreaterThanOrEqual(1);
 - Clears timeout on unmount or settings change
 - Recomputes immediately when settings change
 
+### Qibla Calculation
+- Uses great circle formula (same as adhan-js)
+- Returns bearing 0-360° from North
+- Smooth heading updates with low-pass filter to reduce jitter
+- iOS uses `webkitCompassHeading`, Android uses `deviceorientationabsolute`
+
+### Camera & Sensor Permissions
+- **HTTPS required**: getUserMedia only works over HTTPS (except localhost)
+- iOS Safari requires `DeviceOrientationEvent.requestPermission()` (iOS 13+)
+- Use dynamic imports with `ssr: false` to prevent build errors
+- Brave browser has stricter defaults - may need Settings → Site permissions
+
 ## Environment Variables
 
 ```bash
 # Optional - for address geocoding
 GEOCODE_API_KEY=your_geocode_maps_co_api_key
+
+# Required for SEO - production URL
+NEXT_PUBLIC_BASE_URL=https://salat10.app
 ```
 
 Without the API key, users can still:
@@ -323,6 +423,17 @@ Without the API key, users can still:
 2. Check if we're in a day boundary scenario (after midnight)
 3. Verify quote filter fields match expected values
 
+### "navigator is not defined" error during build
+1. Use dynamic import: `dynamic(() => import('./component'), { ssr: false })`
+2. Ensure browser APIs are only accessed in `useEffect` or event handlers
+3. Check that the component is actually client-side (`'use client'` directive)
+
+### "Qibla compass not working on mobile"
+1. Verify app is served over HTTPS (required for camera/sensors on iOS)
+2. Check browser permissions in Settings
+3. For Brave: Check Settings → Site permissions → Camera/Motion
+4. For Safari: Check Settings → Safari → Camera/Motion & Orientation Access
+
 ## When to Create Tests
 
 **Always test:**
@@ -330,11 +441,17 @@ Without the API key, users can still:
 - Date/time manipulation logic
 - Filter/matching logic
 - Day boundary scenarios
+- Store utilities (pure functions)
 
 **Optional:**
 - UI components (prefer integration tests)
 - Simple utility functions
 - Type-only changes
+
+**Test Coverage Goal:**
+- Aim for 100% coverage on core logic (`lib/` modules)
+- Store logic tested via extracted utilities
+- Use `bun test --coverage` to check
 
 ## Code Style
 
@@ -353,6 +470,7 @@ Without the API key, users can still:
 ```bash
 bun test                              # Run all tests
 bun test --watch                      # Watch mode
+bun test --coverage                   # With coverage report
 bun test src/lib/calculator.test.ts   # Specific file
 bun run lint                          # Check code style
 bun run lint --write                  # Auto-fix issues
@@ -367,3 +485,4 @@ bun run build                         # Production build
 - Test day boundary scenarios (before Fajr, after midnight)
 - Consider timezone implications
 - Verify against actual prayer times using a reference
+- For Qibla/camera issues: Ensure HTTPS and proper permissions

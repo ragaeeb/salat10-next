@@ -1,16 +1,13 @@
-import { Coordinates, PrayerTimes, SunnahTimes } from 'adhan';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
 import packageJson from '@/../package.json';
 import { defaultSettings } from '@/lib/constants';
-import { createParameters } from '@/lib/settings';
+import { computePrayerTimesForDate, getMillisecondsUntilNextUpdate, hasValidCoordinates } from '@/lib/store-utils';
+import type { ComputedPrayerData } from '@/types/prayer';
 import type { Settings } from '@/types/settings';
 
 const STORAGE_KEY = packageJson.name;
-
-// Computed prayer data for a specific date
-export type ComputedPrayerData = { date: Date; prayerTimes: PrayerTimes; sunnahTimes: SunnahTimes; computedAt: number };
 
 type PrayerStore = {
     // Persisted state
@@ -34,67 +31,6 @@ type PrayerStore = {
     _clearScheduledUpdate: () => void;
 };
 
-// Helper to check if coordinates are valid
-const hasValidCoordinates = (settings: Settings): boolean => {
-    const lat = Number.parseFloat(settings.latitude);
-    const lon = Number.parseFloat(settings.longitude);
-    return Number.isFinite(lat) && Number.isFinite(lon);
-};
-
-// Helper to compute prayer times for a given date
-const computeForDate = (settings: Settings, date: Date): ComputedPrayerData | null => {
-    if (!hasValidCoordinates(settings)) {
-        return null;
-    }
-
-    const lat = Number.parseFloat(settings.latitude);
-    const lon = Number.parseFloat(settings.longitude);
-    const fajrAngle = Number.parseFloat(settings.fajrAngle);
-    const ishaAngle = Number.parseFloat(settings.ishaAngle);
-    const ishaInterval = Number.parseFloat(settings.ishaInterval);
-
-    const params = createParameters({
-        fajrAngle: Number.isFinite(fajrAngle) ? fajrAngle : 0,
-        ishaAngle: Number.isFinite(ishaAngle) ? ishaAngle : 0,
-        ishaInterval: Number.isFinite(ishaInterval) ? ishaInterval : 0,
-        method: settings.method,
-    });
-
-    const coordinates = new Coordinates(lat, lon);
-    const prayerTimes = new PrayerTimes(coordinates, date, params);
-    const sunnahTimes = new SunnahTimes(prayerTimes);
-
-    return { computedAt: Date.now(), date, prayerTimes, sunnahTimes };
-};
-
-// Helper to find the next event time
-const findNextEventTime = (data: ComputedPrayerData | null): Date | null => {
-    if (!data) {
-        return null;
-    }
-
-    const now = Date.now();
-    const { prayerTimes, sunnahTimes } = data;
-
-    // All possible events in chronological order
-    const events = [
-        prayerTimes.fajr,
-        prayerTimes.sunrise,
-        prayerTimes.dhuhr,
-        prayerTimes.asr,
-        prayerTimes.maghrib,
-        prayerTimes.isha,
-        sunnahTimes.middleOfTheNight,
-        sunnahTimes.lastThirdOfTheNight,
-    ].filter((time): time is Date => time instanceof Date);
-
-    // Find the next event that hasn't happened yet
-    const nextEvent = events.find((time) => time.getTime() > now);
-
-    // If no next event today, return null (will schedule for midnight)
-    return nextEvent ?? null;
-};
-
 export const usePrayerStore = create<PrayerStore>()(
     persist(
         (set, get) => ({
@@ -116,27 +52,7 @@ export const usePrayerStore = create<PrayerStore>()(
                     clearTimeout(state._timeoutId);
                 }
 
-                const nextTime = findNextEventTime(state.currentData);
-
-                if (!nextTime) {
-                    // No next event found, schedule for midnight to compute next day
-                    const now = new Date();
-                    const midnight = new Date(now);
-                    midnight.setHours(24, 0, 0, 0);
-                    const msUntilMidnight = midnight.getTime() - now.getTime();
-
-                    const timeoutId = setTimeout(() => {
-                        get().computePrayerTimes();
-                        get()._scheduleNextUpdate();
-                    }, msUntilMidnight);
-
-                    set({ _timeoutId: timeoutId });
-                    return;
-                }
-
-                // Schedule for the next event
-                const now = Date.now();
-                const msUntilNext = nextTime.getTime() - now;
+                const msUntilNext = getMillisecondsUntilNextUpdate(state.currentData);
 
                 if (msUntilNext > 0) {
                     const timeoutId = setTimeout(() => {
@@ -153,7 +69,7 @@ export const usePrayerStore = create<PrayerStore>()(
             computePrayerTimes: (forDate) => {
                 const state = get();
                 const targetDate = forDate ?? new Date();
-                const newData = computeForDate(state.settings, targetDate);
+                const newData = computePrayerTimesForDate(state.settings, targetDate);
                 set({ currentData: newData });
             },
             currentData: null,
@@ -166,7 +82,7 @@ export const usePrayerStore = create<PrayerStore>()(
                         clearTimeout(state._timeoutId);
                     }
 
-                    const newData = computeForDate(defaultSettings, new Date());
+                    const newData = computePrayerTimesForDate(defaultSettings, new Date());
 
                     return { _timeoutId: null, currentData: newData, settings: defaultSettings };
                 });
@@ -187,7 +103,7 @@ export const usePrayerStore = create<PrayerStore>()(
                     // Support both object and function updater
                     const newSettings =
                         typeof updates === 'function' ? updates(state.settings) : { ...state.settings, ...updates };
-                    const newData = computeForDate(newSettings, new Date());
+                    const newData = computePrayerTimesForDate(newSettings, new Date());
 
                     // Clear and reschedule
                     if (state._timeoutId) {
