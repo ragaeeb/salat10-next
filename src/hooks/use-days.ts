@@ -10,39 +10,55 @@ export function useDayBuffer(config: CalculationConfig) {
 
     const loadDay = useCallback(
         (date: Date): DayData => {
-            const nextDate = new Date(date);
-            nextDate.setDate(nextDate.getDate() + 1);
+            // Ensure we're working with a clean date at noon to avoid DST/timezone issues
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const day = date.getDate();
+            const safeDate = new Date(year, month, day, 12, 0, 0, 0);
+
+            // Calculate next day's date
+            const nextDate = new Date(year, month, day + 1, 12, 0, 0, 0);
+
             const nextRes = daily(salatLabels, config, nextDate);
             const nextFajr = nextRes.timings.find((t: Timing) => t.event === 'fajr')?.value ?? null;
-            return {
-                date,
-                dayIndex: dayIndexCounter.current++,
-                nextFajr,
-                timings: daily(salatLabels, config, date).timings,
-            };
+
+            const todayRes = daily(salatLabels, config, safeDate);
+
+            return { date: safeDate, dayIndex: dayIndexCounter.current++, nextFajr, timings: todayRes.timings };
         },
         [config],
     );
 
     // Initialize with the correct day for current prayer time
     useEffect(() => {
-        const now = new Date();
-        const today = new Date(now);
+        // Don't initialize if coordinates are invalid
+        const lat = Number.parseFloat(config.latitude);
+        const lon = Number.parseFloat(config.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+            setDays([]);
+            return;
+        }
 
-        // If we're before Fajr, we need yesterday's day (since Islamic day is Fajr to Fajr)
+        const now = new Date();
+        // Create today's date at midnight in local time
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // Check today's Fajr time
         const todayData = loadDay(today);
-        const fajrTime = todayData.timings.find((t) => t.event === 'fajr')?.value;
+        const todayFajr = todayData.timings.find((t) => t.event === 'fajr')?.value;
 
         let initialDay = today;
-        if (fajrTime && now < fajrTime) {
-            // We're before today's Fajr, so load yesterday's data
+
+        // If current time is before today's Fajr, we're still in yesterday's Islamic day
+        if (todayFajr && now < todayFajr) {
             initialDay = new Date(today);
             initialDay.setDate(initialDay.getDate() - 1);
         }
 
         dayIndexCounter.current = 0;
-        setDays([loadDay(initialDay)]);
-    }, [loadDay]);
+        const initialDayData = loadDay(initialDay);
+        setDays([initialDayData]);
+    }, [loadDay, config.latitude, config.longitude]);
 
     const addPreviousDay = useCallback(() => {
         setDays((prev) => {
