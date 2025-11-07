@@ -391,9 +391,6 @@ it('should validate coordinates', () => {
 ```bash
 # Optional - for address geocoding
 GEOCODE_API_KEY=your_geocode_maps_co_api_key
-
-# Required for SEO - production URL
-NEXT_PUBLIC_BASE_URL=https://salat10.app
 ```
 
 Without the API key, users can still:

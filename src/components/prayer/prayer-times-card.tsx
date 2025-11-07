@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, SearchIcon, TableIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, SearchIcon, TrendingUpIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { AuroraText } from '@/components/magicui/aurora-text';
@@ -159,9 +159,9 @@ export function PrayerTimesCard({
 
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <Button asChild size="sm" variant="outline" className="border-white/30">
-                        <Link href="/timetable">
-                            <TableIcon className="mr-1 h-4 w-4" />
-                            Timetable
+                        <Link href="/graph">
+                            <TrendingUpIcon className="mr-1 h-4 w-4" />
+                            View Trends
                         </Link>
                     </Button>
                     <Button asChild size="sm">

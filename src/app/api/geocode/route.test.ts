@@ -1,8 +1,8 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { NextRequest } from 'next/server';
-import { fetchGeocode, GET, validateAddress, validateCoordinates, validateOrigin } from './route';
+import { fetchGeocode, GET, validateAddress, validateCoordinates } from './route';
 
-describe('route', () => {
+describe('geocode route', () => {
     const originalConsoleError = console.error;
 
     beforeAll(() => {
@@ -11,36 +11,6 @@ describe('route', () => {
 
     afterAll(() => {
         console.error = originalConsoleError;
-    });
-
-    describe('validateOrigin', () => {
-        it('should allow exact origin match', () => {
-            expect(validateOrigin('https://salat10.app', null)).toBe(true);
-        });
-
-        it('should allow localhost', () => {
-            expect(validateOrigin('http://localhost:3000', null)).toBe(true);
-        });
-
-        it('should allow vercel subdomain', () => {
-            expect(validateOrigin('https://salaten.vercel.app', null)).toBe(true);
-        });
-
-        it('should reject unknown origin', () => {
-            expect(validateOrigin('https://evil.com', null)).toBe(false);
-        });
-
-        it('should allow referer when origin is null', () => {
-            expect(validateOrigin(null, 'https://salat10.app/settings')).toBe(true);
-        });
-
-        it('should reject bad referer', () => {
-            expect(validateOrigin(null, 'https://evil.com/page')).toBe(false);
-        });
-
-        it('should allow when both origin and referer are null', () => {
-            expect(validateOrigin(null, null)).toBe(true);
-        });
     });
 
     describe('validateAddress', () => {

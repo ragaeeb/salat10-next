@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar as CalendarIcon, ChartLineIcon, ChevronLeft } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useId, useMemo, useState } from 'react';
@@ -88,14 +88,6 @@ export function TimetableClient({ initialFrom, initialTo }: TimetableClientProps
         [router, searchParams],
     );
 
-    const graphHref = useMemo(() => {
-        if (!dateRange?.from || !dateRange?.to) {
-            return '/graph';
-        }
-        const params = updateDateRangeParams(new URLSearchParams(), dateRange.from, dateRange.to);
-        return `/graph?${params.toString()}`;
-    }, [dateRange]);
-
     const dateRangeDisplay = formatDateRangeDisplay(dateRange);
 
     const selectedFormatOption = DATE_FORMAT_OPTIONS.find((opt) => opt.value === dateFormat) ?? DATE_FORMAT_OPTIONS[0];
@@ -153,11 +145,6 @@ export function TimetableClient({ initialFrom, initialTo }: TimetableClientProps
                             </option>
                         ))}
                     </select>
-                    <Button asChild size="sm">
-                        <Link href={graphHref}>
-                            <ChartLineIcon />
-                        </Link>
-                    </Button>
                 </div>
             </div>
             <PrayerTimetableTable

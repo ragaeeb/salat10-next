@@ -1,6 +1,6 @@
 'use client';
 
-import { IconSunMoon } from '@tabler/icons-react';
+import { IconCompass, IconSunMoon } from '@tabler/icons-react';
 import { Settings2Icon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,22 +22,17 @@ export function PrayerTimesPageClient() {
     const hasHydrated = useHasHydrated();
     const router = useRouter();
 
-    // Get active event from current timings
     const activeEvent = useActiveEvent();
-
-    // Day navigation (local state for preview)
     const { viewDate, timings, dateLabel, handlePrevDay, handleNextDay, handleToday } = useDayNavigation();
 
     const hijri = useMemo(() => writeIslamicDate(0, viewDate), [viewDate]);
 
-    // Redirect to settings if no valid coordinates AFTER hydration
     useEffect(() => {
         if (hasHydrated && !hasValidCoordinates) {
             router.push('/settings');
         }
     }, [hasHydrated, hasValidCoordinates, router]);
 
-    // Show loading state until hydration completes
     if (!hasHydrated) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background">
@@ -48,7 +43,6 @@ export function PrayerTimesPageClient() {
         );
     }
 
-    // Don't render if no valid coordinates (will redirect)
     if (!hasValidCoordinates) {
         return null;
     }
@@ -64,6 +58,16 @@ export function PrayerTimesPageClient() {
                 >
                     <Link href="/v2">
                         <IconSunMoon />
+                    </Link>
+                </Button>
+                <Button
+                    asChild
+                    className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90"
+                    size="sm"
+                    variant="default"
+                >
+                    <Link href="/qibla">
+                        <IconCompass />
                     </Link>
                 </Button>
                 <Button

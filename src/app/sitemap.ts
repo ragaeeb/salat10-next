@@ -12,9 +12,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
         { changeFrequency: 'daily', priority: 1.0, url: baseUrl },
         { changeFrequency: 'weekly', priority: 0.9, url: `${baseUrl}/v2` },
         { changeFrequency: 'weekly', priority: 0.9, url: `${baseUrl}/qibla` },
-        { changeFrequency: 'monthly', priority: 0.8, url: `${baseUrl}/settings` },
         { changeFrequency: 'weekly', priority: 0.8, url: `${baseUrl}/timetable` },
         { changeFrequency: 'weekly', priority: 0.7, url: `${baseUrl}/graph` },
+        { changeFrequency: 'weekly', priority: 0.6, url: `${baseUrl}/online` },
         { changeFrequency: 'monthly', priority: 0.6, url: `${baseUrl}/explanations` },
     ];
 }

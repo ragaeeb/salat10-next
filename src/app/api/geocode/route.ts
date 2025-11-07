@@ -1,29 +1,10 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { SITE_URL } from '@/config/seo';
+import { createCorsHeaders, validateOrigin } from '@/lib/security';
 
 type GeocodeApiResponse = Array<{ lat: string; lon: string; display_name?: string }>;
 
-const ALLOWED_ORIGINS = [
-    SITE_URL,
-    `${SITE_URL.replace('https://', 'https://www.')}`,
-    'https://salaten.vercel.app',
-    'http://localhost:3000',
-];
-
 const SUSPICIOUS_PATTERNS = [/<script/i, /javascript:/i, /on\w+=/i, /data:text\/html/i];
-
-export function validateOrigin(origin: string | null, referer: string | null): boolean {
-    if (origin) {
-        return ALLOWED_ORIGINS.includes(origin);
-    }
-    if (referer) {
-        return ALLOWED_ORIGINS.some((allowed) => referer.startsWith(allowed));
-    }
-
-    // In production, require origin or referer. In development, allow missing headers.
-    return process.env.NODE_ENV === 'development';
-}
 
 export function validateAddress(address: string | null): { valid: boolean; error?: string } {
     if (!address?.trim()) {
@@ -43,7 +24,6 @@ export function validateCoordinates(lat: number, lon: number): boolean {
 }
 
 type ErrorResponse = { error: string; status: number };
-
 type GeoCodeResponse = { lat: number; lon: number; label?: string };
 
 export async function fetchGeocode(address: string, apiKey: string): Promise<GeoCodeResponse | ErrorResponse> {
@@ -117,6 +97,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
         { label: result.label, latitude: result.lat, longitude: result.lon },
-        { headers: origin ? { 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Origin': origin } : {} },
+        { headers: createCorsHeaders(origin) },
     );
 }

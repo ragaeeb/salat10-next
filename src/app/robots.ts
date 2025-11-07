@@ -16,10 +16,10 @@ export default function robots(): MetadataRoute.Robots {
                 disallow: [
                     '/api/', // Don't index API routes
                     '/_next/', // Don't index Next.js internals
+                    '/settings', // Don't index settings page (no SEO value)
                 ],
                 userAgent: '*',
             },
-            // Special rule for well-behaved bots
             { allow: '/', crawlDelay: 0, userAgent: ['Googlebot', 'Bingbot'] },
         ],
         sitemap: `${baseUrl}/sitemap.xml`,
