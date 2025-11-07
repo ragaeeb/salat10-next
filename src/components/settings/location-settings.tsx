@@ -18,6 +18,10 @@ type LocationStatus = 'idle' | 'loading';
 
 const DEFAULT_TZ = 'UTC';
 
+/**
+ * Get browser's timezone using Intl API
+ * @returns IANA timezone identifier or UTC as fallback
+ */
 const getBrowserTimezone = (): string => {
     try {
         return Intl.DateTimeFormat().resolvedOptions().timeZone ?? DEFAULT_TZ;
@@ -26,6 +30,10 @@ const getBrowserTimezone = (): string => {
     }
 };
 
+/**
+ * Location settings component for configuring coordinates and timezone
+ * Supports manual entry, browser geolocation, and address geocoding
+ */
 export function LocationSettings({ settings, onSettingsChange, onFieldChange }: LocationSettingsProps) {
     const [geocodeStatus, setGeocodeStatus] = useState<GeocodeStatus>('idle');
     const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
@@ -34,6 +42,10 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
         onFieldChange(key, event.target.value);
     };
 
+    /**
+     * Request location from browser's Geolocation API
+     * Updates coordinates and timezone on success
+     */
     const requestBrowserLocation = () => {
         if (!('geolocation' in navigator)) {
             toast.error('Geolocation is not supported by your browser');
@@ -73,6 +85,10 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
         );
     };
 
+    /**
+     * Geocode address to coordinates using API
+     * Updates coordinates, timezone, and location metadata (city/state/country)
+     */
     const lookupCoordinates = async () => {
         if (!settings.address.trim()) {
             toast.error('Please enter an address or city first.');
@@ -106,6 +122,10 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
                 latitude: lat,
                 longitude: lon,
                 timeZone: getBrowserTimezone(),
+                // Update location metadata if available
+                ...(result.city && { city: result.city }),
+                ...(result.state && { state: result.state }),
+                ...(result.country && { country: result.country }),
             }));
 
             setGeocodeStatus('idle');

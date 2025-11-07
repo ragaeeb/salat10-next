@@ -5,10 +5,16 @@ const BATCH_SIZE = Number.parseInt(process.env.NEXT_PUBLIC_ANALYTICS_BATCH_SIZE 
 const SESSION_ID_KEY = process.env.NEXT_PUBLIC_SESSION_ID_KEY ?? 'salat10_session_id';
 const FLUSH_INTERVAL = Number.parseInt(process.env.NEXT_PUBLIC_ANALYTICS_FLUSH_INTERVAL ?? '3600000', 10); // 1 hour
 
+/**
+ * Analytics event structure for tracking page views and custom events
+ */
 type AnalyticsEvent = { type: 'pageview' | 'event'; path: string; timestamp: number; data?: Record<string, unknown> };
 
 /**
  * Generate a unique session ID for presence tracking
+ * Uses sessionStorage for per-tab isolation
+ *
+ * @returns Unique session identifier
  */
 export function getOrCreateSessionId(): string {
     if (typeof window === 'undefined') {
@@ -31,6 +37,7 @@ export function getOrCreateSessionId(): string {
 
 /**
  * Get pending analytics events from localStorage
+ * @returns Array of pending events
  */
 export function getPendingEvents(): AnalyticsEvent[] {
     if (typeof window === 'undefined') {
@@ -47,6 +54,7 @@ export function getPendingEvents(): AnalyticsEvent[] {
 
 /**
  * Save pending analytics events to localStorage
+ * @param events - Events to persist
  */
 export function setPendingEvents(events: AnalyticsEvent[]): void {
     if (typeof window === 'undefined') {
@@ -61,7 +69,8 @@ export function setPendingEvents(events: AnalyticsEvent[]): void {
 }
 
 /**
- * Send batched events to server
+ * Send batched events to server and clear storage on success
+ * @param events - Events to flush
  */
 export async function flushEvents(events: AnalyticsEvent[]): Promise<void> {
     if (events.length === 0) {
@@ -84,7 +93,8 @@ export async function flushEvents(events: AnalyticsEvent[]): Promise<void> {
 }
 
 /**
- * Add event to queue and optionally flush
+ * Add event to queue and optionally flush when batch size is reached
+ * @param event - Event to queue
  */
 async function queueEvent(event: AnalyticsEvent): Promise<void> {
     const pending = getPendingEvents();
@@ -99,6 +109,7 @@ async function queueEvent(event: AnalyticsEvent): Promise<void> {
 
 /**
  * Track a pageview (batched)
+ * @param path - Route path
  */
 export async function trackPageView(path: string): Promise<void> {
     const event: AnalyticsEvent = { path, timestamp: Date.now(), type: 'pageview' };
@@ -107,6 +118,8 @@ export async function trackPageView(path: string): Promise<void> {
 
 /**
  * Track custom event (batched)
+ * @param name - Event name
+ * @param data - Optional event data
  */
 export async function trackEvent(name: string, data?: Record<string, unknown>): Promise<void> {
     const event: AnalyticsEvent = {
@@ -119,14 +132,40 @@ export async function trackEvent(name: string, data?: Record<string, unknown>): 
 }
 
 /**
- * Update presence (real-time, not batched)
+ * Update user presence with location (real-time, not batched)
+ * Includes optional city, state, country for map labels
+ *
+ * @param lat - Latitude coordinate
+ * @param lon - Longitude coordinate
+ * @param page - Current page path
+ * @param city - Optional city name
+ * @param state - Optional state/region name
+ * @param country - Optional country name
  */
-export async function updatePresence(lat: number, lon: number, page: string): Promise<void> {
+export async function updatePresence(
+    lat: number,
+    lon: number,
+    page: string,
+    city?: string,
+    state?: string,
+    country?: string,
+): Promise<void> {
     const sessionId = getOrCreateSessionId();
 
     try {
         await fetch('/api/track', {
-            body: JSON.stringify({ presence: { lastSeen: Date.now(), lat, lon, page, sessionId } }),
+            body: JSON.stringify({
+                presence: {
+                    lastSeen: Date.now(),
+                    lat,
+                    lon,
+                    page,
+                    sessionId,
+                    ...(city && { city }),
+                    ...(state && { state }),
+                    ...(country && { country }),
+                },
+            }),
             headers: { 'Content-Type': 'application/json' },
             method: 'POST',
         });
@@ -146,7 +185,7 @@ export async function flushPendingEvents(): Promise<void> {
 }
 
 /**
- * Initialize analytics - flush old events on app load
+ * Initialize analytics - flush old events on app load and set up periodic flush
  * Call this once on app mount
  */
 export function initAnalytics(): void {
