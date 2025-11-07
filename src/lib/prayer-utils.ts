@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type CalculationConfig, daily, formatTimeRemaining, getActiveEvent, getTimeUntilNext } from '@/lib/calculator';
-import { salatLabels } from '@/lib/salat-labels';
 import { useCurrentData, useSettings } from '@/store/usePrayerStore';
+import { type SalatEvent, salatLabels } from './constants';
 import { formatDate } from './formatting';
 
 /**
@@ -58,7 +58,7 @@ export const useTimingsForDate = (date: Date) => {
  */
 export const useActiveEvent = () => {
     const timings = useCurrentTimings();
-    const [activeEvent, setActiveEvent] = useState<string | null>(null);
+    const [activeEvent, setActiveEvent] = useState<SalatEvent | null>(null);
 
     useEffect(() => {
         if (timings.length === 0) {

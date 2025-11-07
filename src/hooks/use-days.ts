@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type CalculationConfig, daily } from '@/lib/calculator';
-import { MAX_BUFFERED_DAYS } from '@/lib/constants';
-import { salatLabels } from '@/lib/salat-labels';
+import { MAX_BUFFERED_DAYS, salatLabels } from '@/lib/constants';
 import type { DayData, Timing } from '@/types/timeline';
 
 export function useDayBuffer(config: CalculationConfig) {

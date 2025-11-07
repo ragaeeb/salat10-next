@@ -76,3 +76,14 @@ export const SERIES_COLORS: Record<string, string> = {
 export const FALLBACK_COLORS = ['#60a5fa', '#eab308', '#22c55e', '#a855f7', '#ec4899', '#3b82f6', '#f97316', '#ef4444'];
 
 export const IS_DEV = process.env.NODE_ENV !== 'production';
+export const salatLabels = {
+    asr: 'ʿAṣr',
+    dhuhr: 'Dhuhr',
+    fajr: 'Fajr',
+    isha: 'ʿIshāʾ',
+    lastThirdOfTheNight: 'Last 1/3 Night Begins',
+    maghrib: 'Maġrib',
+    middleOfTheNight: '1/2 Night Begins',
+    sunrise: 'Sunrise',
+} as const;
+export type SalatEvent = keyof typeof salatLabels;

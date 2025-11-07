@@ -54,7 +54,7 @@ export function QuoteCard() {
                         by="line"
                         className="whitespace-pre-wrap font-medium text-foreground leading-relaxed"
                     >
-                        {`"${quote.body}"`}
+                        {quote.body}
                     </TextAnimate>
                     <footer className="text-foreground/80 text-sm italic">
                         —{' '}

@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { daily } from '@/lib/calculator';
+import { salatLabels } from '@/lib/constants';
 import { useCalculationConfig } from '@/lib/prayer-utils';
-import { salatLabels } from '@/lib/salat-labels';
 import { formatDateRangeDisplay, generateScheduleLabel, updateDateRangeParams } from '@/lib/time';
 import { cn } from '@/lib/utils';
 
