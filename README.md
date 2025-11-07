@@ -240,7 +240,7 @@ Contributions welcome! Please:
 4. Run `bun run lint` and `bun test`
 5. Submit a pull request
 
-See [AGENTS.MD](./AGENTS.MD) for detailed development guide.
+See [AGENTS.md](./AGENTS.md) for detailed development guide.
 
 ## 📄 License
 
