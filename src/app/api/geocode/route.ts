@@ -20,7 +20,9 @@ export function validateOrigin(origin: string | null, referer: string | null): b
     if (referer) {
         return ALLOWED_ORIGINS.some((allowed) => referer.startsWith(allowed));
     }
-    return true; // Allow if no origin/referer (direct API calls during dev)
+
+    // In production, require origin or referer. In development, allow missing headers.
+    return process.env.NODE_ENV === 'development';
 }
 
 export function validateAddress(address: string | null): { valid: boolean; error?: string } {

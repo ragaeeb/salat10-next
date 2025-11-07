@@ -26,7 +26,7 @@ export function QuoteCard() {
 
         try {
             const citation = formatCitation(quote);
-            await navigator.clipboard.writeText(`"${quote.body}" - [${citation}]${QUOTE_WATERMARK}`);
+            await navigator.clipboard.writeText(`${quote.body} - [${citation}]${QUOTE_WATERMARK}`);
             toast.success('Copied');
         } catch (error) {
             console.warn('Clipboard copy failed', error);

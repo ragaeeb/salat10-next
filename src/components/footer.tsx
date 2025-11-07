@@ -15,7 +15,7 @@ export const Footer = () => {
                         className="underline hover:text-foreground"
                         href="https://ilmtest.io"
                         target="_blank"
-                        rel="noopener"
+                        rel="noopener noreferrer"
                     >
                         IlmTest
                     </a>

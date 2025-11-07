@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
 import { useId } from 'react';
 
-export const OrbitDiagram = ({ width = 400, height = 300, className = '' }) => {
+type OrbitDiagramProps = { width?: number; height?: number; className?: string };
+
+export const OrbitDiagram = ({ width = 400, height = 300, className = '' }: OrbitDiagramProps) => {
     const uid = useId();
     const gradientId = `orbit-gradient-${uid}`;
     const glowId = `sun-glow-${uid}`;

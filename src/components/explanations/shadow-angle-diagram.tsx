@@ -1,6 +1,18 @@
 import { motion } from 'framer-motion';
+import { useId } from 'react';
 
-export const ShadowAngleDiagram = ({ shadowMultiplier = 1, width = 400, height = 350, className = '' }) => {
+type ShadowAngleDiagramProps = { shadowMultiplier?: number; width?: number; height?: number; className?: string };
+
+export const ShadowAngleDiagram = ({
+    shadowMultiplier = 1,
+    width = 400,
+    height = 350,
+    className = '',
+}: ShadowAngleDiagramProps) => {
+    const uid = useId();
+    const sunGradId = `sun-grad-${uid}`;
+    const shadowGradId = `shadow-grad-${uid}`;
+
     const groundY = 250;
     const objectHeight = 100;
     const objectX = 150;
@@ -26,11 +38,11 @@ export const ShadowAngleDiagram = ({ shadowMultiplier = 1, width = 400, height =
         >
             <title>Shadow Angle Diagram</title>
             <defs>
-                <radialGradient id="sun-grad">
+                <radialGradient id={sunGradId}>
                     <stop offset="0%" stopColor="#ffd700" />
                     <stop offset="100%" stopColor="#ff8c00" />
                 </radialGradient>
-                <linearGradient id="shadow-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient id={shadowGradId} x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#1e293b" stopOpacity="0.7" />
                     <stop offset="100%" stopColor="#1e293b" stopOpacity="0.1" />
                 </linearGradient>
@@ -48,7 +60,7 @@ export const ShadowAngleDiagram = ({ shadowMultiplier = 1, width = 400, height =
             {/* Shadow */}
             <motion.path
                 d={`M ${objectX} ${groundY} L ${shadowEnd} ${groundY} L ${objectX} ${objectTop} Z`}
-                fill="url(#shadow-grad)"
+                fill={`url(#${shadowGradId})`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.6 }}
                 transition={{ duration: 1 }}
@@ -63,7 +75,7 @@ export const ShadowAngleDiagram = ({ shadowMultiplier = 1, width = 400, height =
                 cx={sunX}
                 cy={sunY}
                 r="20"
-                fill="url(#sun-grad)"
+                fill={`url(#${sunGradId})`}
                 initial={{ scale: 0.8 }}
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}

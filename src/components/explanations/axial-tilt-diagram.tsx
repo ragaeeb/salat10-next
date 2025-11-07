@@ -4,6 +4,7 @@ export const AxialTiltDiagram = ({ width = 400, height = 350, className = '' }) 
     const uid = useId();
     const earthGradient = `earth-grad-${uid}`;
     const sunGradient = `sun-grad-${uid}`;
+    const equatorGradient = `equator-grad-${uid}`;
 
     const earthX = 200;
     const earthY = 180;
@@ -29,7 +30,7 @@ export const AxialTiltDiagram = ({ width = 400, height = 350, className = '' }) 
                     <stop offset="0%" stopColor="#ffd700" />
                     <stop offset="100%" stopColor="#ff8c00" />
                 </radialGradient>
-                <linearGradient id="equator-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient id={equatorGradient} x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
                     <stop offset="50%" stopColor="#10b981" stopOpacity="0.8" />
                     <stop offset="100%" stopColor="#10b981" stopOpacity="0.3" />
