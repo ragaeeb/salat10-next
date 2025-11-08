@@ -12,7 +12,6 @@ import {
     normalizeToScale,
     radiansToDegrees,
     SECONDS_PER_HOUR,
-    seasonAdjustedEveningTwilight,
     seasonAdjustedMorningTwilight,
     shortTimeZone,
     unwindAngle,
