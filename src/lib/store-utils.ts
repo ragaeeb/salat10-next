@@ -4,7 +4,11 @@ import type { Settings } from '@/types/settings';
 import { createParameters } from './settings';
 
 /**
- * Check if coordinates in settings are valid numbers
+ * Check if coordinates in settings are valid finite numbers
+ * Parses string coordinates and validates they are usable
+ *
+ * @param settings - Application settings containing latitude/longitude strings
+ * @returns True if both coordinates are valid finite numbers
  */
 export function hasValidCoordinates(settings: Settings): boolean {
     const lat = Number.parseFloat(settings.latitude);
@@ -13,8 +17,13 @@ export function hasValidCoordinates(settings: Settings): boolean {
 }
 
 /**
- * Compute prayer times for a given date using settings
+ * Compute prayer times for a specific date using current settings
+ * Creates Adhan calculation parameters and computes prayer/sunnah times
  * Returns null if coordinates are invalid
+ *
+ * @param settings - Application settings with location and calculation method
+ * @param date - Target date for prayer time calculation
+ * @returns Computed prayer data with timestamps, or null if invalid coordinates
  */
 export function computePrayerTimesForDate(settings: Settings, date: Date): ComputedPrayerData | null {
     if (!hasValidCoordinates(settings)) {
@@ -42,8 +51,12 @@ export function computePrayerTimesForDate(settings: Settings, date: Date): Compu
 }
 
 /**
- * Find the next event time from computed prayer data
- * Returns null if no next event found (will trigger midnight recalculation)
+ * Find the next event time that hasn't occurred yet
+ * Searches through all prayer and sunnah times chronologically
+ * Returns null if all events have passed (triggers midnight recalculation)
+ *
+ * @param data - Computed prayer data with all event times
+ * @returns Date of next event, or null if no upcoming events
  */
 export function findNextEventTime(data: ComputedPrayerData | null): Date | null {
     if (!data) {
@@ -53,7 +66,6 @@ export function findNextEventTime(data: ComputedPrayerData | null): Date | null 
     const now = Date.now();
     const { prayerTimes, sunnahTimes } = data;
 
-    // All possible events in chronological order
     const events = [
         prayerTimes.fajr,
         prayerTimes.sunrise,
@@ -65,26 +77,27 @@ export function findNextEventTime(data: ComputedPrayerData | null): Date | null 
         sunnahTimes.lastThirdOfTheNight,
     ].filter((time): time is Date => time instanceof Date);
 
-    // Find the next event that hasn't happened yet
     return events.find((time) => time.getTime() > now) ?? null;
 }
 
 /**
- * Calculate milliseconds until the next event
- * If no next event, returns ms until midnight
+ * Calculate milliseconds until the next prayer time update is needed
+ * If no next event found, returns time until midnight for next day calculation
+ * Used for efficient auto-recalculation scheduling
+ *
+ * @param data - Computed prayer data
+ * @returns Milliseconds until next update needed (always >= 0)
  */
 export function getMillisecondsUntilNextUpdate(data: ComputedPrayerData | null): number {
     const nextTime = findNextEventTime(data);
 
     if (!nextTime) {
-        // No next event found, schedule for midnight to compute next day
         const now = new Date();
         const midnight = new Date(now);
         midnight.setHours(24, 0, 0, 0);
         return midnight.getTime() - now.getTime();
     }
 
-    // Schedule for the next event
     const now = Date.now();
     return Math.max(0, nextTime.getTime() - now);
 }

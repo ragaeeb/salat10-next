@@ -5,37 +5,76 @@ import { formatDate, formatTime } from './formatting';
 import { createParameters } from './settings';
 
 /**
- * Formatted timing entry for display
+ * Formatted timing entry for display in UI
+ * Combines event metadata with human-readable labels and times
  */
-export type FormattedTiming = { event: SalatEvent; isFard: boolean; label: string; time: string; value: Date };
+export type FormattedTiming = {
+    /** Prayer event identifier */
+    event: SalatEvent;
+    /** Whether this is one of the five obligatory prayers */
+    isFard: boolean;
+    /** Human-readable label for the event */
+    label: string;
+    /** Formatted time string in local timezone */
+    time: string;
+    /** Actual Date object for calculations */
+    value: Date;
+};
 
 /**
- * Configuration for prayer time calculation
+ * Configuration parameters for prayer time calculation
+ * Extracted from Settings for testability
  */
 export type CalculationConfig = {
+    /** Fajr angle below horizon in degrees */
     fajrAngle: number;
+    /** Isha angle below horizon in degrees */
     ishaAngle: number;
+    /** Fixed interval after Maghrib for Isha (minutes), 0 for angle-based */
     ishaInterval: number;
+    /** Latitude as string (from form input) */
     latitude: string;
+    /** Longitude as string (from form input) */
     longitude: string;
+    /** Calculation method preset */
     method: MethodValue;
+    /** IANA timezone identifier */
     timeZone: string;
 };
 
 /**
- * Daily prayer times result
+ * Daily prayer times calculation result
+ * Includes all timings and metadata for a single day
  */
-export type DailyResult = { date: string; timings: FormattedTiming[]; nextEventTime: Date | null };
+export type DailyResult = {
+    /** Formatted date string */
+    date: string;
+    /** Array of all prayer/sunnah times in chronological order */
+    timings: FormattedTiming[];
+    /** Time of next event, or null if all events passed */
+    nextEventTime: Date | null;
+};
 
 /**
- * Determines whether the provided prayer event is one of the five obligatory prayers.
+ * Check if a prayer event is one of the five obligatory (fard) prayers
+ *
+ * @param event - Prayer event name
+ * @returns True if the event is Fajr, Dhuhr, Asr, Maghrib, or Isha
  */
 export const isFard = (event: string): boolean => {
     return ['asr', 'dhuhr', 'fajr', 'isha', 'maghrib'].includes(event);
 };
 
 /**
- * Formats raw prayer time objects into a sorted, display-friendly collection.
+ * Format raw prayer time objects into sorted, display-friendly collection
+ * Combines five obligatory prayers with sunnah times (sunrise, middle/last third of night)
+ * Excludes sunset as it's identical to Maghrib
+ *
+ * @param prayerTimes - Calculated prayer times from Adhan library
+ * @param sunnahTimes - Calculated sunnah times (night portions)
+ * @param timeZone - IANA timezone for formatting
+ * @param salatLabels - Event name to label mapping
+ * @returns Sorted array of formatted timings
  */
 const formatTimings = (
     prayerTimes: PrayerTimes,
@@ -45,7 +84,6 @@ const formatTimings = (
 ): FormattedTiming[] => {
     const labelFor = (event: SalatEvent) => salatLabels[event] ?? event;
 
-    // Combine all times except sunset (which is same as maghrib)
     const allTimes: Record<SalatEvent, Date> = {
         asr: prayerTimes.asr,
         dhuhr: prayerTimes.dhuhr,
@@ -69,7 +107,13 @@ const formatTimings = (
 };
 
 /**
- * Builds the daily prayer timetable
+ * Calculate daily prayer timetable for a specific date
+ * Uses Adhan library for astronomical calculations
+ *
+ * @param salatLabels - Event name to human-readable label mapping
+ * @param config - Calculation configuration (coordinates, angles, method)
+ * @param date - Target date for calculation
+ * @returns Daily result with formatted timings and next event time
  */
 export const daily = (salatLabels: Record<string, string>, config: CalculationConfig, date: Date): DailyResult => {
     const { fajrAngle, ishaAngle, ishaInterval, latitude, longitude, method, timeZone } = config;
@@ -81,7 +125,6 @@ export const daily = (salatLabels: Record<string, string>, config: CalculationCo
 
     const timings = formatTimings(prayerTimes, sunnahTimes, timeZone, salatLabels);
 
-    // Find the next event time after current moment
     const now = Date.now();
     const nextEventTime = timings.find((t) => t.value.getTime() > now)?.value ?? null;
 
@@ -89,7 +132,13 @@ export const daily = (salatLabels: Record<string, string>, config: CalculationCo
 };
 
 /**
- * Generates a month of prayer times for the provided target date.
+ * Generate a full month of prayer times
+ * Iterates through all days in the target month
+ *
+ * @param salatLabels - Event name to label mapping
+ * @param config - Calculation configuration
+ * @param targetDate - Any date within the target month (defaults to current month)
+ * @returns Object with dates array and formatted label
  */
 export const monthly = (salatLabels: Record<string, string>, config: CalculationConfig, targetDate = new Date()) => {
     const times: DailyResult[] = [];
@@ -109,7 +158,13 @@ export const monthly = (salatLabels: Record<string, string>, config: Calculation
 };
 
 /**
- * Generates a year-long calendar of prayer times for the given target date.
+ * Generate a full year of prayer times (365 or 366 days)
+ * Iterates through all days from January 1 to December 31
+ *
+ * @param salatLabels - Event name to label mapping
+ * @param config - Calculation configuration
+ * @param targetDate - Any date within the target year (defaults to current year)
+ * @returns Object with dates array and year label
  */
 export const yearly = (salatLabels: Record<string, string>, config: CalculationConfig, targetDate = new Date()) => {
     const times: DailyResult[] = [];
@@ -126,20 +181,25 @@ export const yearly = (salatLabels: Record<string, string>, config: CalculationC
 };
 
 /**
- * Get the active event for a given time
+ * Get the currently active prayer event at a given timestamp
+ * Handles day boundaries where night prayers from yesterday can be active
+ * after midnight but before today's Fajr
  *
- * Finds the most recent event that has already started (event time <= current time).
+ * Algorithm:
+ * 1. Find most recent event that has started (forward scan)
+ * 2. If found, return it
+ * 3. If not found (before Fajr), check yesterday's night prayers
+ * 4. Shift night events back 24 hours and check if active
  *
- * Special case: When before today's Fajr (early morning), we need to check
- * yesterday's night prayers. To handle this, we shift night prayer times back
- * by 24 hours to see if we're in yesterday's night prayer period.
+ * @param timings - Array of formatted timings for today
+ * @param timestamp - Unix timestamp in milliseconds to check
+ * @returns Active event name, or null if none found
  */
 export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): SalatEvent | null => {
     if (!timings || timings.length === 0) {
         return null;
     }
 
-    // Find the most recent event that has already started (forward scan from today)
     let activeEvent: SalatEvent | null = null;
 
     for (let i = timings.length - 1; i >= 0; i--) {
@@ -150,21 +210,13 @@ export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): S
         }
     }
 
-    // If we found an active event today, return it
     if (activeEvent) {
         return activeEvent;
     }
 
-    // No events have started today yet - we're in early morning before Fajr
-    // Check if we're in yesterday's night prayer period
-
-    // Get the last three events (isha, middleOfTheNight, lastThirdOfTheNight)
-    // These are the only events that can span into the next calendar day
     const nightEvents = timings.slice(-3);
     const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
-    // Check these events as if they happened yesterday, in reverse order
-    // This way we find the LATEST event that has already started
     for (let i = nightEvents.length - 1; i >= 0; i--) {
         const event = nightEvents[i];
         if (event) {
@@ -175,12 +227,15 @@ export const getActiveEvent = (timings: FormattedTiming[], timestamp: number): S
         }
     }
 
-    // If we're before even yesterday's isha, return the last event
     return timings[timings.length - 1]?.event ?? null;
 };
 
 /**
- * Get the next event for a given time
+ * Get the next upcoming prayer event at a given timestamp
+ *
+ * @param timings - Array of formatted timings
+ * @param timestamp - Unix timestamp in milliseconds
+ * @returns Next event name, or null if no upcoming events today
  */
 export const getNextEvent = (timings: FormattedTiming[], timestamp: number): string | null => {
     if (!timings || timings.length === 0) {
@@ -191,7 +246,11 @@ export const getNextEvent = (timings: FormattedTiming[], timestamp: number): str
 };
 
 /**
- * Get time remaining until next event in milliseconds
+ * Calculate milliseconds remaining until next prayer event
+ *
+ * @param timings - Array of formatted timings
+ * @param timestamp - Current Unix timestamp in milliseconds
+ * @returns Milliseconds until next event, or null if no upcoming events
  */
 export const getTimeUntilNext = (timings: FormattedTiming[], timestamp: number): number | null => {
     if (!timings || timings.length === 0) {
@@ -202,7 +261,10 @@ export const getTimeUntilNext = (timings: FormattedTiming[], timestamp: number):
 };
 
 /**
- * Format time remaining as "Xh Ym Zs"
+ * Format milliseconds into human-readable countdown string
+ *
+ * @param milliseconds - Time duration in milliseconds
+ * @returns Formatted string like "2h 15m 30s"
  */
 export const formatTimeRemaining = (milliseconds: number): string => {
     const hours = Math.floor(milliseconds / (1000 * 60 * 60));

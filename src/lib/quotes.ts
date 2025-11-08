@@ -5,7 +5,11 @@ import type { Quote } from '@/types/quote';
 import { writeIslamicDate } from './hijri';
 
 /**
- * Get all events with their times in chronological order
+ * Get all prayer/sunnah events with their times in chronological order
+ * Used for determining current/next event timing
+ *
+ * @param data - Computed prayer data with all times
+ * @returns Sorted array of events with timestamps
  */
 const getAllEvents = (data: ComputedPrayerData): Array<{ event: string; time: Date }> => {
     return [
@@ -21,25 +25,30 @@ const getAllEvents = (data: ComputedPrayerData): Array<{ event: string; time: Da
 };
 
 /**
- * Get the current active event based on the current time
+ * Get the current active event name based on timestamp
+ * Handles day boundary where night prayers from yesterday can be active
+ *
+ * Algorithm:
+ * 1. Find last event that has started today
+ * 2. If none, check if we're in yesterday's night events (after midnight, before Fajr)
+ * 3. Shift night events back 24 hours to detect yesterday's active event
+ *
+ * @param data - Computed prayer data
+ * @returns Current event name, or null if none found
  */
 const getCurrentEventName = (data: ComputedPrayerData): string | null => {
     const now = data.date.getTime();
     const events = getAllEvents(data);
 
-    // Find the last event that has already occurred
     const activeEvent = [...events].reverse().find((e) => e.time.getTime() <= now);
 
     if (activeEvent) {
         return activeEvent.event;
     }
 
-    // If no event has occurred yet today, check if we're in yesterday's night events
-    // This handles the case where we're after midnight but before today's Fajr
     const nightEvents = ['isha', 'middleOfTheNight', 'lastThirdOfTheNight'];
     const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
-    // Check night events as if they happened yesterday
     for (let i = events.length - 1; i >= 0; i--) {
         const event = events[i];
         if (event && nightEvents.includes(event.event)) {
@@ -50,12 +59,15 @@ const getCurrentEventName = (data: ComputedPrayerData): string | null => {
         }
     }
 
-    // Fallback to last event
     return events[events.length - 1]?.event ?? null;
 };
 
 /**
- * Get the time for a specific event
+ * Get the time for a specific event name
+ *
+ * @param data - Computed prayer data
+ * @param event - Event name to look up
+ * @returns Event timestamp, or null if not found
  */
 const getEventTime = (data: ComputedPrayerData, event: string): Date | null => {
     switch (event) {
@@ -80,6 +92,14 @@ const getEventTime = (data: ComputedPrayerData, event: string): Date | null => {
     }
 };
 
+/**
+ * Check if quote matches current Hijri month
+ * If quote has no month filter, it matches all months
+ *
+ * @param quote - Quote to check
+ * @param hijri - Current Hijri date
+ * @returns True if quote should be shown in this month
+ */
 const matchesHijriMonth = (quote: Quote, hijri: HijriDate): boolean => {
     if (!quote.hijri_months) {
         return true;
@@ -87,6 +107,14 @@ const matchesHijriMonth = (quote: Quote, hijri: HijriDate): boolean => {
     return quote.hijri_months.includes(hijri.monthIndex + 1);
 };
 
+/**
+ * Check if quote matches current Hijri date (day of month)
+ * If quote has no date filter, it matches all dates
+ *
+ * @param quote - Quote to check
+ * @param hijri - Current Hijri date
+ * @returns True if quote should be shown on this date
+ */
 const matchesHijriDate = (quote: Quote, hijri: HijriDate): boolean => {
     if (!quote.hijri_dates) {
         return true;
@@ -94,6 +122,14 @@ const matchesHijriDate = (quote: Quote, hijri: HijriDate): boolean => {
     return quote.hijri_dates.includes(hijri.date);
 };
 
+/**
+ * Check if quote matches current weekday
+ * If quote has no weekday filter, it matches all days
+ *
+ * @param quote - Quote to check
+ * @param date - Current date
+ * @returns True if quote should be shown on this weekday
+ */
 const matchesWeekday = (quote: Quote, date: Date): boolean => {
     if (!quote.days) {
         return true;
@@ -101,6 +137,14 @@ const matchesWeekday = (quote: Quote, date: Date): boolean => {
     return quote.days.includes(date.getDay());
 };
 
+/**
+ * Check if quote matches "after" filter (during specific events)
+ * Example: `after: {events: ['isha']}` matches while in Isha prayer
+ *
+ * @param quote - Quote to check
+ * @param data - Computed prayer data
+ * @returns True if currently in one of the specified events
+ */
 const matchesAfter = (quote: Quote, data: ComputedPrayerData): boolean => {
     if (!quote.after) {
         return true;
@@ -114,6 +158,21 @@ const matchesAfter = (quote: Quote, data: ComputedPrayerData): boolean => {
     return quote.after.events.some((event) => event === currentEvent);
 };
 
+/**
+ * Check if quote matches "before" filter (time windows before events)
+ *
+ * Two modes:
+ * 1. With `diff`: Match if within time window before event
+ *    Example: `before: {events: ['maghrib'], diff: '1h'}` = within 1 hour before Maghrib
+ * 2. Without `diff`: Match only if in the event immediately before
+ *    Example: `before: {events: ['maghrib']}` = only during Asr (event before Maghrib)
+ *
+ * Handles day boundaries for night events
+ *
+ * @param quote - Quote to check
+ * @param data - Computed prayer data
+ * @returns True if conditions are met
+ */
 const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
     if (!quote.before) {
         return true;
@@ -122,7 +181,6 @@ const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
     const now = data.date.getTime();
     const currentEvent = getCurrentEventName(data);
 
-    // If diff is specified, check time window
     if (quote.before.diff) {
         const maxDiffMs = parseDuration(quote.before.diff);
         if (!maxDiffMs) {
@@ -140,16 +198,12 @@ const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
         });
     }
 
-    // If no diff specified, match only if we're in the event immediately before
     if (!currentEvent) {
         return false;
     }
 
     const allEvents = getAllEvents(data);
 
-    // Special handling for night events that span into the next day
-    // If we're in a night event (isha, middleOfTheNight, lastThirdOfTheNight),
-    // we need to check if we're actually in yesterday's event
     const nightEvents = ['isha', 'middleOfTheNight', 'lastThirdOfTheNight'];
     const isInNightEvent = nightEvents.includes(currentEvent);
     const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -157,18 +211,11 @@ const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
     let currentIndex = -1;
 
     if (isInNightEvent) {
-        // Check if we're actually in yesterday's version of this event
-        // by seeing if today's version hasn't happened yet
         const todayEventTime = getEventTime(data, currentEvent);
         if (todayEventTime && todayEventTime.getTime() > now) {
-            // We're in yesterday's event, so the next event is today's first event (fajr)
-            // unless we're looking for a specific night event that comes after current one
-
-            // Find which night event we're in
             const nightEventOrder = ['isha', 'middleOfTheNight', 'lastThirdOfTheNight'];
             const currentNightIndex = nightEventOrder.indexOf(currentEvent);
 
-            // If there's another night event after this one, check if quote is looking for it
             if (currentNightIndex < nightEventOrder.length - 1) {
                 const nextNightEvent = nightEventOrder[currentNightIndex + 1];
                 if (quote.before.events.includes(nextNightEvent!)) {
@@ -176,12 +223,10 @@ const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
                 }
             }
 
-            // Otherwise, next event is fajr
             return quote.before.events.includes('fajr');
         }
     }
 
-    // Normal case - find current event in today's timeline
     currentIndex = allEvents.findIndex((e) => e.event === currentEvent);
 
     if (currentIndex === -1) {
@@ -190,7 +235,6 @@ const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
 
     const nextIndex = currentIndex + 1;
 
-    // If at end of day, next is tomorrow's fajr
     if (nextIndex >= allEvents.length) {
         return quote.before.events.includes('fajr');
     }
@@ -204,7 +248,17 @@ const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
 };
 
 /**
- * Calculate a specificity score for a quote to prioritize more specific matches
+ * Calculate specificity score for a quote
+ * More specific quotes (with more filters) are prioritized
+ *
+ * Score breakdown:
+ * - hijri_dates: +20 (most specific)
+ * - after/before: +15 each (time-specific)
+ * - hijri_months: +10 (month-specific)
+ * - days: +5 (weekday-specific)
+ *
+ * @param quote - Quote to score
+ * @returns Specificity score (higher = more specific)
  */
 const calculateSpecificity = (quote: Quote): number => {
     let score = 0;
@@ -226,6 +280,19 @@ const calculateSpecificity = (quote: Quote): number => {
     return score;
 };
 
+/**
+ * Filter quotes by current conditions and sort by specificity
+ *
+ * Process:
+ * 1. Apply all filters (Hijri month/date, weekday, after/before)
+ * 2. If matches found, sort by specificity (most specific first)
+ * 3. If no matches, return generic quotes (no filters)
+ * 4. If no generic quotes, return all quotes as fallback
+ *
+ * @param data - Current prayer data with date/time
+ * @param quotes - Array of all available quotes
+ * @returns Filtered and sorted array of matching quotes
+ */
 export const filterQuotesByPresent = (data: ComputedPrayerData, quotes: Quote[]): Quote[] => {
     const hijri = writeIslamicDate(0, data.date);
 
@@ -248,6 +315,13 @@ export const filterQuotesByPresent = (data: ComputedPrayerData, quotes: Quote[])
     return generic.length > 0 ? generic : quotes;
 };
 
+/**
+ * Get a random quote from filtered results
+ *
+ * @param current - Current prayer data
+ * @param quotes - Array of all available quotes
+ * @returns Random matching quote, or null if no quotes available
+ */
 export const getRandomQuote = (current: ComputedPrayerData, quotes: Quote[]): Quote | null => {
     const filtered = filterQuotesByPresent(current, quotes);
 
@@ -259,6 +333,13 @@ export const getRandomQuote = (current: ComputedPrayerData, quotes: Quote[]): Qu
     return filtered[randomIndex]!;
 };
 
+/**
+ * Format quote citation for display
+ * Combines title, part/page numbers, and author
+ *
+ * @param quote - Quote to format citation for
+ * @returns Formatted citation string like "Title, 1/123, Author"
+ */
 export const formatCitation = (quote: Quote): string => {
     const parts: string[] = [quote.title];
 

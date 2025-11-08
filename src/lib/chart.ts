@@ -5,6 +5,14 @@ import { getColorFor } from './colors';
 import { IS_DEV, MINUTES_IN_DAY } from './constants';
 import { formatMinutesLabel } from './formatting';
 
+/**
+ * Build canonical series order from schedule data
+ * Ensures consistent ordering across different date ranges
+ * Uses first day with timings as base, then adds any additional events
+ *
+ * @param schedule - Schedule with dates array
+ * @returns Array of event names in display order
+ */
 export const buildSeriesOrder = (schedule: Schedule) => {
     const firstWithTimings = schedule.dates.find((day) => day.timings.length);
     if (!firstWithTimings) {
@@ -23,6 +31,15 @@ export const buildSeriesOrder = (schedule: Schedule) => {
     return baseOrder;
 };
 
+/**
+ * Reduce array of values using a reducer function, skipping nulls
+ * Used for calculating min/max from potentially sparse data
+ *
+ * @param values - Array of numbers or nulls
+ * @param reducer - Reduction function (e.g., Math.min, Math.max)
+ * @param initial - Initial accumulator value
+ * @returns Reduced value, or initial if no valid values
+ */
 export const reduceValues = (
     values: (number | null)[],
     reducer: (acc: number, value: number) => number,
@@ -44,6 +61,14 @@ export const reduceValues = (
     return used ? acc : initial;
 };
 
+/**
+ * Build uPlot configuration for prayer time chart
+ * Creates axes, scales, series, and calculates appropriate padding
+ *
+ * @param prepared - Prepared chart data with series and values
+ * @param selectedEvent - Currently selected event to display, or null for first
+ * @returns Complete chart configuration, or null if insufficient data
+ */
 export const buildChartConfig = (
     prepared: PreparedChartData | null,
     selectedEvent: string | null,
@@ -160,6 +185,13 @@ export const buildChartConfig = (
     };
 };
 
+/**
+ * Convert Date to minutes since midnight in local time
+ * Avoids DST issues by using local time components directly
+ *
+ * @param value - Date object
+ * @returns Minutes since midnight (0-1439.xxx)
+ */
 const minutesSinceMidnight = (value: Date) => {
     // Extract hours and minutes directly in local time to avoid DST issues
     const hours = value.getHours();
@@ -169,8 +201,22 @@ const minutesSinceMidnight = (value: Date) => {
     return hours * 60 + minutes + seconds / 60 + milliseconds / 60000;
 };
 
+/**
+ * Find timing entry by event name
+ *
+ * @param timings - Array of timing entries
+ * @param event - Event name to find
+ * @returns Matching timing entry or undefined
+ */
 const findTiming = (timings: TimingEntry[], event: string) => timings.find((timing) => timing.event === event);
 
+/**
+ * Prepare chart data from schedule by normalizing times to minutes
+ * Handles wraparound for night prayers by adding 1440 minutes (24 hours)
+ *
+ * @param schedule - Schedule with prayer times
+ * @returns Prepared data ready for charting, or null if invalid
+ */
 export const prepareChartData = (schedule: Schedule | null): PreparedChartData | null => {
     if (!schedule || !schedule.dates.length) {
         return null;
@@ -223,6 +269,15 @@ export const prepareChartData = (schedule: Schedule | null): PreparedChartData |
     return { baseFajrMin: Number.isFinite(baseFajrMin ?? NaN) ? (baseFajrMin as number) : null, series, xValues };
 };
 
+/**
+ * Update chart cursor position and display tooltip
+ * Handles tooltip positioning to stay within container bounds
+ *
+ * @param chart - uPlot chart instance
+ * @param tooltip - Tooltip HTML element
+ * @param chartConfig - Chart configuration with data
+ * @param container - Container HTML element
+ */
 export const setChartCursor = (
     chart: uPlot,
     tooltip: HTMLDivElement,

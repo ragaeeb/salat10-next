@@ -6,6 +6,9 @@ import { formatDate } from './formatting';
 
 /**
  * Hook to get formatted timings for the current date from the store
+ * Recalculates when store data or settings change
+ *
+ * @returns Array of formatted timing entries
  */
 const useCurrentTimings = () => {
     const currentData = useCurrentData();
@@ -33,6 +36,10 @@ const useCurrentTimings = () => {
 
 /**
  * Hook to get formatted timings for a specific date (for preview/navigation)
+ * Useful when viewing non-current dates in card view navigation
+ *
+ * @param date - Target date for calculation
+ * @returns Daily result with timings and metadata
  */
 export const useTimingsForDate = (date: Date) => {
     const settings = useSettings();
@@ -53,8 +60,11 @@ export const useTimingsForDate = (date: Date) => {
 };
 
 /**
- * Hook to get the active event with efficient timeout-based updates
- * Only recalculates when an event boundary is crossed
+ * Hook to get the currently active prayer event
+ * Uses efficient timeout-based updates - only recalculates when crossing event boundaries
+ * Avoids constant polling by scheduling updates at exact event times
+ *
+ * @returns Current active event name, or null if none
  */
 export const useActiveEvent = () => {
     const timings = useCurrentTimings();
@@ -73,20 +83,14 @@ export const useActiveEvent = () => {
             return now;
         };
 
-        // Set initial active event
         const currentTime = updateActiveEvent();
-
-        // Find when the next event starts to schedule update
         const nextTiming = timings.find((t) => t.value.getTime() > currentTime);
 
         if (!nextTiming) {
-            // No more events today, will be updated when timings change
             return;
         }
 
         const msUntilNext = nextTiming.value.getTime() - currentTime;
-
-        // Schedule update at the next event time
         const timeoutId = setTimeout(() => {
             updateActiveEvent();
         }, msUntilNext);
@@ -99,7 +103,10 @@ export const useActiveEvent = () => {
 
 /**
  * Hook to get countdown to next prayer with efficient updates
+ * Updates every second only while there's an active countdown
  * Uses metadata from daily calculation to minimize computation
+ *
+ * @returns Formatted countdown string like "2h 15m 30s until Dhuhr", or empty if none
  */
 export const useCountdownToNext = () => {
     const timings = useCurrentTimings();
@@ -132,15 +139,12 @@ export const useCountdownToNext = () => {
             return { nextTiming, timeUntil };
         };
 
-        // Initial update
         const result = updateCountdown();
 
         if (!result) {
             return;
         }
 
-        // Update every second only while there's a countdown
-        // This is more efficient than checking every prayer time
         const intervalId = setInterval(() => {
             const result = updateCountdown();
             if (!result) {
@@ -155,7 +159,12 @@ export const useCountdownToNext = () => {
 };
 
 /**
- * Helper to check if two dates are the same day (ignoring time)
+ * Helper to check if two dates are the same calendar day
+ * Ignores time component
+ *
+ * @param date1 - First date
+ * @param date2 - Second date
+ * @returns True if same year, month, and day
  */
 const isSameDay = (date1: Date, date2: Date): boolean => {
     return (
@@ -167,20 +176,24 @@ const isSameDay = (date1: Date, date2: Date): boolean => {
 
 /**
  * Hook for day navigation (prev/next/today)
- * - Uses precomputed store data for current day
- * - Only calculates on-demand for prev/next days
+ * Optimized to use precomputed store data for current day
+ * Only calculates on-demand for prev/next days
+ *
+ * Features:
+ * - Uses store's precomputed data when viewing today
+ * - Calculates fresh data only when viewing other days
+ * - Provides navigation handlers for prev/next/today
+ *
+ * @returns Object with timings, date label, handlers, and current view date
  */
 export const useDayNavigation = () => {
     const currentData = useCurrentData();
     const currentTimings = useCurrentTimings();
 
-    // Track which date we're viewing (null = today/current)
     const [viewDate, setViewDate] = useState<Date | null>(null);
 
-    // Calculate timings only when viewing a different day
     const previewResult = useTimingsForDate(viewDate ?? new Date());
 
-    // Determine if we're viewing "today" based on store's current date
     const isViewingToday = useMemo(() => {
         if (!currentData || viewDate === null) {
             return true;
@@ -188,7 +201,6 @@ export const useDayNavigation = () => {
         return isSameDay(viewDate, currentData.date);
     }, [viewDate, currentData]);
 
-    // Use store timings for today, calculated timings for other days
     const timings = isViewingToday ? currentTimings : previewResult.timings;
     const dateLabel = isViewingToday && currentData ? formatDate(currentData.date) : previewResult.date;
     const effectiveDate = viewDate ?? (currentData?.date || new Date());
@@ -212,7 +224,6 @@ export const useDayNavigation = () => {
     }, []);
 
     const handleToday = useCallback(() => {
-        // Reset to null to use store's precomputed data
         setViewDate(null);
     }, []);
 
@@ -220,7 +231,10 @@ export const useDayNavigation = () => {
 };
 
 /**
- * Hook to build calculation config from store
+ * Hook to build calculation config from store settings
+ * Memoized to avoid recreating config object on every render
+ *
+ * @returns Calculation config ready for prayer time functions
  */
 export const useCalculationConfig = (): CalculationConfig => {
     const settings = useSettings();

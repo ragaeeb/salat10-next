@@ -2,7 +2,21 @@ import { FALLBACK_TIMELINE_VALUES } from '@/lib/constants';
 import { clamp01, pick } from '@/lib/utils';
 import type { DayData, Timeline } from '@/types/timeline';
 
-/** Build a normalized [0..1] timeline from actual times: 0 = today's Fajr, 1 = next day's Fajr */
+/**
+ * Build normalized timeline from actual prayer times
+ * Converts absolute timestamps to [0..1] range where:
+ * - 0 = today's Fajr
+ * - 1 = tomorrow's Fajr
+ *
+ * Returns fallback values if any times are missing (rare edge case)
+ *
+ * Special handling:
+ * - Dhuhr positioned at visual midpoint between sunrise and Maghrib
+ *   (accounts for equation of time without visual jump)
+ *
+ * @param day - Day data with timings and next Fajr
+ * @returns Timeline with normalized event positions [0..1]
+ */
 export function buildTimeline(day: DayData): Timeline {
     const tFajr = pick(day.timings, 'fajr');
     const tSunrise = pick(day.timings, 'sunrise');
@@ -15,7 +29,6 @@ export function buildTimeline(day: DayData): Timeline {
     const tNextFajr = day.nextFajr;
 
     if (!tFajr || !tSunrise || !tDhuhr || !tAsr || !tMaghrib || !tIsha || !tMid || !tLast || !tNextFajr) {
-        // Fallback to fixed fractions if anything is missing (should be rare)
         return FALLBACK_TIMELINE_VALUES;
     }
 
@@ -27,8 +40,6 @@ export function buildTimeline(day: DayData): Timeline {
 
     const pSunrise = toP(tSunrise);
     const pMaghrib = toP(tMaghrib);
-    // Place Dhuhr at the *meridian* (midpoint between sunrise & maghrib) visually,
-    // regardless of slight equation-of-time offsets in the computed 'dhuhr' label.
     const pDhuhr = (pSunrise + pMaghrib) / 2;
 
     return {
@@ -44,7 +55,19 @@ export function buildTimeline(day: DayData): Timeline {
     };
 }
 
-/** Where should the initial scroll be for the current time? */
+/**
+ * Calculate initial scroll position for current time
+ * Maps current timestamp to timeline position [0..1]
+ *
+ * Handles edge cases:
+ * - Before Fajr: scroll to top (0)
+ * - After next Fajr: clamp near bottom (0.999)
+ * - Between: interpolate position
+ *
+ * @param nowMs - Current timestamp in milliseconds
+ * @param day - Day data with timings
+ * @returns Scroll position [0..1]
+ */
 export const timeToScroll = (nowMs: number, day: DayData) => {
     const fajr = pick(day.timings, 'fajr')?.getTime();
     const nextFajr = day.nextFajr?.getTime();
@@ -53,10 +76,10 @@ export const timeToScroll = (nowMs: number, day: DayData) => {
     }
 
     if (nowMs <= fajr) {
-        return 0; // before fajr: start at top
+        return 0;
     }
     if (nowMs >= nextFajr) {
-        return 0.999; // after next fajr: clamp near bottom
+        return 0.999;
     }
 
     return clamp01((nowMs - fajr) / (nextFajr - fajr));
