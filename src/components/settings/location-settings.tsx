@@ -7,19 +7,36 @@ import { TimezoneCombobox } from '@/components/timezone-combobox';
 import { Button } from '@/components/ui/button';
 import type { Settings } from '@/types/settings';
 
+/**
+ * Props for the LocationSettings component
+ */
 type LocationSettingsProps = {
+    /** Current settings state */
     settings: Settings;
+    /** Handler for updating multiple settings at once */
     onSettingsChange: (updater: (prev: Settings) => Settings) => void;
+    /** Handler for updating a single field */
     onFieldChange: (key: keyof Settings, value: string) => void;
 };
 
+/**
+ * Geocoding request status
+ */
 type GeocodeStatus = 'idle' | 'loading';
+
+/**
+ * Browser geolocation request status
+ */
 type LocationStatus = 'idle' | 'loading';
 
+/**
+ * Default timezone fallback
+ */
 const DEFAULT_TZ = 'UTC';
 
 /**
- * Get browser's timezone using Intl API
+ * Gets browser's timezone using the Intl API.
+ *
  * @returns IANA timezone identifier or UTC as fallback
  */
 const getBrowserTimezone = (): string => {
@@ -31,8 +48,20 @@ const getBrowserTimezone = (): string => {
 };
 
 /**
- * Location settings component for configuring coordinates and timezone
- * Supports manual entry, browser geolocation, and address geocoding
+ * Location configuration panel for coordinates and timezone.
+ *
+ * Features:
+ * - Manual address/label entry
+ * - Geocoding API integration (auto-fill coordinates from address)
+ * - Browser geolocation support
+ * - Timezone selection via combobox
+ * - Manual latitude/longitude entry
+ *
+ * Both geocoding and browser location automatically detect and set the timezone.
+ * Updates city/state/country metadata when geocoding succeeds.
+ *
+ * @param props - Component configuration
+ * @returns Form controls for location settings with loading states
  */
 export function LocationSettings({ settings, onSettingsChange, onFieldChange }: LocationSettingsProps) {
     const [geocodeStatus, setGeocodeStatus] = useState<GeocodeStatus>('idle');
@@ -121,7 +150,7 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
                 address: label,
                 latitude: lat,
                 longitude: lon,
-                timeZone: getBrowserTimezone(),
+                timeZone: result.timeZone ?? getBrowserTimezone(),
                 // Update location metadata if available
                 ...(result.city && { city: result.city }),
                 ...(result.state && { state: result.state }),

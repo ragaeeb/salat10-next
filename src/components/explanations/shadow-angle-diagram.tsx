@@ -1,8 +1,36 @@
 import { motion } from 'framer-motion';
 import { useId } from 'react';
 
-type ShadowAngleDiagramProps = { shadowMultiplier?: number; width?: number; height?: number; className?: string };
+/**
+ * Props for the ShadowAngleDiagram component
+ */
+type ShadowAngleDiagramProps = {
+    /** Shadow length multiplier (1 for Shāfiʿī/Mālikī/Ḥanbalī, 2 for Ḥanafī) @default 1 */
+    shadowMultiplier?: number;
+    /** Width of the SVG in pixels @default 400 */
+    width?: number;
+    /** Height of the SVG in pixels @default 350 */
+    height?: number;
+    /** Additional CSS classes to apply */
+    className?: string;
+};
 
+/**
+ * Illustrates the shadow-based calculation method for ʿAṣr prayer time.
+ *
+ * Shows a vertical object casting a shadow with:
+ * - Object height (h)
+ * - Shadow length (1h or 2h depending on madhab)
+ * - Sun position and angle
+ * - Sun rays connecting to shadow endpoints
+ *
+ * Different madhabs use different shadow multipliers:
+ * - Shāfiʿī, Mālikī, Ḥanbalī: shadow = 1× object height
+ * - Ḥanafī: shadow = 2× object height
+ *
+ * @param props - Component configuration
+ * @returns Animated SVG demonstrating ʿAṣr shadow calculation
+ */
 export const ShadowAngleDiagram = ({
     shadowMultiplier = 1,
     width = 400,

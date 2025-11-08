@@ -169,10 +169,13 @@ export function getIOSCompassQuality(accuracy: number): { text: string; color: s
  * @returns True if running on iPad, iPhone, or iPod
  */
 export function isIOSDevice(): boolean {
-    if (typeof navigator === 'undefined') {
+    if (typeof navigator === 'undefined' || typeof window === 'undefined') {
         return false;
     }
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
+
+    const userAgent = navigator.userAgent ?? '';
+    const hasMSStream = 'MSStream' in window;
+    return /iPad|iPhone|iPod/.test(userAgent) && !hasMSStream;
 }
 
 /**

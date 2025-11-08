@@ -49,7 +49,17 @@ import type { Timeline } from '@/types/timeline';
  * );
  * ```
  */
-export function useSun(scrollProgress: MotionValue<number>, timeline: Timeline | null) {
+
+type SunAnimationValues = {
+    sunX: MotionValue<number>;
+    sunY: MotionValue<number>;
+    sunOpacity: MotionValue<number>;
+    sunColorR: MotionValue<number>;
+    sunColorG: MotionValue<number>;
+    sunColorB: MotionValue<number>;
+};
+
+export function useSun(scrollProgress: MotionValue<number>, timeline: Timeline | null): SunAnimationValues {
     // Sun motion: RIGHT -> LEFT (east->west), arcing only during daylight
     const sunXRaw = useTransform(scrollProgress, (p) => {
         if (!timeline) {

@@ -48,7 +48,7 @@ export function OnlineClient() {
                 if (response.ok) {
                     const data = await response.json();
                     setUsers(data.users || []);
-                    if (data.ttl) {
+                    if (typeof data.ttl === 'number') {
                         setTtl(data.ttl);
                     }
                 }

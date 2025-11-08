@@ -362,7 +362,7 @@ class SolarTime {
  * @param madhab - Juristic school name
  * @returns Shadow length ratio (1 for Shafi, 2 for Hanafi)
  */
-const shadowLengthFromMadhab = (madhab: string) => (madhab === 'hanafi' ? 2 : 1);
+const shadowLengthFromMadhab = (madhab: string) => (madhab.toLowerCase() === 'hanafi' ? 2 : 1);
 
 /**
  * Build complete calculation context with all intermediate values

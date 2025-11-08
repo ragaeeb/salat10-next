@@ -10,28 +10,51 @@ import type { SalatEvent } from '@/lib/constants';
 import { useCountdownToNext } from '@/lib/prayer-utils';
 import { cn } from '@/lib/utils';
 
-export type PrayerTimesCardProps = {
+/**
+ * Props for the PrayerTimesCard component
+ */
+type PrayerTimesCardProps = {
+    /** Currently active prayer event, if any */
     activeEvent: SalatEvent | null;
+    /** Location address label for display */
     addressLabel: string;
+    /** Formatted date string (e.g., "Nov 8, 2025") */
     dateLabel: string;
+    /** Hijri calendar date string */
     hijriLabel: string;
+    /** Detailed location info (city, state, country) */
     locationDetail: string;
+    /** Calculation method label */
     methodLabel: string;
+    /** Handler for navigating to next day */
     onNextDay: () => void;
+    /** Handler for navigating to previous day */
     onPrevDay: () => void;
+    /** Handler for resetting to today */
     onToday: () => void;
+    /** Array of prayer times to display */
     timings: FormattedTiming[];
 };
 
+/**
+ * Individual prayer time row with label and time
+ *
+ * @param props - Row configuration
+ * @returns Prayer time list item with conditional highlighting
+ */
 const PrayerTimeRow = ({
     active,
     label,
     time,
     isFard,
 }: {
+    /** Whether this is the currently active prayer */
     active: boolean;
+    /** Whether this is a fard prayer */
     isFard: boolean;
+    /** Prayer name label */
     label: string;
+    /** Formatted time string */
     time: string;
 }) => {
     const labelContent = active ? (
@@ -60,6 +83,11 @@ const PrayerTimeRow = ({
     );
 };
 
+/**
+ * Countdown timer to the next prayer time
+ *
+ * @returns Countdown display or null if no upcoming prayer
+ */
 const Countdown = () => {
     const countdown = useCountdownToNext();
 
@@ -74,6 +102,21 @@ const Countdown = () => {
     );
 };
 
+/**
+ * Main prayer times display card with date navigation and quick actions.
+ *
+ * Features:
+ * - Prayer time grid with active prayer highlighting (aurora effect)
+ * - Gregorian and Hijri date display
+ * - Day navigation (prev/today/next)
+ * - Location and method information
+ * - Countdown to next prayer
+ * - Quick links to trends, timetable, and explanations
+ * - Meteor animation during last third of night
+ *
+ * @param props - Card configuration and handlers
+ * @returns Animated card displaying prayer times and controls
+ */
 export function PrayerTimesCard({
     activeEvent,
     addressLabel,

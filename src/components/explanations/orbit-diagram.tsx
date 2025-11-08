@@ -1,8 +1,32 @@
 import { motion } from 'framer-motion';
 import { useId } from 'react';
 
-type OrbitDiagramProps = { width?: number; height?: number; className?: string };
+/**
+ * Props for the OrbitDiagram component
+ */
+type OrbitDiagramProps = {
+    /** Width of the SVG in pixels @default 400 */
+    width?: number;
+    /** Height of the SVG in pixels @default 300 */
+    height?: number;
+    /** Additional CSS classes to apply */
+    className?: string;
+};
 
+/**
+ * Displays Earth's elliptical orbit around the sun with perihelion and aphelion points.
+ *
+ * Visualizes the eccentric orbit (exaggerated for clarity) showing:
+ * - Sun at one focus (not the center)
+ * - Perihelion (closest approach)
+ * - Aphelion (farthest distance)
+ * - Animated Earth traveling along the orbital path
+ *
+ * Demonstrates the equation of center concept for prayer time calculations.
+ *
+ * @param props - Component configuration
+ * @returns Animated SVG of Earth's elliptical orbit
+ */
 export const OrbitDiagram = ({ width = 400, height = 300, className = '' }: OrbitDiagramProps) => {
     const uid = useId();
     const gradientId = `orbit-gradient-${uid}`;

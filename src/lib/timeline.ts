@@ -2,6 +2,9 @@ import { FALLBACK_TIMELINE_VALUES } from '@/lib/constants';
 import { clamp01, pick } from '@/lib/utils';
 import type { DayData, Timeline } from '@/types/timeline';
 
+/** Maximum scroll position; slightly below 1.0 to avoid edge case issues */
+const MAX_SCROLL_POSITION = 0.999;
+
 /**
  * Build normalized timeline from actual prayer times
  * Converts absolute timestamps to [0..1] range where:
@@ -20,7 +23,6 @@ import type { DayData, Timeline } from '@/types/timeline';
 export function buildTimeline(day: DayData): Timeline {
     const tFajr = pick(day.timings, 'fajr');
     const tSunrise = pick(day.timings, 'sunrise');
-    const tDhuhr = pick(day.timings, 'dhuhr');
     const tAsr = pick(day.timings, 'asr');
     const tMaghrib = pick(day.timings, 'maghrib');
     const tIsha = pick(day.timings, 'isha');
@@ -28,7 +30,7 @@ export function buildTimeline(day: DayData): Timeline {
     const tLast = pick(day.timings, 'lastThirdOfTheNight');
     const tNextFajr = day.nextFajr;
 
-    if (!tFajr || !tSunrise || !tDhuhr || !tAsr || !tMaghrib || !tIsha || !tMid || !tLast || !tNextFajr) {
+    if (!tFajr || !tSunrise || !tAsr || !tMaghrib || !tIsha || !tMid || !tLast || !tNextFajr) {
         return FALLBACK_TIMELINE_VALUES;
     }
 
@@ -79,7 +81,7 @@ export const timeToScroll = (nowMs: number, day: DayData) => {
         return 0;
     }
     if (nowMs >= nextFajr) {
-        return 0.999;
+        return MAX_SCROLL_POSITION;
     }
 
     return clamp01((nowMs - fajr) / (nextFajr - fajr));

@@ -11,10 +11,21 @@ import { SITE_NAME, SITE_URL } from '@/config/seo';
 import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
 import { formatCitation } from '@/lib/quotes';
 
+/**
+ * Watermark appended to copied quotes for attribution
+ */
 const QUOTE_WATERMARK = `\n\nShared from ${SITE_NAME} [${SITE_URL}]`;
 
 /**
- * Renders the motivational quote card with copy and animation affordances.
+ * Displays a motivational Islamic quote with copy functionality.
+ *
+ * Features:
+ * - Animated text reveal (fade-in by line)
+ * - Formatted citation with optional URL link
+ * - Copy to clipboard with attribution watermark
+ * - Toast notifications for copy feedback
+ *
+ * @returns Quote card with copy button, or null if no quote available
  */
 export function QuoteCard() {
     const { quote } = useMotivationalQuote();

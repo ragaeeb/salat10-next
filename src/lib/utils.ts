@@ -35,10 +35,11 @@ export const invLerp = (a: number, b: number, v: number) => (a === b ? 0 : clamp
 
 /**
  * Linear interpolation - blend between two values
+ * Note: Does not clamp t - values outside [0..1] will extrapolate
  *
  * @param a - Start value
  * @param b - End value
- * @param t - Interpolation factor [0..1]
+ * @param t - Interpolation factor (typically [0..1], but extrapolates outside this range)
  * @returns Interpolated value
  */
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;

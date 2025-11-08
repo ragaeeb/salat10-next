@@ -156,7 +156,13 @@ export async function flushEvents(events: AnalyticsEvent[], presence?: PresenceD
         });
 
         if (events.length > 0) {
-            setPendingEvents([]);
+            const current = getPendingEvents();
+
+            if (current.length > events.length) {
+                setPendingEvents(current.slice(events.length));
+            } else {
+                setPendingEvents([]);
+            }
         }
         setLastFlushTime(now);
     } catch (error) {

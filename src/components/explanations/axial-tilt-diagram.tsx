@@ -1,6 +1,28 @@
 import { useId } from 'react';
 
-export const AxialTiltDiagram = ({ width = 400, height = 350, className = '' }) => {
+/**
+ * Props for the AxialTiltDiagram component
+ */
+type AxialTiltDiagramProps = {
+    /** Width of the SVG in pixels @default 400 */
+    width?: number;
+    /** Height of the SVG in pixels @default 350 */
+    height?: number;
+    /** Additional CSS classes to apply */
+    className?: string;
+};
+
+/**
+ * Visualizes Earth's 23.4° axial tilt (obliquity of the ecliptic) and its effects.
+ *
+ * Shows Earth tilted relative to its orbital plane with the sun's position,
+ * illustrating how this tilt creates seasons and affects solar altitude.
+ * Includes labeled elements: rotation axis, equator, north pole, and orbital plane.
+ *
+ * @param props - Component configuration
+ * @returns SVG diagram of Earth's axial tilt
+ */
+export const AxialTiltDiagram = ({ width = 400, height = 350, className = '' }: AxialTiltDiagramProps) => {
     const uid = useId();
     const earthGradient = `earth-grad-${uid}`;
     const sunGradient = `sun-grad-${uid}`;

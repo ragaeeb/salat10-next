@@ -57,7 +57,7 @@ export default function WorldMap({ dots = [], lineColor }: MapProps) {
                 {dots.map((dot, index) => {
                     const startPoint = projectPoint(dot.start.lat, dot.start.lng);
                     const endPoint = projectPoint(dot.end.lat, dot.end.lng);
-                    const pathId = `${dot.start.lat}-${dot.start.lng}-${dot.end.lat}-${dot.end.lng}`;
+                    const pathId = `${dot.start.lat}-${dot.start.lng}-${dot.end.lat}-${dot.end.lng}-${index}`;
                     return (
                         <g key={`path-group-${pathId}`}>
                             <motion.path

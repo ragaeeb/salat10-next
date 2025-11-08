@@ -21,8 +21,8 @@ type FajrGradientProps = { opacity: number | MotionValue<number> };
  *
  * @example
  * ```tsx
- * const { sunsetGradientOpacity } = useSky(scrollProgress, timeline);
- * return <SunsetGradient opacity={sunsetGradientOpacity} />;
+ * const { fajrGradientOpacity } = useSky(scrollProgress, timeline);
+ * return <FajrGradient opacity={fajrGradientOpacity} />;
  * ```
  */
 export const FajrGradient = memo<FajrGradientProps>(({ opacity }) => (
