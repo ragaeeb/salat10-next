@@ -1,20 +1,21 @@
-'use client';
-
 import DottedMap from 'dotted-map';
 import { motion } from 'motion/react';
 import Image from 'next/image';
 import { useMemo, useRef } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MapProps {
     dots?: Array<{
         start: { lat: number; lng: number; label?: string };
         end: { lat: number; lng: number; label?: string };
+        label?: string;
     }>;
     lineColor?: string;
 }
 
 export default function WorldMap({ dots = [], lineColor }: MapProps) {
     const svgRef = useRef<SVGSVGElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const arcColor = lineColor ?? '#ffffff';
 
@@ -36,7 +37,7 @@ export default function WorldMap({ dots = [], lineColor }: MapProps) {
     };
 
     return (
-        <div className="relative aspect-[2/1] w-full rounded-lg bg-card font-sans text-foreground">
+        <div ref={containerRef} className="relative aspect-[2/1] w-full rounded-lg bg-card font-sans text-foreground">
             <Image
                 alt="world map"
                 className="pointer-events-none h-full w-full select-none [mask-image:linear-gradient(to_bottom,transparent,white_10%,white_90%,transparent)]"
@@ -47,18 +48,18 @@ export default function WorldMap({ dots = [], lineColor }: MapProps) {
                 width={1056}
             />
             <svg
-                aria-hidden="true"
                 ref={svgRef}
                 viewBox="0 0 800 400"
-                className="pointer-events-none absolute inset-0 h-full w-full select-none"
-                focusable="false"
+                className="pointer-events-none absolute inset-0 h-full w-full"
+                aria-hidden="true"
             >
+                <title>World map with user locations</title>
                 {dots.map((dot, index) => {
                     const startPoint = projectPoint(dot.start.lat, dot.start.lng);
                     const endPoint = projectPoint(dot.end.lat, dot.end.lng);
-                    const dotKey = `${dot.start.lat}-${dot.start.lng}-${dot.end.lat}-${dot.end.lng}`;
+                    const pathId = `${dot.start.lat}-${dot.start.lng}-${dot.end.lat}-${dot.end.lng}-${index}`;
                     return (
-                        <g key={`path-group-${dotKey}`}>
+                        <g key={`path-group-${pathId}`}>
                             <motion.path
                                 d={createCurvedPath(startPoint, endPoint)}
                                 fill="none"
@@ -67,8 +68,7 @@ export default function WorldMap({ dots = [], lineColor }: MapProps) {
                                 initial={{ pathLength: 0 }}
                                 animate={{ pathLength: 1 }}
                                 transition={{ delay: 0.5 * index, duration: 1, ease: 'easeOut' }}
-                                key={`start-upper-${dotKey}`}
-                            ></motion.path>
+                            />
                         </g>
                     );
                 })}
@@ -82,78 +82,79 @@ export default function WorldMap({ dots = [], lineColor }: MapProps) {
                     </linearGradient>
                 </defs>
 
-                {dots.map((dot) => {
-                    const dotKey = `${dot.start.lat}-${dot.start.lng}-${dot.end.lat}-${dot.end.lng}`;
+                {dots.map((dot, index) => {
+                    const point = projectPoint(dot.start.lat, dot.start.lng);
+                    const dotId = `${dot.start.lat}-${dot.start.lng}-${index}`;
                     return (
-                        <g key={`points-group-${dotKey}`}>
-                            <g key={`start-${dotKey}`}>
-                                <circle
-                                    cx={projectPoint(dot.start.lat, dot.start.lng).x}
-                                    cy={projectPoint(dot.start.lat, dot.start.lng).y}
-                                    r="2"
-                                    fill={arcColor}
+                        <g key={`dot-${dotId}`}>
+                            <circle
+                                cx={point.x}
+                                cy={point.y}
+                                r="2"
+                                fill={arcColor}
+                                className="cursor-pointer"
+                                data-tooltip={dot.start.label}
+                            />
+                            <circle
+                                cx={point.x}
+                                cy={point.y}
+                                r="2"
+                                fill={arcColor}
+                                opacity="0.5"
+                                className="pointer-events-none"
+                            >
+                                <animate
+                                    attributeName="r"
+                                    from="2"
+                                    to="8"
+                                    dur="1.5s"
+                                    begin="0s"
+                                    repeatCount="indefinite"
                                 />
-                                <circle
-                                    cx={projectPoint(dot.start.lat, dot.start.lng).x}
-                                    cy={projectPoint(dot.start.lat, dot.start.lng).y}
-                                    r="2"
-                                    fill={arcColor}
-                                    opacity="0.5"
-                                >
-                                    <animate
-                                        attributeName="r"
-                                        from="2"
-                                        to="8"
-                                        dur="1.5s"
-                                        begin="0s"
-                                        repeatCount="indefinite"
-                                    />
-                                    <animate
-                                        attributeName="opacity"
-                                        from="0.5"
-                                        to="0"
-                                        dur="1.5s"
-                                        begin="0s"
-                                        repeatCount="indefinite"
-                                    />
-                                </circle>
-                            </g>
-                            <g key={`end-${dotKey}`}>
-                                <circle
-                                    cx={projectPoint(dot.end.lat, dot.end.lng).x}
-                                    cy={projectPoint(dot.end.lat, dot.end.lng).y}
-                                    r="2"
-                                    fill={arcColor}
+                                <animate
+                                    attributeName="opacity"
+                                    from="0.5"
+                                    to="0"
+                                    dur="1.5s"
+                                    begin="0s"
+                                    repeatCount="indefinite"
                                 />
-                                <circle
-                                    cx={projectPoint(dot.end.lat, dot.end.lng).x}
-                                    cy={projectPoint(dot.end.lat, dot.end.lng).y}
-                                    r="2"
-                                    fill={arcColor}
-                                    opacity="0.5"
-                                >
-                                    <animate
-                                        attributeName="r"
-                                        from="2"
-                                        to="8"
-                                        dur="1.5s"
-                                        begin="0s"
-                                        repeatCount="indefinite"
-                                    />
-                                    <animate
-                                        attributeName="opacity"
-                                        from="0.5"
-                                        to="0"
-                                        dur="1.5s"
-                                        begin="0s"
-                                        repeatCount="indefinite"
-                                    />
-                                </circle>
-                            </g>
+                            </circle>
                         </g>
                     );
                 })}
             </svg>
+
+            {/* Overlay invisible divs for tooltips */}
+            <div className="absolute inset-0 z-10">
+                {dots.map((dot, index) => {
+                    const point = projectPoint(dot.start.lat, dot.start.lng);
+                    const left = `${(point.x / 800) * 100}%`;
+                    const top = `${(point.y / 400) * 100}%`;
+                    const label = dot.label || dot.start.label;
+                    const tooltipId = `${dot.start.lat}-${dot.start.lng}-${index}`;
+
+                    if (!label) {
+                        return null;
+                    }
+
+                    return (
+                        <Tooltip key={`tooltip-${tooltipId}`} delayDuration={0}>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    className="-translate-x-1/2 -translate-y-1/2 absolute h-8 w-8 cursor-pointer rounded-full hover:bg-white/10"
+                                    style={{ left, top }}
+                                    aria-label={label}
+                                />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="font-medium">
+                                {label}
+                            </TooltipContent>
+                        </Tooltip>
+                    );
+                })}
+            </div>
         </div>
     );
 }

@@ -4,6 +4,10 @@ import { CalculationMethod, CalculationParameters } from 'adhan';
 import type { MethodValue, Settings } from '@/types/settings';
 import { CALCULATION_METHOD_OPTIONS, defaultSettings } from './constants';
 
+/**
+ * Factory functions for built-in calculation methods from Adhan library
+ * Maps method names to their factory functions
+ */
 const methodFactories = {
     Dubai: CalculationMethod.Dubai,
     Egyptian: CalculationMethod.Egyptian,
@@ -18,10 +22,28 @@ const methodFactories = {
     UmmAlQura: CalculationMethod.UmmAlQura,
 } as const;
 
+/** Type helper for method factory keys */
 type MethodFactoryKey = keyof typeof methodFactories;
 
-type MethodPreset = { fajrAngle: number; ishaAngle: number; ishaInterval: number };
+/**
+ * Prayer calculation method preset with angles
+ */
+type MethodPreset = {
+    /** Fajr angle below horizon in degrees */
+    fajrAngle: number;
+    /** Isha angle below horizon in degrees */
+    ishaAngle: number;
+    /** Fixed interval after Maghrib for Isha (minutes), 0 for angle-based */
+    ishaInterval: number;
+};
 
+/**
+ * Build a method preset from method name
+ * Extracts angles from Adhan library factory or uses defaults
+ *
+ * @param method - Method name
+ * @returns Preset with angles and interval
+ */
 const buildPreset = (method: MethodValue): MethodPreset => {
     if (method === 'Other') {
         return {
@@ -43,6 +65,12 @@ const buildPreset = (method: MethodValue): MethodPreset => {
     return { fajrAngle: params.fajrAngle, ishaAngle: params.ishaAngle, ishaInterval: params.ishaInterval ?? 0 };
 };
 
+/**
+ * Build complete method presets map for all calculation methods
+ * Pre-computes all presets for fast lookup
+ *
+ * @returns Record mapping method names to their presets
+ */
 const buildMethodPresets = () => {
     const presets = {} as Record<MethodValue, MethodPreset>;
     for (const option of CALCULATION_METHOD_OPTIONS) {
@@ -51,10 +79,23 @@ const buildMethodPresets = () => {
     return presets;
 };
 
+/**
+ * Pre-computed method presets for all calculation methods
+ * Contains Fajr/Isha angles and intervals for each method
+ */
 export const methodPresets: Record<MethodValue, MethodPreset> = buildMethodPresets();
 
+/** Tolerance for floating point comparison when detecting methods */
 const METHOD_TOLERANCE = 0.01;
 
+/**
+ * Detect which calculation method matches the given angles
+ * Compares angles within tolerance to account for floating point precision
+ * Returns 'Other' if no exact match found
+ *
+ * @param preset - Preset with angles to match
+ * @returns Matching method name, or 'Other'
+ */
 export const detectMethodFor = (preset: MethodPreset): MethodValue => {
     const candidates = Object.entries(methodPresets) as [MethodValue, MethodPreset][];
     for (const [method, values] of candidates) {
@@ -68,11 +109,23 @@ export const detectMethodFor = (preset: MethodPreset): MethodValue => {
     return 'Other';
 };
 
+/**
+ * Map of method values to human-readable labels
+ * Used for UI display
+ */
 export const methodLabelMap = CALCULATION_METHOD_OPTIONS.reduce<Record<string, string>>((acc, option) => {
     acc[option.value] = option.label;
     return acc;
 }, {});
 
+/**
+ * Create CalculationParameters from settings
+ * Hydrates Adhan library parameters with custom or preset values
+ * Handles fallback to defaults for invalid values
+ *
+ * @param settings - Application settings
+ * @returns Adhan CalculationParameters ready for prayer time calculation
+ */
 export const hydrateParameters = (settings: Settings): CalculationParameters => {
     const preset = methodPresets[settings.method] ?? methodPresets.Other;
     const factory = settings.method === 'Other' ? null : methodFactories[settings.method as MethodFactoryKey];
@@ -89,6 +142,13 @@ export const hydrateParameters = (settings: Settings): CalculationParameters => 
     return params;
 };
 
+/**
+ * Create CalculationParameters from discrete angle values
+ * Convenience function for testing and direct parameter creation
+ *
+ * @param config - Configuration object with method and angles
+ * @returns Adhan CalculationParameters
+ */
 export const createParameters = ({
     method,
     fajrAngle,

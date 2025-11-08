@@ -181,31 +181,31 @@ describe('phaseLabelAndTime', () => {
 
     it('should return Asr between asr and maghrib', () => {
         const result = phaseLabelAndTime(0.65, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('Asr');
+        expect(result.label).toBe('ʿAṣr');
         expect(result.time).toContain('3:00');
     });
 
     it('should return Maghrib between maghrib and isha', () => {
         const result = phaseLabelAndTime(0.8, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('Maghrib');
+        expect(result.label).toBe('Maġrib');
         expect(result.time).toContain('5:30');
     });
 
     it('should return Isha between isha and midnight', () => {
         const result = phaseLabelAndTime(0.87, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('Isha');
+        expect(result.label).toBe('ʿIshāʾ');
         expect(result.time).toContain('7:00');
     });
 
     it('should return Half the Night between midnight and last third', () => {
         const result = phaseLabelAndTime(0.92, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('Half the Night');
+        expect(result.label).toBe('1/2 Night Begins');
         expect(result.time).toContain('12:15');
     });
 
     it('should return Last 1/3 after last third', () => {
         const result = phaseLabelAndTime(0.97, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('Last 1/3 of the night');
+        expect(result.label).toBe('Last 1/3 Night Begins');
         expect(result.time).toContain('2:30');
     });
 });

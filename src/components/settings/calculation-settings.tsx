@@ -4,11 +4,26 @@ import { CALCULATION_METHOD_OPTIONS } from '@/lib/constants';
 import { detectMethodFor, methodPresets } from '@/lib/settings';
 import type { MethodValue, Settings } from '@/types/settings';
 
+/**
+ * Props for the CalculationSettings component
+ */
 type CalculationSettingsProps = {
+    /** Current settings state */
     settings: Settings;
+    /** Handler for updating settings */
     onSettingsChange: (updater: (prev: Settings) => Settings) => void;
 };
 
+/**
+ * Builds updated settings state when angle values change.
+ * Automatically detects and updates the calculation method based on angle combination.
+ * Resets ishaInterval to 0 when angle-based fields are modified.
+ *
+ * @param prev - Previous settings state
+ * @param field - Field being updated
+ * @param value - New value as string
+ * @returns Updated settings with auto-detected method
+ */
 const buildAngleState = (
     prev: Settings,
     field: 'fajrAngle' | 'ishaAngle' | 'ishaInterval',
@@ -26,6 +41,21 @@ const buildAngleState = (
     return { ...next, method };
 };
 
+/**
+ * Calculation method configuration panel.
+ *
+ * Allows users to configure:
+ * - Fajr angle (degrees below horizon)
+ * - ʿIshāʾ angle (degrees below horizon)
+ * - ʿIshāʾ interval (fixed minutes after Maghrib, alternative to angle)
+ * - Preset calculation methods (loads predefined angles)
+ *
+ * Automatically detects the method when angles are manually adjusted.
+ * Setting ishaInterval > 0 takes precedence over ishaAngle.
+ *
+ * @param props - Component configuration
+ * @returns Form controls for calculation parameters
+ */
 export function CalculationSettings({ settings, onSettingsChange }: CalculationSettingsProps) {
     const handleMethodSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const nextMethod = event.target.value as MethodValue;

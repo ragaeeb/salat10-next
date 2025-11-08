@@ -5,6 +5,48 @@ import { timeToScroll } from '@/lib/timeline';
 import type { DayData } from '@/types/timeline';
 import { useScrollProgress } from './use-scroll-progress';
 
+/**
+ * Hook to track scroll position and manage timeline navigation
+ *
+ * Coordinates scroll position initialization, current day tracking, and button
+ * visibility for loading adjacent days. Automatically scrolls to current prayer
+ * time on mount and adjusts scroll position when days are added to prevent jumps.
+ *
+ * @param {DayData[]} days - Array of loaded day data with prayer timings
+ * @returns Scroll tracking state and controls
+ * @property {number} currentDayIndex - Index of currently visible day in the buffer
+ * @property {MotionValue<number>} scrollProgress - Normalized progress (0-0.999) within current day
+ * @property {number} pNow - Plain number version of scrollProgress for branching logic
+ * @property {boolean} showLoadPrev - True when user is near top and should see "load previous" button
+ * @property {boolean} showLoadNext - True when user is near bottom and should see "load next" button
+ * @property {number} totalHeight - Total scrollable height in pixels
+ * @property {() => void} onAddPrevDay - Adjust scroll position after adding previous day
+ *
+ * @example
+ * ```tsx
+ * const { days, addPreviousDay } = useDayBuffer(config);
+ * const {
+ *   currentDayIndex,
+ *   scrollProgress,
+ *   showLoadPrev,
+ *   onAddPrevDay
+ * } = useScrollTracking(days);
+ *
+ * return (
+ *   <>
+ *     {showLoadPrev && (
+ *       <button onClick={() => {
+ *         addPreviousDay();
+ *         onAddPrevDay();
+ *       }}>
+ *         Load Previous Day
+ *       </button>
+ *     )}
+ *     <Timeline day={days[currentDayIndex]} />
+ *   </>
+ * );
+ * ```
+ */
 export const useScrollTracking = (days: DayData[]) => {
     const hasInitialized = useRef(false);
     // Track scroll position and current day

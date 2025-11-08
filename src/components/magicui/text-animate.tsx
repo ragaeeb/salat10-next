@@ -202,6 +202,10 @@ const TextAnimateBase = ({
     const MotionComponent = motion.create(Component);
 
     const segments = useMemo(() => {
+        if (!children) {
+            return [];
+        }
+
         switch (by) {
             case 'word':
                 return children.split(/(\s+)/);

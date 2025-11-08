@@ -7,9 +7,31 @@ interface CameraState {
 }
 
 /**
- * Hook to manage device camera access
- * Requests rear-facing camera for AR experience
- * Includes feature detection for older iOS Safari
+ * Hook to manage device camera access for AR experiences
+ *
+ * Requests rear-facing camera with optimal resolution for AR overlays.
+ * Includes feature detection and fallbacks for older iOS Safari versions.
+ * Automatically starts camera on mount and cleans up on unmount.
+ *
+ * @returns Camera state and control functions
+ * @property {React.RefObject<HTMLVideoElement>} videoRef - Ref to attach to video element
+ * @property {MediaStream | null} stream - Active media stream from camera
+ * @property {string | null} error - User-friendly error message if camera access fails
+ * @property {boolean} isReady - True when camera is active and ready for capture
+ * @property {() => Promise<void>} startCamera - Function to manually restart camera
+ *
+ * @example
+ * ```tsx
+ * const { videoRef, error, isReady } = useCamera();
+ *
+ * return (
+ *   <div>
+ *     <video ref={videoRef} playsInline muted />
+ *     {error && <p>{error}</p>}
+ *     {isReady && <p>Camera ready!</p>}
+ *   </div>
+ * );
+ * ```
  */
 export function useCamera() {
     const videoRef = useRef<HTMLVideoElement>(null);

@@ -1,92 +1,69 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-import { SITE_URL } from '@/config/seo';
+import { type NextRequest, NextResponse } from 'next/server';
+import { validateOrigin } from '@/lib/security';
 
-type GeocodeApiResponse = Array<{ lat: string; lon: string; display_name?: string }>;
+/**
+ * Geocode API response from geocode.maps.co
+ */
+type GeocodeResult = {
+    lat: string;
+    lon: string;
+    display_name: string;
+    address?: {
+        city?: string;
+        town?: string;
+        village?: string;
+        state?: string;
+        state_district?: string;
+        country?: string;
+        country_code?: string;
+    };
+    name?: string;
+};
 
-const ALLOWED_ORIGINS = [
-    SITE_URL,
-    `${SITE_URL.replace('https://', 'https://www.')}`,
-    'https://salaten.vercel.app',
-    'http://localhost:3000',
-];
+/**
+ * Extract location details from geocode response
+ * Priority: city/town/village > state_district > state > country
+ *
+ * @param result - Geocode API result
+ * @returns Location details with city, state, and country
+ */
+function extractLocationDetails(result: GeocodeResult) {
+    const address = result.address;
 
-const SUSPICIOUS_PATTERNS = [/<script/i, /javascript:/i, /on\w+=/i, /data:text\/html/i];
+    // Get city name (try city, town, village, or use main name as fallback)
+    const city = address?.city || address?.town || address?.village || result.name || undefined;
 
-export function validateOrigin(origin: string | null, referer: string | null): boolean {
-    if (origin) {
-        return ALLOWED_ORIGINS.includes(origin);
-    }
-    if (referer) {
-        return ALLOWED_ORIGINS.some((allowed) => referer.startsWith(allowed));
-    }
+    // Get state (prefer state_district for more specific region, fall back to state)
+    const state = address?.state_district || address?.state || undefined;
 
-    // In production, require origin or referer. In development, allow missing headers.
-    return process.env.NODE_ENV === 'development';
+    // Get country
+    const country = address?.country || undefined;
+
+    return { city, country, state };
 }
 
-export function validateAddress(address: string | null): { valid: boolean; error?: string } {
-    if (!address?.trim()) {
-        return { error: 'Address parameter is required', valid: false };
-    }
-    if (address.length > 200) {
-        return { error: 'Address too long (max 200 characters)', valid: false };
-    }
-    if (SUSPICIOUS_PATTERNS.some((pattern) => pattern.test(address))) {
-        return { error: 'Invalid address format', valid: false };
-    }
-    return { valid: true };
+/**
+ * Validate address format - reject suspicious patterns
+ */
+function isValidAddress(address: string): boolean {
+    // Reject HTML tags, script content, and other suspicious patterns
+    const invalidPatterns = [/<[^>]*>/, /<script/i, /javascript:/i, /on\w+=/i];
+    return !invalidPatterns.some((pattern) => pattern.test(address));
 }
 
-export function validateCoordinates(lat: number, lon: number): boolean {
-    return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
-}
-
-type ErrorResponse = { error: string; status: number };
-
-type GeoCodeResponse = { lat: number; lon: number; label?: string };
-
-export async function fetchGeocode(address: string, apiKey: string): Promise<GeoCodeResponse | ErrorResponse> {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        const response = await fetch(
-            `https://geocode.maps.co/search?q=${encodeURIComponent(address)}&limit=1&api_key=${apiKey}`,
-            { headers: { Accept: 'application/json' }, signal: controller.signal },
-        );
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            console.error(`Geocoding API error: ${response.status}`);
-            return { error: 'Geocoding service error', status: 502 };
-        }
-
-        const data: GeocodeApiResponse = await response.json();
-
-        if (!Array.isArray(data) || data.length === 0 || !data[0]) {
-            return { error: 'Location not found', status: 404 };
-        }
-
-        const [match] = data;
-        const lat = Number.parseFloat(match.lat);
-        const lon = Number.parseFloat(match.lon);
-
-        if (!validateCoordinates(lat, lon)) {
-            return { error: 'Invalid coordinates from service', status: 502 };
-        }
-
-        return { ...(match.display_name && { label: match.display_name }), lat, lon };
-    } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-            return { error: 'Request timeout', status: 504 };
-        }
-        console.error('Geocoding failed:', error);
-        return { error: 'Service error', status: 500 };
-    }
-}
-
+/**
+ * GET /api/geocode
+ * Convert address to coordinates using geocode.maps.co API
+ *
+ * Query params:
+ * - address: string - Address or location to geocode
+ *
+ * Returns:
+ * - 200: { latitude: number, longitude: number, label: string, city?: string, state?: string, country?: string }
+ * - 400: Missing or invalid address
+ * - 404: Location not found
+ * - 500: Server error or API error
+ */
 export async function GET(request: NextRequest) {
     const origin = request.headers.get('origin');
     const referer = request.headers.get('referer');
@@ -98,25 +75,63 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const address = searchParams.get('address');
 
-    const addressValidation = validateAddress(address);
-    if (!addressValidation.valid) {
-        return NextResponse.json({ error: addressValidation.error }, { status: 400 });
+    if (!address?.trim()) {
+        return NextResponse.json({ error: 'Address parameter is required' }, { status: 400 });
     }
 
-    const apiKey = process.env.GEOCODE_API_KEY;
-    if (!apiKey) {
-        console.error('GEOCODE_API_KEY not configured');
-        return NextResponse.json({ error: 'Service unavailable' }, { status: 500 });
+    if (!isValidAddress(address)) {
+        return NextResponse.json({ error: 'Invalid address format' }, { status: 400 });
     }
 
-    const result = await fetchGeocode(address!, apiKey);
+    try {
+        const apiKey = process.env.GEOCODE_API_KEY;
+        const url = apiKey
+            ? `https://geocode.maps.co/search?q=${encodeURIComponent(address)}&api_key=${apiKey}`
+            : `https://geocode.maps.co/search?q=${encodeURIComponent(address)}`;
 
-    if ('error' in result) {
-        return NextResponse.json({ error: result.error }, { status: result.status });
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            console.error('Geocode API error:', response.status, response.statusText);
+            return NextResponse.json({ error: 'Failed to fetch from geocoding service' }, { status: 500 });
+        }
+
+        const data: GeocodeResult[] = await response.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+            return NextResponse.json({ error: 'Location not found' }, { status: 404 });
+        }
+
+        // Use first result
+        const result = data[0]!;
+        const latitude = Number.parseFloat(result.lat);
+        const longitude = Number.parseFloat(result.lon);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            return NextResponse.json({ error: 'Invalid coordinates in response' }, { status: 500 });
+        }
+
+        // Extract location details
+        const { city, state, country } = extractLocationDetails(result);
+
+        const responseData = {
+            label: result.display_name,
+            latitude,
+            longitude,
+            ...(city && { city }),
+            ...(state && { state }),
+            ...(country && { country }),
+        };
+
+        // Set CORS headers if origin is present
+        const headers: Record<string, string> = {};
+        if (origin) {
+            headers['Access-Control-Allow-Origin'] = origin;
+        }
+
+        return NextResponse.json(responseData, { headers });
+    } catch (error) {
+        console.error('Geocode error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-
-    return NextResponse.json(
-        { label: result.label, latitude: result.lat, longitude: result.lon },
-        { headers: origin ? { 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Origin': origin } : {} },
-    );
 }

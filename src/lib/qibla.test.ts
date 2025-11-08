@@ -329,15 +329,13 @@ describe('qibla', () => {
     });
 
     describe('isIOSDevice', () => {
-        // Note: This test depends on the runtime environment
-        // In bun test, navigator.userAgent will be present but not from iOS
         it('should return boolean', () => {
             const result = isIOSDevice();
             expect(typeof result).toBe('boolean');
         });
 
-        it('should return false in Node/Bun environment', () => {
-            // In test environment, should not detect as iOS
+        it('should return false when navigator is not available', () => {
+            // In test environment without browser globals, should return false
             expect(isIOSDevice()).toBe(false);
         });
     });

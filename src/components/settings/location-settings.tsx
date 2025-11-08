@@ -7,17 +7,38 @@ import { TimezoneCombobox } from '@/components/timezone-combobox';
 import { Button } from '@/components/ui/button';
 import type { Settings } from '@/types/settings';
 
+/**
+ * Props for the LocationSettings component
+ */
 type LocationSettingsProps = {
+    /** Current settings state */
     settings: Settings;
+    /** Handler for updating multiple settings at once */
     onSettingsChange: (updater: (prev: Settings) => Settings) => void;
+    /** Handler for updating a single field */
     onFieldChange: (key: keyof Settings, value: string) => void;
 };
 
+/**
+ * Geocoding request status
+ */
 type GeocodeStatus = 'idle' | 'loading';
+
+/**
+ * Browser geolocation request status
+ */
 type LocationStatus = 'idle' | 'loading';
 
+/**
+ * Default timezone fallback
+ */
 const DEFAULT_TZ = 'UTC';
 
+/**
+ * Gets browser's timezone using the Intl API.
+ *
+ * @returns IANA timezone identifier or UTC as fallback
+ */
 const getBrowserTimezone = (): string => {
     try {
         return Intl.DateTimeFormat().resolvedOptions().timeZone ?? DEFAULT_TZ;
@@ -26,6 +47,22 @@ const getBrowserTimezone = (): string => {
     }
 };
 
+/**
+ * Location configuration panel for coordinates and timezone.
+ *
+ * Features:
+ * - Manual address/label entry
+ * - Geocoding API integration (auto-fill coordinates from address)
+ * - Browser geolocation support
+ * - Timezone selection via combobox
+ * - Manual latitude/longitude entry
+ *
+ * Both geocoding and browser location automatically detect and set the timezone.
+ * Updates city/state/country metadata when geocoding succeeds.
+ *
+ * @param props - Component configuration
+ * @returns Form controls for location settings with loading states
+ */
 export function LocationSettings({ settings, onSettingsChange, onFieldChange }: LocationSettingsProps) {
     const [geocodeStatus, setGeocodeStatus] = useState<GeocodeStatus>('idle');
     const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
@@ -34,6 +71,10 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
         onFieldChange(key, event.target.value);
     };
 
+    /**
+     * Request location from browser's Geolocation API
+     * Updates coordinates and timezone on success
+     */
     const requestBrowserLocation = () => {
         if (!('geolocation' in navigator)) {
             toast.error('Geolocation is not supported by your browser');
@@ -73,6 +114,10 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
         );
     };
 
+    /**
+     * Geocode address to coordinates using API
+     * Updates coordinates, timezone, and location metadata (city/state/country)
+     */
     const lookupCoordinates = async () => {
         if (!settings.address.trim()) {
             toast.error('Please enter an address or city first.');
@@ -105,7 +150,11 @@ export function LocationSettings({ settings, onSettingsChange, onFieldChange }: 
                 address: label,
                 latitude: lat,
                 longitude: lon,
-                timeZone: getBrowserTimezone(),
+                timeZone: result.timeZone ?? getBrowserTimezone(),
+                // Update location metadata if available
+                ...(result.city && { city: result.city }),
+                ...(result.state && { state: result.state }),
+                ...(result.country && { country: result.country }),
             }));
 
             setGeocodeStatus('idle');

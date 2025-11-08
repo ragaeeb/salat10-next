@@ -1,8 +1,27 @@
 import { type MotionValue, motion } from 'motion/react';
 import { memo } from 'react';
 
-/** Sunset gradient (overlays warm dusk colors on top of base sky) */
 type SunsetGradientProps = { opacity: number | MotionValue<number> };
+
+/**
+ * Sunset gradient overlay component
+ *
+ * Renders warm dusk colors that appear during Asr to Maghrib transition.
+ * Gradient progresses from warm orange/red at top through purple mid-tones
+ * to transparent at bottom, creating realistic sunset atmosphere.
+ *
+ * Colors simulate atmospheric scattering during the golden hour before sunset.
+ *
+ * @param {SunsetGradientProps} props - Component props
+ * @param {number | MotionValue<number>} props.opacity - Opacity control (0-1)
+ *
+ * @example
+ * ```tsx
+ * const { sunsetGradientOpacity } = useSky(scrollProgress, timeline);
+ * return <SunsetGradient opacity={sunsetGradientOpacity} />;
+
+ * ```
+ */
 export const SunsetGradient = memo<SunsetGradientProps>(({ opacity }) => (
     <motion.div
         className="pointer-events-none absolute inset-0 z-20"

@@ -1,7 +1,11 @@
 import type { DateRange } from 'react-day-picker';
 
 /**
- * Formats a date as ISO date string (YYYY-MM-DD)
+ * Format a date as ISO date string (YYYY-MM-DD)
+ * Used for URL parameters
+ *
+ * @param date - Date to format
+ * @returns ISO date string
  */
 export const formatDateParam = (date: Date): string => {
     const year = date.getFullYear();
@@ -11,7 +15,11 @@ export const formatDateParam = (date: Date): string => {
 };
 
 /**
- * Parses initial date range from search params or returns defaults
+ * Parse initial date range from search params or return defaults
+ * Defaults to current month (first day to last day)
+ *
+ * @param searchParams - URL search parameters object
+ * @returns Object with from and to dates
  */
 export const parseInitialDateRange = (
     searchParams: Record<string, string | string[] | undefined> | undefined,
@@ -33,7 +41,10 @@ export const parseInitialDateRange = (
 };
 
 /**
- * Formats a date range for display
+ * Format a date range for human-readable display
+ *
+ * @param dateRange - React Day Picker date range
+ * @returns Formatted string or placeholder text
  */
 export const formatDateRangeDisplay = (dateRange: DateRange | undefined): string => {
     if (!dateRange?.from) {
@@ -42,11 +53,20 @@ export const formatDateRangeDisplay = (dateRange: DateRange | undefined): string
     if (!dateRange.to) {
         return dateRange.from.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
     }
-    return `${dateRange.from.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })} - ${dateRange.to.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    return `${dateRange.from.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    })} - ${dateRange.to.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 };
 
 /**
- * Generates a schedule label from a date range
+ * Generate a schedule label from a date range
+ * Used for displaying range in timetable header
+ *
+ * @param from - Start date
+ * @param to - End date
+ * @returns Formatted range string like "Jan 1, 2024 - Jan 31, 2024"
  */
 export const generateScheduleLabel = (from: Date, to: Date): string => {
     const fromStr = from.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -55,7 +75,13 @@ export const generateScheduleLabel = (from: Date, to: Date): string => {
 };
 
 /**
- * Updates URL with new date range parameters
+ * Update URL search params with new date range
+ * Returns new URLSearchParams object for router navigation
+ *
+ * @param searchParams - Current search params
+ * @param from - New start date
+ * @param to - New end date
+ * @returns Updated URLSearchParams with date range
  */
 export const updateDateRangeParams = (searchParams: URLSearchParams, from: Date, to: Date): URLSearchParams => {
     const params = new URLSearchParams(searchParams.toString());

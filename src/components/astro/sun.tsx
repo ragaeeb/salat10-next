@@ -16,6 +16,46 @@ type SunProps = {
     className?: string; // optional extra classes
 };
 
+/**
+ * Animated sun component with dynamic color and glow effects
+ *
+ * Renders a realistic sun with:
+ * - Core circle with gaussian blur glow
+ * - Larger outer circle for body
+ * - Radial gradient halo for atmospheric scattering
+ * - Dynamic RGB color (warm orange at horizon, bright white at peak)
+ * - Hardware-accelerated rendering with mix-blend-mode: screen
+ *
+ * Position, opacity, and color are controlled via MotionValues for smooth
+ * timeline animation synchronized with prayer times.
+ *
+ * @param {SunProps} props - Component props
+ * @param {number | MotionValue<number>} props.x - Horizontal position (percentage, 0-100)
+ * @param {number | MotionValue<number>} props.y - Vertical position (percentage, 0-100)
+ * @param {number | MotionValue<number>} props.opacity - Opacity (0-1)
+ * @param {object} props.color - RGB color channels
+ * @param {MotionValue<number>} props.color.r - Red channel (0-255)
+ * @param {MotionValue<number>} props.color.g - Green channel (0-255)
+ * @param {MotionValue<number>} props.color.b - Blue channel (0-255)
+ * @param {number} [props.size=80] - Size in pixels (width and height)
+ * @param {number} [props.width] - Width override
+ * @param {number} [props.height] - Height override
+ * @param {string} [props.className] - Additional CSS classes
+ *
+ * @example
+ * ```tsx
+ * const { sunX, sunY, sunOpacity, sunColorR, sunColorG, sunColorB } = useSun(scrollProgress, timeline);
+ *
+ * return (
+ *   <Sun
+ *     x={sunX}
+ *     y={sunY}
+ *     opacity={sunOpacity}
+ *     color={{ r: sunColorR, g: sunColorG, b: sunColorB }}
+ *   />
+ * );
+ * ```
+ */
 export const Sun = memo<SunProps>(({ x, y, opacity, color, size = 80, width, height, className }) => {
     const leftPct = useTransform(x as MotionValue<number>, (v) => `${v}%`);
     const topPct = useTransform(y as MotionValue<number>, (v) => `${v}%`);

@@ -17,8 +17,39 @@ interface DeviceOrientationEventiOS extends DeviceOrientationEvent {
 }
 
 /**
- * Hook to manage device compass/orientation sensor
- * Handles iOS and Android differences in DeviceOrientation API
+ * Hook to manage device compass/orientation sensor for Qibla direction
+ *
+ * Handles platform-specific differences between iOS and Android DeviceOrientation APIs.
+ * iOS uses webkitCompassHeading and requires explicit permission (iOS 13+).
+ * Android/Desktop uses deviceorientationabsolute with alpha rotation.
+ *
+ * Provides raw heading, smoothed heading for UI stability, and calibration quality
+ * indicators where available.
+ *
+ * @returns Compass state and control functions
+ * @property {number | null} rawHeading - Raw compass heading in degrees (0-360, 0=North)
+ * @property {number | null} smoothedHeading - Smoothed heading for stable UI rendering
+ * @property {number | null} calibrationQuality - iOS calibration accuracy in degrees, or null
+ * @property {PermissionState} permissionState - Current permission state ('prompt' | 'granted' | 'denied')
+ * @property {string | null} error - Error message if sensor access fails
+ * @property {number[]} headingHistory - Recent heading values for stability detection
+ * @property {boolean} isIOS - True if running on iOS device
+ * @property {() => Promise<void>} requestPermission - Request orientation permission (required for iOS)
+ *
+ * @example
+ * ```tsx
+ * const { smoothedHeading, permissionState, requestPermission, error } = useQiblaCompass();
+ *
+ * if (permissionState === 'prompt') {
+ *   return <button onClick={requestPermission}>Enable Compass</button>;
+ * }
+ *
+ * return (
+ *   <div style={{ transform: `rotate(${smoothedHeading}deg)` }}>
+ *     <CompassArrow />
+ *   </div>
+ * );
+ * ```
  */
 export function useQiblaCompass() {
     const [state, setState] = useState<CompassState>({

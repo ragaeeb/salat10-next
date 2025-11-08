@@ -1,9 +1,25 @@
 import type { HijriDate } from '@/types/hijri';
 
+/**
+ * Generalized modulo function that handles negative numbers correctly
+ * Used for wrapping weekday calculations
+ *
+ * @param n - Number to take modulo of
+ * @param m - Modulo divisor
+ * @returns Result in range [0, m)
+ */
 const gmod = (n: number, m: number) => ((n % m) + m) % m;
 
+/**
+ * Arabic transliterated names for days of the week
+ * Index 0 = Sunday (al-ʾAḥad), Index 6 = Saturday (al-Sabt)
+ */
 const weekdayNames = ['al-ʾAḥad', 'al-ʾIthnayn', 'ath-Thulāthāʾ', 'al-ʾArbiʿāʾ', 'al-Khamīs', 'al-Jumuʿah', 'al-Sabt'];
 
+/**
+ * Arabic transliterated names for Islamic calendar months
+ * Index 0 = al-Muḥarram (month 1), Index 11 = Ḏū ʾl-Ḥijjah (month 12)
+ */
 const islamicMonthNames = [
     'al-Muḥarram',
     'Ṣafar',
@@ -19,27 +35,80 @@ const islamicMonthNames = [
     'Ḏū ʾl-Ḥijjah',
 ];
 
+/**
+ * Kuwaiti algorithm constant: total days in 30-year Islamic calendar cycle
+ * 30 years × 354.36667 days/year ≈ 10631 days
+ */
 const KUWAITI_CYCLE_DAYS = 10631;
+
+/**
+ * Kuwaiti algorithm constant: average length of Islamic year
+ * 10631 days / 30 years = 354.36667 days
+ */
 const KUWAITI_AVERAGE_YEAR = KUWAITI_CYCLE_DAYS / 30;
+
+/**
+ * Kuwaiti algorithm constant: Julian Day Number for Islamic epoch
+ * Corresponds to July 16, 622 CE (first day of Muharram 1 AH)
+ */
 const KUWAITI_EPOCH = 1948084;
+
+/**
+ * Kuwaiti algorithm constant: correction shift in days
+ * Fine-tunes the calendar to match astronomical observations
+ */
 const KUWAITI_SHIFT = 8.01 / 60;
 
+/**
+ * Complete result from Kuwaiti algorithm calculation
+ * Contains both Gregorian and Islamic calendar components
+ */
 type KuwaitiResult = {
+    /** Gregorian day of month */
     ceDay: number;
+    /** Gregorian month (1-12) */
     ceMonth: number;
+    /** Gregorian year */
     ceYear: number;
+    /** Julian Day Number (JDN - 1) */
     julianDayNumber: number;
+    /** Raw Julian Day Number */
     rawJulianDay: number;
+    /** Weekday index (0=Sunday, 6=Saturday) */
     weekdayIndex: number;
+    /** Islamic day of month */
     islamicDay: number;
+    /** Islamic month index (0-11, where 0=Muharram) */
     islamicMonthIndex: number;
+    /** Islamic year (Anno Hegirae) */
     islamicYear: number;
+    /** Number of complete 30-year cycles since epoch */
     cycleIndex: number;
+    /** Remaining days after removing complete cycles */
     remainderAfterCycles: number;
+    /** Remaining days after removing complete years */
     remainderAfterYears: number;
+    /** Raw month calculation (1-13, clamped to 12) */
     rawMonth: number;
 };
 
+/**
+ * Kuwaiti algorithm for Gregorian to Islamic calendar conversion
+ * Implements tabular Islamic calendar with optimizations
+ *
+ * Algorithm steps:
+ * 1. Adjust date by offset if provided
+ * 2. Calculate Julian Day Number from Gregorian date
+ * 3. Calculate weekday from JDN
+ * 4. Calculate days since Islamic epoch (622 CE)
+ * 5. Divide into 30-year cycles
+ * 6. Extract year within cycle
+ * 7. Calculate month and day
+ *
+ * @param adjust - Number of days to adjust (positive or negative)
+ * @param now - Gregorian date to convert
+ * @returns Complete calculation result with both calendar systems
+ */
 const kuwaiticalendar = (adjust: number, now: Date): KuwaitiResult => {
     let today = now;
 
@@ -127,16 +196,35 @@ const kuwaiticalendar = (adjust: number, now: Date): KuwaitiResult => {
     };
 };
 
+/**
+ * Detailed explanation of Hijri conversion process
+ * Used for educational/documentation purposes
+ */
 export type HijriExplanation = {
+    /** Arabic weekday name */
     weekdayName: string;
+    /** Julian Day Number for the date */
     julianDayNumber: number;
+    /** Days since Islamic epoch (622 CE) */
     offsetFromEpoch: number;
+    /** Algorithm constants used in calculation */
     constants: { epoch: number; cycleDays: number; averageYear: number; shift: number };
+    /** Cycle calculation breakdown */
     cycle: { index: number; remainderDays: number; yearsIntoCycle: number; remainderAfterYears: number };
+    /** Islamic date components */
     islamic: { day: number; monthIndex: number; monthName: string; year: number };
+    /** Month calculation details */
     monthCalculation: { rawMonth: number };
 };
 
+/**
+ * Generate detailed explanation of Hijri calendar conversion
+ * Useful for displaying step-by-step calculation in UI
+ *
+ * @param adjustment - Days to adjust (0 for no adjustment)
+ * @param today - Gregorian date to convert
+ * @returns Detailed explanation with all intermediate values
+ */
 export const explainHijriConversion = (adjustment: number, today: Date): HijriExplanation => {
     const result = kuwaiticalendar(adjustment, today);
     const yearsIntoCycle = result.islamicYear - 30 * result.cycleIndex;
@@ -166,6 +254,13 @@ export const explainHijriConversion = (adjustment: number, today: Date): HijriEx
     };
 };
 
+/**
+ * Convert Gregorian date to Islamic date (simplified result)
+ *
+ * @param adjustment - Days to adjust (0 for current date)
+ * @param today - Gregorian date to convert
+ * @returns Islamic date with weekday and month names
+ */
 export const writeIslamicDate = (adjustment: number, today: Date): HijriDate => {
     const explained = explainHijriConversion(adjustment, today);
     return {

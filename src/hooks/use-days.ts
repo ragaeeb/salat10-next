@@ -3,10 +3,43 @@ import { type CalculationConfig, daily } from '@/lib/calculator';
 import { MAX_BUFFERED_DAYS, salatLabels } from '@/lib/constants';
 import type { DayData, Timing } from '@/types/timeline';
 
+/**
+ * Hook to manage a sliding window buffer of prayer time days
+ *
+ * Maintains a buffer of calculated prayer times for multiple days to enable
+ * efficient scrolling through the timeline. Automatically initializes with
+ * the correct Islamic day based on Fajr time and provides functions to
+ * load adjacent days on demand.
+ *
+ * Islamic day boundaries are determined by Fajr - if current time is before
+ * today's Fajr, we're still in yesterday's Islamic day.
+ *
+ * @param {CalculationConfig} config - Prayer calculation configuration (lat, lon, method, etc.)
+ * @returns Day buffer state and control functions
+ * @property {DayData[]} days - Array of loaded days with prayer timings
+ * @property {() => void} addPreviousDay - Load one day before the current buffer start
+ * @property {() => void} addNextDay - Load one day after the current buffer end
+ *
+ * @example
+ * ```tsx
+ * const config = { latitude: '40.7128', longitude: '-74.0060', method: 'isna' };
+ * const { days, addPreviousDay, addNextDay } = useDayBuffer(config);
+ *
+ * // days[0] contains today's Islamic day prayer times
+ * // Call addNextDay when user scrolls near bottom
+ * // Call addPreviousDay when user scrolls near top
+ * ```
+ */
 export function useDayBuffer(config: CalculationConfig) {
     const [days, setDays] = useState<DayData[]>([]);
     const dayIndexCounter = useRef(0);
 
+    /**
+     * Load prayer times for a specific date
+     *
+     * @param {Date} date - Date to calculate prayer times for
+     * @returns {DayData} Day data including timings and next Fajr
+     */
     const loadDay = useCallback(
         (date: Date): DayData => {
             // Ensure we're working with a clean date at noon to avoid DST/timezone issues
@@ -59,6 +92,10 @@ export function useDayBuffer(config: CalculationConfig) {
         setDays([initialDayData]);
     }, [loadDay, config.latitude, config.longitude]);
 
+    /**
+     * Add one day before the current buffer (user scrolling backward in time)
+     * Maintains maximum buffer size by trimming from the end
+     */
     const addPreviousDay = useCallback(() => {
         setDays((prev) => {
             const firstDate = prev[0]!.date;
@@ -69,6 +106,10 @@ export function useDayBuffer(config: CalculationConfig) {
         });
     }, [loadDay]);
 
+    /**
+     * Add one day after the current buffer (user scrolling forward in time)
+     * Maintains maximum buffer size by trimming from the start
+     */
     const addNextDay = useCallback(() => {
         setDays((prev) => {
             const lastDate = prev[prev.length - 1]!.date;

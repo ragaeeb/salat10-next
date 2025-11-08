@@ -2,6 +2,23 @@ import { type MotionValue, motion } from 'motion/react';
 import { memo } from 'react';
 
 type LightRaysProps = { opacity: number | MotionValue<number> };
+
+/**
+ * Light rays effect component
+ *
+ * Renders subtle blue radial rays emanating from the horizon during sunrise.
+ * Creates an atmospheric effect of light breaking through the atmosphere.
+ * Multiple overlapping radial gradients provide depth and realism.
+ *
+ * @param {LightRaysProps} props - Component props
+ * @param {number | MotionValue<number>} props.opacity - Opacity control (0-1)
+ *
+ * @example
+ * ```tsx
+ * const { lightRaysOpacity } = useSky(scrollProgress, timeline);
+ * return <LightRays opacity={lightRaysOpacity} />;
+ * ```
+ */
 export const LightRays = memo<LightRaysProps>(({ opacity }) => (
     <motion.div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" style={{ opacity }}>
         <div

@@ -3,12 +3,23 @@ import { FALLBACK_COLORS, FRAC, SERIES_COLORS } from './constants';
 import { invLerp, lerp } from './utils';
 
 /**
- * Base sky color - single source of truth for the background throughout the day.
- * FajrGradient and SunsetGradient overlay on top to add dawn/dusk warmth.
+ * Calculate base sky color at a given timeline position
+ * Single source of truth for background color throughout the day
+ * Fajr and sunset gradients overlay on top of this base
+ *
+ * Color progression:
+ * - Pre-sunrise: Dark night (consistent through Fajr for gradient overlay)
+ * - Morning: Light blue transitioning to daytime
+ * - Afternoon: Bright sky blue
+ * - Maghrib to Isha: Darkening blue
+ * - Night: Very dark blue/black
+ *
+ * @param p - Timeline position [0..1] where 0=Fajr, 1=next Fajr
+ * @param tl - Timeline object with normalized prayer time positions
+ * @returns RGBA color string
  */
 export const skyColorAt = (p: number, tl: Timeline): string => {
     if (p < tl.sunrise) {
-        // Keep the same dark night base through Fajr - let FajrGradient overlay provide the dawn glow
         return 'rgba(5, 7, 16, 0.98)';
     }
     if (p < tl.dhuhr) {
@@ -30,10 +41,17 @@ export const skyColorAt = (p: number, tl: Timeline): string => {
     if (p < tl.lastThird) {
         return 'rgba(6, 8, 20, 0.95)';
     }
-    // Last third through pre-sunrise: single source of truth for night darkness
     return 'rgba(5, 7, 16, 0.98)';
 };
 
+/**
+ * Calculate star field opacity at given timeline position
+ * Stars only visible after Isha, fading in until midnight
+ *
+ * @param p - Timeline position [0..1]
+ * @param tl - Timeline object
+ * @returns Opacity value [0..1]
+ */
 export const starsOpacityAt = (p: number, tl: Timeline): number => {
     if (p < tl.isha) {
         return 0;
@@ -44,13 +62,22 @@ export const starsOpacityAt = (p: number, tl: Timeline): number => {
     return 1;
 };
 
+/**
+ * Calculate Fajr gradient overlay opacity
+ * Provides dawn glow on top of dark base sky
+ * Visible immediately at Fajr, peaks at sunrise, then fades
+ *
+ * @param p - Timeline position [0..1]
+ * @param tl - Timeline object
+ * @returns Opacity value [0..1]
+ */
 export const fajrGradientOpacityAt = (p: number, tl: Timeline): number => {
     if (p < tl.fajr) {
         return 0;
     }
     if (p < tl.sunrise) {
         const t = invLerp(tl.fajr, tl.sunrise, p);
-        return 0.7 + 0.3 * t; // visible immediately at Fajr (checklist #1)
+        return 0.7 + 0.3 * t;
     }
     const tail = lerp(0, tl.sunrise - tl.fajr, FRAC.FAJR_GLOW_TAIL_OF_SUNRISE);
     if (p < tl.sunrise + tail) {
@@ -59,8 +86,16 @@ export const fajrGradientOpacityAt = (p: number, tl: Timeline): number => {
     return 0;
 };
 
+/**
+ * Calculate sunset gradient overlay opacity
+ * Provides orange/red glow during sunset transition
+ * Starts halfway between Asr and Maghrib, holds through Maghrib, fades before Isha
+ *
+ * @param p - Timeline position [0..1]
+ * @param tl - Timeline object
+ * @returns Opacity value [0..1]
+ */
 export const sunsetGradientOpacityAt = (p: number, tl: Timeline): number => {
-    // Start orange exactly halfway between Asr & Maghrib (checklist #5)
     const orangeStart = (tl.asr + tl.maghrib) / 2;
     if (p < orangeStart) {
         return 0;
@@ -81,6 +116,15 @@ export const sunsetGradientOpacityAt = (p: number, tl: Timeline): number => {
     return 0;
 };
 
+/**
+ * Calculate sun color channel value (R, G, or B) at timeline position
+ * Sun transitions from day yellow to dusk orange during sunset
+ *
+ * @param p - Timeline position [0..1]
+ * @param tl - Timeline object
+ * @param ch - Color channel ('r', 'g', or 'b')
+ * @returns Color channel value [0..255]
+ */
 export const sunColorChannelAt = (p: number, tl: Timeline, ch: 'r' | 'g' | 'b'): number => {
     const day = { b: 102, g: 223, r: 255 };
     const dusk = { b: 0, g: 140, r: 255 };
@@ -92,11 +136,18 @@ export const sunColorChannelAt = (p: number, tl: Timeline, ch: 'r' | 'g' | 'b'):
     return Math.round(lerp(day[ch], dusk[ch], t));
 };
 
+/**
+ * Calculate sun opacity at timeline position
+ * Sun visible from sunrise, fades shortly before Maghrib
+ *
+ * @param p - Timeline position [0..1]
+ * @param tl - Timeline object
+ * @returns Opacity value [0..1]
+ */
 export const sunOpacityAt = (p: number, tl: Timeline): number => {
     if (p < tl.sunrise) {
         return 0;
     }
-    // fade shortly before Maghrib (checklist #6)
     const orangeStart = (tl.asr + tl.maghrib) / 2;
     const fadeStart = lerp(orangeStart, tl.maghrib, 1 - FRAC.SUN_FADE_PRE_MAGHRIB);
     if (p < fadeStart) {
@@ -105,9 +156,17 @@ export const sunOpacityAt = (p: number, tl: Timeline): number => {
     if (p < tl.maghrib) {
         return 1 - invLerp(fadeStart, tl.maghrib, p);
     }
-    return 0; // at Maghrib the sun is fully gone (checklist #7)
+    return 0;
 };
 
+/**
+ * Calculate moon opacity at timeline position
+ * Moon appears shortly before Maghrib, fully visible at/after Maghrib
+ *
+ * @param p - Timeline position [0..1]
+ * @param tl - Timeline object
+ * @returns Opacity value [0..1]
+ */
 export const moonOpacityAt = (p: number, tl: Timeline): number => {
     const orangeStart = (tl.asr + tl.maghrib) / 2;
     const appearStart = lerp(orangeStart, tl.maghrib, 1 - FRAC.MOON_PRE_MAGHRIB_APPEAR);
@@ -117,9 +176,17 @@ export const moonOpacityAt = (p: number, tl: Timeline): number => {
     if (p < tl.maghrib) {
         return invLerp(appearStart, tl.maghrib, p);
     }
-    return 1; // moon fully visible at/after Maghrib (checklist #7)
+    return 1;
 };
 
+/**
+ * Calculate light rays opacity (subtle sunrise effect)
+ * Visible during Fajr to sunrise transition with short tail after
+ *
+ * @param p - Timeline position [0..1]
+ * @param tl - Timeline object
+ * @returns Opacity value [0..1], capped at 0.4 for subtlety
+ */
 export const lightRaysOpacityAt = (p: number, tl: Timeline): number => {
     if (p < tl.fajr) {
         return 0;
@@ -127,7 +194,6 @@ export const lightRaysOpacityAt = (p: number, tl: Timeline): number => {
     if (p < tl.sunrise) {
         return invLerp(tl.fajr, tl.sunrise, p) * 0.4;
     }
-    // gentle tail after sunrise
     const tail = lerp(0, tl.sunrise - tl.fajr, 0.15);
     if (p < tl.sunrise + tail) {
         return (1 - invLerp(tl.sunrise, tl.sunrise + tail, p)) * 0.4;
@@ -135,6 +201,14 @@ export const lightRaysOpacityAt = (p: number, tl: Timeline): number => {
     return 0;
 };
 
+/**
+ * Get color for a specific prayer event in charts/visualizations
+ * Uses predefined color map with fallback to index-based colors
+ *
+ * @param event - Prayer event name
+ * @param index - Fallback index for color selection
+ * @returns Hex color string
+ */
 export const getColorFor = (event: string, index: number) => {
     const fallbackColor = FALLBACK_COLORS[index % FALLBACK_COLORS.length] ?? FALLBACK_COLORS[0] ?? '#60a5fa';
     return SERIES_COLORS[event] ?? fallbackColor;
