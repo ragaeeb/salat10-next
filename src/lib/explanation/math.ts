@@ -1,26 +1,75 @@
 import type { Coordinates } from 'adhan';
 
+/** Number of seconds in one hour */
 export const SECONDS_PER_HOUR = 3600;
+
+/** Solar altitude angle at sunrise/sunset (-50/60 degrees accounts for atmospheric refraction) */
 export const SOLAR_ALTITUDE = -50 / 60;
 
+/**
+ * Convert degrees to radians for trigonometric calculations
+ * @param degrees - Angle in degrees
+ * @returns Angle in radians
+ */
 export const degreesToRadians = (degrees: number) => (degrees * Math.PI) / 180;
+
+/**
+ * Convert radians to degrees
+ * @param radians - Angle in radians
+ * @returns Angle in degrees
+ */
 export const radiansToDegrees = (radians: number) => (radians * 180) / Math.PI;
 
+/**
+ * Normalize a number to a scale [0, max)
+ * @param num - Number to normalize
+ * @param max - Maximum value (exclusive)
+ * @returns Normalized value in range [0, max)
+ */
 export const normalizeToScale = (num: number, max: number) => num - max * Math.floor(num / max);
 
+/**
+ * Normalize angle to [0, 360) degree range
+ * @param angle - Angle in degrees
+ * @returns Normalized angle between 0 and 360
+ */
 export const unwindAngle = (angle: number) => normalizeToScale(angle, 360.0);
 
+/**
+ * Shift angle to [-180, 180] degree range
+ * Used for calculating shortest angular distance
+ * @param angle - Angle in degrees
+ * @returns Angle shifted to range [-180, 180]
+ */
 export const quadrantShiftAngle = (angle: number) =>
     angle >= -180 && angle <= 180 ? angle : angle - 360 * Math.round(angle / 360);
 
+/**
+ * Create new date by adding specified number of days
+ * @param date - Starting date
+ * @param days - Number of days to add (can be negative)
+ * @returns New date object
+ */
 export const dateByAddingDays = (date: Date, days: number) => {
     const next = new Date(date.getTime());
     next.setDate(next.getDate() + days);
     return next;
 };
 
+/**
+ * Create new date by adding specified number of seconds
+ * @param date - Starting date
+ * @param seconds - Number of seconds to add (can be negative)
+ * @returns New date object
+ */
 export const dateByAddingSeconds = (date: Date, seconds: number) => new Date(date.getTime() + seconds * 1000);
 
+/**
+ * Check if year is a leap year
+ * Uses Gregorian calendar rules
+ * @param year - Year to check
+ * @returns True if leap year, false otherwise
+ */
 export const isLeapYear = (year: number) => {
     if (year % 4 !== 0) {
         return false;
@@ -31,12 +80,25 @@ export const isLeapYear = (year: number) => {
     return true;
 };
 
+/**
+ * Calculate day of year (1-366)
+ * @param date - Date to calculate for
+ * @returns Day number (1 = Jan 1, 365/366 = Dec 31)
+ */
 export const dayOfYear = (date: Date) => {
     const feb = isLeapYear(date.getFullYear()) ? 29 : 28;
     const months = [31, feb, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     return months.slice(0, date.getMonth()).reduce((acc, value) => acc + value, 0) + date.getDate();
 };
 
+/**
+ * Calculate days since winter solstice (Dec 21/22)
+ * Adjusts for northern/southern hemisphere
+ * @param dayOfYearValue - Day of year (1-366)
+ * @param year - Calendar year
+ * @param latitude - Observer latitude in degrees
+ * @returns Days since solstice (0-365)
+ */
 export const daysSinceSolstice = (dayOfYearValue: number, year: number, latitude: number) => {
     const northernOffset = 10;
     const southernOffset = isLeapYear(year) ? 173 : 172;
@@ -57,6 +119,16 @@ export const daysSinceSolstice = (dayOfYearValue: number, year: number, latitude
     return daysSince;
 };
 
+/**
+ * Evaluate seasonal adjustment for twilight times
+ * Uses piecewise linear interpolation across 6 seasonal segments
+ * @param dyy - Days since solstice
+ * @param a - Coefficient for segment 1 (days 0-90)
+ * @param b - Coefficient for segment 2 (days 91-136)
+ * @param c - Coefficient for segment 3 (days 137-182)
+ * @param d - Coefficient for segment 4 (days 183-228)
+ * @returns Adjustment value in minutes
+ */
 export const evaluateSeasonalAdjustment = (dyy: number, a: number, b: number, c: number, d: number) => {
     if (dyy < 91) {
         return a + ((b - a) / 91.0) * dyy;
@@ -76,6 +148,15 @@ export const evaluateSeasonalAdjustment = (dyy: number, a: number, b: number, c:
     return b + ((a - b) / 91.0) * (dyy - 275);
 };
 
+/**
+ * Calculate season-adjusted Fajr time for high latitudes
+ * Uses Moonsighting Committee algorithm
+ * @param latitude - Observer latitude in degrees
+ * @param dayOfYearValue - Day of year (1-366)
+ * @param year - Calendar year
+ * @param sunrise - Sunrise time for the date
+ * @returns Adjusted Fajr time
+ */
 export const seasonAdjustedMorningTwilight = (
     latitude: number,
     dayOfYearValue: number,
@@ -93,6 +174,16 @@ export const seasonAdjustedMorningTwilight = (
     return dateByAddingSeconds(sunrise, Math.round(adjustment * -60.0));
 };
 
+/**
+ * Calculate season-adjusted Isha time for high latitudes
+ * Uses Moonsighting Committee algorithm with shafaq parameter
+ * @param latitude - Observer latitude in degrees
+ * @param dayOfYearValue - Day of year (1-366)
+ * @param year - Calendar year
+ * @param sunset - Sunset time for the date
+ * @param shafaq - Twilight type ('ahmer' = red, 'abyad' = white, 'general' = default)
+ * @returns Adjusted Isha time
+ */
 export const seasonAdjustedEveningTwilight = (
     latitude: number,
     dayOfYearValue: number,
@@ -128,6 +219,15 @@ export const seasonAdjustedEveningTwilight = (
     return dateByAddingSeconds(sunset, Math.round(adjustment * 60.0));
 };
 
+/**
+ * Calculate Julian Day Number for given date
+ * JDN is continuous count of days since Jan 1, 4713 BCE (proleptic Julian calendar)
+ * @param year - Calendar year
+ * @param month - Month (1-12)
+ * @param day - Day of month
+ * @param hours - Hour of day (default 0)
+ * @returns Julian Day Number
+ */
 export const julianDay = (year: number, month: number, day: number, hours = 0) => {
     const Y = Math.trunc(month > 2 ? year : year - 1);
     const M = Math.trunc(month > 2 ? month : month + 12);
@@ -142,32 +242,67 @@ export const julianDay = (year: number, month: number, day: number, hours = 0) =
     return i0 + i1 + D + B - 1524.5;
 };
 
+/**
+ * Calculate Julian Century from Julian Day Number
+ * Used in astronomical calculations
+ * @param julianDayValue - Julian Day Number
+ * @returns Julian centuries since J2000.0 epoch
+ */
 export const julianCentury = (julianDayValue: number) => (julianDayValue - 2451545.0) / 36525;
 
+/**
+ * Calculate mean longitude of Sun
+ * @param julianCenturyValue - Julian centuries since J2000.0
+ * @returns Mean solar longitude in degrees
+ */
 export const meanSolarLongitude = (julianCenturyValue: number) => {
     const T = julianCenturyValue;
     const L0 = 280.4664567 + 36000.76983 * T + 0.0003032 * T * T;
     return unwindAngle(L0);
 };
 
+/**
+ * Calculate mean longitude of Moon
+ * @param julianCenturyValue - Julian centuries since J2000.0
+ * @returns Mean lunar longitude in degrees
+ */
 export const meanLunarLongitude = (julianCenturyValue: number) => {
     const T = julianCenturyValue;
     const Lp = 218.3165 + 481267.8813 * T;
     return unwindAngle(Lp);
 };
 
+/**
+ * Calculate longitude of Moon's ascending node
+ * Used in nutation calculations
+ * @param julianCenturyValue - Julian centuries since J2000.0
+ * @returns Ascending node longitude in degrees
+ */
 export const ascendingLunarNodeLongitude = (julianCenturyValue: number) => {
     const T = julianCenturyValue;
     const Omega = 125.04452 - 1934.136261 * T + 0.0020708 * T * T + T ** 3 / 450000;
     return unwindAngle(Omega);
 };
 
+/**
+ * Calculate mean anomaly of Sun
+ * Represents angular distance from perihelion
+ * @param julianCenturyValue - Julian centuries since J2000.0
+ * @returns Mean solar anomaly in degrees
+ */
 export const meanSolarAnomaly = (julianCenturyValue: number) => {
     const T = julianCenturyValue;
     const M = 357.52911 + 35999.05029 * T - 0.0001537 * T * T;
     return unwindAngle(M);
 };
 
+/**
+ * Calculate equation of center for Sun
+ * Difference between true and mean anomaly due to elliptical orbit
+ * @param julianCenturyValue - Julian centuries since J2000.0
+ * @param meanAnomaly - Mean solar anomaly in degrees
+ * @returns Equation of center in degrees
+ */
 export const solarEquationOfTheCenter = (julianCenturyValue: number, meanAnomaly: number) => {
     const T = julianCenturyValue;
     const Mrad = degreesToRadians(meanAnomaly);
@@ -177,6 +312,13 @@ export const solarEquationOfTheCenter = (julianCenturyValue: number, meanAnomaly
     return term1 + term2 + term3;
 };
 
+/**
+ * Calculate apparent longitude of Sun
+ * Includes equation of center and nutation corrections
+ * @param julianCenturyValue - Julian centuries since J2000.0
+ * @param meanLongitude - Mean solar longitude in degrees
+ * @returns Apparent solar longitude in degrees
+ */
 export const apparentSolarLongitude = (julianCenturyValue: number, meanLongitude: number) => {
     const T = julianCenturyValue;
     const longitude = meanLongitude + solarEquationOfTheCenter(T, meanSolarAnomaly(T));
@@ -185,11 +327,24 @@ export const apparentSolarLongitude = (julianCenturyValue: number, meanLongitude
     return unwindAngle(Lambda);
 };
 
+/**
+ * Calculate mean obliquity of ecliptic
+ * Angle between Earth's equator and ecliptic plane
+ * @param julianCenturyValue - Julian centuries since J2000.0
+ * @returns Mean obliquity in degrees
+ */
 export const meanObliquityOfTheEcliptic = (julianCenturyValue: number) => {
     const T = julianCenturyValue;
     return 23.439291 - 0.013004167 * T - 0.0000001639 * T ** 2 + 0.0000005036 * T ** 3;
 };
 
+/**
+ * Calculate apparent obliquity of ecliptic
+ * Includes nutation correction
+ * @param julianCenturyValue - Julian centuries since J2000.0
+ * @param meanObliquity - Mean obliquity in degrees
+ * @returns Apparent obliquity in degrees
+ */
 export const apparentObliquityOfTheEcliptic = (julianCenturyValue: number, meanObliquity: number) => {
     const T = julianCenturyValue;
     const Epsilon0 = meanObliquity;
@@ -197,6 +352,12 @@ export const apparentObliquityOfTheEcliptic = (julianCenturyValue: number, meanO
     return Epsilon0 + 0.00256 * Math.cos(degreesToRadians(O));
 };
 
+/**
+ * Calculate mean sidereal time at Greenwich
+ * Angle between vernal equinox and Greenwich meridian
+ * @param julianCenturyValue - Julian centuries since J2000.0
+ * @returns Mean sidereal time in degrees
+ */
 export const meanSiderealTime = (julianCenturyValue: number) => {
     const T = julianCenturyValue;
     const JD = T * 36525 + 2451545.0;
@@ -204,6 +365,15 @@ export const meanSiderealTime = (julianCenturyValue: number) => {
     return unwindAngle(Theta);
 };
 
+/**
+ * Calculate nutation in longitude
+ * Periodic oscillation in Earth's axis due to Moon's gravity
+ * @param _julianCenturyValue - Julian centuries since J2000.0 (unused but kept for signature)
+ * @param solarLongitude - Mean solar longitude in degrees
+ * @param lunarLongitude - Mean lunar longitude in degrees
+ * @param ascendingNode - Ascending node longitude in degrees
+ * @returns Nutation in longitude (degrees)
+ */
 export const nutationInLongitude = (
     _julianCenturyValue: number,
     solarLongitude: number,
@@ -220,6 +390,15 @@ export const nutationInLongitude = (
     return term1 - term2 - term3 + term4;
 };
 
+/**
+ * Calculate nutation in obliquity
+ * Periodic oscillation in Earth's axial tilt
+ * @param _julianCenturyValue - Julian centuries since J2000.0 (unused but kept for signature)
+ * @param solarLongitude - Mean solar longitude in degrees
+ * @param lunarLongitude - Mean lunar longitude in degrees
+ * @param ascendingNode - Ascending node longitude in degrees
+ * @returns Nutation in obliquity (degrees)
+ */
 export const nutationInObliquity = (
     _julianCenturyValue: number,
     solarLongitude: number,
@@ -236,6 +415,13 @@ export const nutationInObliquity = (
     return term1 + term2 + term3 - term4;
 };
 
+/**
+ * Calculate altitude of celestial body above horizon
+ * @param observerLatitude - Observer's latitude in degrees
+ * @param declination - Celestial body's declination in degrees
+ * @param localHourAngle - Local hour angle in degrees
+ * @returns Altitude in degrees (positive = above horizon)
+ */
 export const altitudeOfCelestialBody = (observerLatitude: number, declination: number, localHourAngle: number) => {
     const Phi = observerLatitude;
     const delta = declination;
@@ -245,6 +431,14 @@ export const altitudeOfCelestialBody = (observerLatitude: number, declination: n
     return radiansToDegrees(Math.asin(term1 + term2));
 };
 
+/**
+ * Interpolate between three values using quadratic formula
+ * @param y2 - Middle value
+ * @param y1 - Previous value
+ * @param y3 - Next value
+ * @param n - Interpolation factor (-1 to 1)
+ * @returns Interpolated value
+ */
 export const interpolate = (y2: number, y1: number, y3: number, n: number) => {
     const a = y2 - y1;
     const b = y3 - y2;
@@ -252,6 +446,14 @@ export const interpolate = (y2: number, y1: number, y3: number, n: number) => {
     return y2 + (n / 2) * (a + b + n * c);
 };
 
+/**
+ * Interpolate between three angle values handling wraparound
+ * @param y2 - Middle angle value in degrees
+ * @param y1 - Previous angle value in degrees
+ * @param y3 - Next angle value in degrees
+ * @param n - Interpolation factor (-1 to 1)
+ * @returns Interpolated angle in degrees
+ */
 export const interpolateAngles = (y2: number, y1: number, y3: number, n: number) => {
     const a = unwindAngle(y2 - y1);
     const b = unwindAngle(y3 - y2);
@@ -259,6 +461,13 @@ export const interpolateAngles = (y2: number, y1: number, y3: number, n: number)
     return y2 + (n / 2) * (a + b + n * c);
 };
 
+/**
+ * Calculate approximate solar transit time (uncorrected)
+ * @param longitude - Observer's longitude in degrees
+ * @param siderealTimeValue - Mean sidereal time in degrees
+ * @param rightAscension - Solar right ascension in degrees
+ * @returns Transit time as fraction of day (0-1)
+ */
 export const approximateTransit = (longitude: number, siderealTimeValue: number, rightAscension: number) => {
     const L = longitude;
     const Theta0 = siderealTimeValue;
@@ -267,6 +476,17 @@ export const approximateTransit = (longitude: number, siderealTimeValue: number,
     return normalizeToScale((a2 + Lw - Theta0) / 360, 1);
 };
 
+/**
+ * Calculate corrected solar transit time
+ * Applies interpolation correction to approximate transit
+ * @param approximateTransitValue - Approximate transit (fraction of day)
+ * @param longitude - Observer's longitude in degrees
+ * @param siderealTimeValue - Mean sidereal time in degrees
+ * @param rightAscension - Current solar right ascension in degrees
+ * @param previousRightAscension - Previous day's right ascension
+ * @param nextRightAscension - Next day's right ascension
+ * @returns Corrected transit time in hours (0-24)
+ */
 export const correctedTransit = (
     approximateTransitValue: number,
     longitude: number,
@@ -289,6 +509,22 @@ export const correctedTransit = (
     return (m0 + dm) * 24;
 };
 
+/**
+ * Calculate corrected hour angle for sunrise/sunset or any solar altitude
+ * Applies iterative correction to account for atmospheric refraction and parallax
+ * @param approximateTransitValue - Approximate transit (fraction of day)
+ * @param angle - Target solar altitude in degrees (negative for twilight)
+ * @param coordinates - Observer's geographic coordinates
+ * @param afterTransit - True for afternoon events (sunset), false for morning (sunrise)
+ * @param siderealTimeValue - Mean sidereal time in degrees
+ * @param rightAscension - Current solar right ascension in degrees
+ * @param previousRightAscension - Previous day's right ascension
+ * @param nextRightAscension - Next day's right ascension
+ * @param declination - Current solar declination in degrees
+ * @param previousDeclination - Previous day's declination
+ * @param nextDeclination - Next day's declination
+ * @returns Event time in hours (0-24)
+ */
 export const correctedHourAngle = (
     approximateTransitValue: number,
     angle: number,
@@ -334,11 +570,23 @@ export const correctedHourAngle = (
     return (m + dm) * 24;
 };
 
+/**
+ * Convert fractional day to Date object
+ * @param dayPortion - Fraction of day (0-1)
+ * @param date - Reference date
+ * @returns Date object with time set
+ */
 export const fractionalDayToDate = (dayPortion: number, date: Date) => {
     const hours = dayPortion * 24;
     return hoursToDate(hours, date);
 };
 
+/**
+ * Convert hours (0-24) to Date object
+ * @param hours - Hours since midnight (can be fractional)
+ * @param date - Reference date
+ * @returns Date object in UTC
+ */
 export const hoursToDate = (hours: number, date: Date) => {
     const hour = Math.floor(hours);
     const minute = Math.floor((hours - hour) * 60);
@@ -346,6 +594,12 @@ export const hoursToDate = (hours: number, date: Date) => {
     return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, second));
 };
 
+/**
+ * Get short timezone abbreviation (e.g., "EST", "PDT")
+ * @param date - Date to format
+ * @param timeZone - IANA timezone identifier
+ * @returns Short timezone string or original identifier on error
+ */
 export const shortTimeZone = (date: Date, timeZone: string) => {
     try {
         return new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' })
