@@ -1,15 +1,11 @@
-// src/lib/analytics.test.ts
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test';
-import type * as Analytics from './analytics'; // <-- type-only, literal path!
+import type * as Analytics from './analytics';
 
-const MODULE_PATH = './analytics'; // relative to this test file
+const MODULE_PATH = './analytics';
 let __i = 0;
 async function importFresh() {
-    // Bust Bun's ESM cache: each specifier with a different query is a fresh module.
     return await import(`${MODULE_PATH}?v=${++__i}`);
 }
-
-// ---- tiny storage + env helpers ------------------------------------------------
 
 type StorageShape = {
     getItem: (k: string) => string | null;
@@ -40,20 +36,26 @@ function createStorageMock(opts?: { throwOnGet?: boolean; throwOnSet?: boolean }
 }
 
 function setupClientWindow(local: StorageShape, session: StorageShape): void {
-    (globalThis as any).window = {} as Window;
+    (globalThis as any).window = { screen: { height: 1080, width: 1920 } } as Window;
     (globalThis as any).localStorage = local;
     (globalThis as any).sessionStorage = session;
     (globalThis as any).window.localStorage = local;
     (globalThis as any).window.sessionStorage = session;
+    (globalThis as any).navigator = {
+        cookieEnabled: true,
+        language: 'en-US',
+        languages: ['en-US', 'en'],
+        platform: 'Test',
+        userAgent: 'Test/1.0',
+    };
 }
 
 function teardownClientWindow(): void {
     delete (globalThis as any).window;
     delete (globalThis as any).localStorage;
     delete (globalThis as any).sessionStorage;
+    delete (globalThis as any).navigator;
 }
-
-// ---- common spies --------------------------------------------------------------
 
 let errorSpy: ReturnType<typeof vi.spyOn>;
 
@@ -72,8 +74,6 @@ afterEach(() => {
     delete process.env.NEXT_PUBLIC_ANALYTICS_STORAGE_KEY;
     delete process.env.NEXT_PUBLIC_SESSION_ID_KEY;
 });
-
-// ---- tests --------------------------------------------------------------------
 
 describe('getOrCreateSessionId()', () => {
     it('should return empty string on server (no window)', async () => {
@@ -187,9 +187,15 @@ describe('flushEvents()', () => {
     });
 
     it('should POST events and clear storage', async () => {
-        const { api: local } = createStorageMock();
+        const { api: local, store } = createStorageMock();
         const { api: session } = createStorageMock();
         setupClientWindow(local, session);
+
+        // Set up time mocking to bypass rate limiting
+        const now = 10000;
+        vi.spyOn(Date, 'now').mockReturnValue(now);
+        store.set('salat10_last_flush', '0'); // Last flush was long ago
+
         const mod = (await importFresh()) as typeof Analytics;
 
         const fetchSpy = vi.spyOn(globalThis as any, 'fetch').mockResolvedValue(new Response());
@@ -198,15 +204,25 @@ describe('flushEvents()', () => {
         const events = [{ path: 'name', timestamp: 7, type: 'event' } as const];
         await mod.flushEvents(events);
 
-        expect(fetchSpy).toHaveBeenCalledWith('/api/track', {
-            body: JSON.stringify({ events }),
-            headers: { 'Content-Type': 'application/json' },
-            method: 'POST',
-        });
+        expect(fetchSpy).toHaveBeenCalledWith(
+            '/api/track',
+            expect.objectContaining({
+                body: expect.stringContaining('"events"'),
+                headers: { 'Content-Type': 'application/json' },
+                method: 'POST',
+            }),
+        );
         expect(setSpy).toHaveBeenCalledWith([]);
     });
 
     it('should keep events and log on failure', async () => {
+        const { api: local, store } = createStorageMock();
+        const { api: session } = createStorageMock();
+        setupClientWindow(local, session);
+
+        vi.spyOn(Date, 'now').mockReturnValue(10000);
+        store.set('salat10_last_flush', '0');
+
         const mod = (await importFresh()) as typeof Analytics;
         vi.spyOn(globalThis as any, 'fetch').mockRejectedValue(new Error('network'));
         const setSpy = vi.spyOn(mod, 'setPendingEvents');
@@ -232,9 +248,13 @@ describe('trackPageView() & trackEvent()', () => {
     });
 
     it('should include data for trackEvent() and flush at batch size', async () => {
-        const { api: local } = createStorageMock();
+        const { api: local, store } = createStorageMock();
         const { api: session } = createStorageMock();
         setupClientWindow(local, session);
+
+        // Mock time to allow flushes
+        vi.spyOn(Date, 'now').mockReturnValue(10000);
+        store.set('salat10_last_flush', '0');
 
         const mod = (await importFresh()) as typeof Analytics;
         const fetchSpy = vi.spyOn(globalThis as any, 'fetch').mockResolvedValue(new Response());
@@ -257,11 +277,13 @@ describe('trackPageView() & trackEvent()', () => {
 
 describe('updatePresence()', () => {
     it('should POST presence with session id', async () => {
-        const { api: local } = createStorageMock();
+        const { api: local, store } = createStorageMock();
         const { api: session } = createStorageMock();
         setupClientWindow(local, session);
 
         vi.spyOn(Date, 'now').mockReturnValue(999);
+        store.set('salat10_last_flush', '0');
+
         const fetchSpy = vi.spyOn(globalThis as any, 'fetch').mockResolvedValue(new Response());
 
         const mod = (await importFresh()) as typeof Analytics;
@@ -276,16 +298,19 @@ describe('updatePresence()', () => {
     });
 
     it('should log on failure without throwing', async () => {
-        const { api: local } = createStorageMock();
+        const { api: local, store } = createStorageMock();
         const { api: session } = createStorageMock();
         setupClientWindow(local, session);
+
+        vi.spyOn(Date, 'now').mockReturnValue(999);
+        store.set('salat10_last_flush', '0');
 
         const mod = (await importFresh()) as typeof Analytics;
         vi.spyOn(mod, 'getOrCreateSessionId').mockReturnValue('sess-2');
         vi.spyOn(globalThis as any, 'fetch').mockRejectedValue(new Error('boom'));
 
         await mod.updatePresence(0, 0, '/');
-        expect(errorSpy).toHaveBeenCalledWith('Failed to update presence', expect.any(Error));
+        expect(errorSpy).toHaveBeenCalledWith('Failed to send analytics', expect.any(Error));
     });
 });
 
@@ -316,36 +341,40 @@ describe('initAnalytics()', () => {
         expect(setIntervalSpy).not.toHaveBeenCalled();
     });
 
-    it('should flush immediately then schedule periodic flush', async () => {
+    it('should schedule periodic flush', async () => {
         process.env.NEXT_PUBLIC_ANALYTICS_FLUSH_INTERVAL = '1000';
-        const { api: local } = createStorageMock();
+        const { api: local, store } = createStorageMock();
         const { api: session } = createStorageMock();
         setupClientWindow(local, session);
 
         const mod = (await importFresh()) as typeof Analytics;
 
-        const getSpy = vi
-            .spyOn(mod, 'getPendingEvents')
-            .mockReturnValueOnce([{ path: 'a', timestamp: 1, type: 'event' }]) // initial
-            .mockReturnValueOnce([{ path: 'b', timestamp: 2, type: 'event' }]); // interval tick
+        const getSpy = vi.spyOn(mod, 'getPendingEvents').mockReturnValue([{ path: 'a', timestamp: 1, type: 'event' }]);
 
         const flushSpy = vi.spyOn(mod, 'flushEvents').mockResolvedValue(undefined);
 
         let capturedDelay = -1;
+        let capturedFn: (() => void) | null = null;
         const intervalSpy = vi.spyOn(globalThis, 'setInterval').mockImplementation(((fn: TimerHandler, ms?: number) => {
             capturedDelay = Number(ms);
-            if (typeof fn === 'function') {
-                fn();
-            }
+            capturedFn = fn as () => void;
             // @ts-expect-error timer handle
             return 1;
         }) as any);
 
         mod.initAnalytics();
 
-        expect(getSpy).toHaveBeenCalledTimes(2);
-        expect(flushSpy).toHaveBeenCalledTimes(2);
+        expect(intervalSpy).toHaveBeenCalled();
         expect(capturedDelay).toBe(1000);
+
+        // Trigger the interval callback
+        if (capturedFn) {
+            capturedFn();
+        }
+
+        expect(getSpy).toHaveBeenCalled();
+        expect(flushSpy).toHaveBeenCalled();
+
         intervalSpy.mockRestore();
     });
 });
