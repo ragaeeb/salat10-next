@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { validateOrigin } from '@/lib/security';
 
 /**
  * Geocode API response from geocode.maps.co
@@ -55,6 +56,13 @@ function extractLocationDetails(result: GeocodeResult) {
  * - 500: Server error or API error
  */
 export async function GET(request: NextRequest) {
+    const origin = request.headers.get('origin');
+    const referer = request.headers.get('referer');
+
+    if (!validateOrigin(origin, referer)) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const address = searchParams.get('address');
 
@@ -82,7 +90,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Use first result
-        const result = data[0];
+        const result = data[0]!;
         const latitude = Number.parseFloat(result.lat);
         const longitude = Number.parseFloat(result.lon);
 

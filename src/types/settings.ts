@@ -41,4 +41,7 @@ export type Settings = {
 
     /** Country name (optional, from geocoding) */
     country?: string;
+
+    /** Persistent unique user identifier */
+    userId: string;
 };

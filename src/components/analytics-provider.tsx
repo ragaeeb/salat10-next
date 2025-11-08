@@ -7,12 +7,7 @@ import { useHasValidCoordinates, useNumericSettings, useSettings } from '@/store
 
 /**
  * Client-side analytics and presence tracking provider
- * Wraps the app to track page views and user presence with location data
- *
- * Features:
- * - Automatic page view tracking on route changes
- * - Real-time presence updates with coordinates and location metadata
- * - Batched event flushing on page unload
+ * Combines page views with presence updates to minimize API calls
  */
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -20,18 +15,18 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     const { latitude, longitude } = useNumericSettings();
     const settings = useSettings();
 
-    // Initialize analytics on mount - flushes old events
+    // Initialize analytics on mount (no flush, just sets up interval)
     useEffect(() => {
         initAnalytics();
     }, []);
 
-    // Track page views
+    // Track page view (queued, not sent immediately)
     useEffect(() => {
         trackPageView(pathname);
     }, [pathname]);
 
-    // Update presence once on mount (if coordinates available)
-    // Includes city, state, country metadata for online map labels
+    // Update presence - this will flush pending events + send presence
+    // Only done once per route change, combines with queued events
     useEffect(() => {
         if (hasValidCoordinates) {
             updatePresence(latitude, longitude, pathname, settings.city, settings.state, settings.country);

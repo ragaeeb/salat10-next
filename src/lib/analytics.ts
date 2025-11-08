@@ -1,21 +1,18 @@
 'use client';
 
+import { getDeviceMetadata, getOrCreateUserId } from './fingerprint';
+
 const STORAGE_KEY = process.env.NEXT_PUBLIC_ANALYTICS_STORAGE_KEY ?? 'salat10_analytics';
 const BATCH_SIZE = Number.parseInt(process.env.NEXT_PUBLIC_ANALYTICS_BATCH_SIZE ?? '10', 10);
 const SESSION_ID_KEY = process.env.NEXT_PUBLIC_SESSION_ID_KEY ?? 'salat10_session_id';
-const FLUSH_INTERVAL = Number.parseInt(process.env.NEXT_PUBLIC_ANALYTICS_FLUSH_INTERVAL ?? '3600000', 10); // 1 hour
+const FLUSH_INTERVAL = Number.parseInt(process.env.NEXT_PUBLIC_ANALYTICS_FLUSH_INTERVAL ?? '3600000', 10);
+const LAST_FLUSH_KEY = 'salat10_last_flush';
+const MIN_FLUSH_DELAY = 5000; // Don't flush more than once per 5 seconds
 
-/**
- * Analytics event structure for tracking page views and custom events
- */
 type AnalyticsEvent = { type: 'pageview' | 'event'; path: string; timestamp: number; data?: Record<string, unknown> };
 
-/**
- * Generate a unique session ID for presence tracking
- * Uses sessionStorage for per-tab isolation
- *
- * @returns Unique session identifier
- */
+type PresenceData = { lat: number; lon: number; page: string; city?: string; state?: string; country?: string };
+
 export function getOrCreateSessionId(): string {
     if (typeof window === 'undefined') {
         return '';
@@ -35,10 +32,31 @@ export function getOrCreateSessionId(): string {
     }
 }
 
-/**
- * Get pending analytics events from localStorage
- * @returns Array of pending events
- */
+function getLastFlushTime(): number {
+    if (typeof window === 'undefined') {
+        return 0;
+    }
+
+    try {
+        const stored = localStorage.getItem(LAST_FLUSH_KEY);
+        return stored ? Number.parseInt(stored, 10) : 0;
+    } catch {
+        return 0;
+    }
+}
+
+function setLastFlushTime(timestamp: number): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    try {
+        localStorage.setItem(LAST_FLUSH_KEY, timestamp.toString());
+    } catch {
+        // Ignore errors
+    }
+}
+
 export function getPendingEvents(): AnalyticsEvent[] {
     if (typeof window === 'undefined') {
         return [];
@@ -52,10 +70,6 @@ export function getPendingEvents(): AnalyticsEvent[] {
     }
 }
 
-/**
- * Save pending analytics events to localStorage
- * @param events - Events to persist
- */
 export function setPendingEvents(events: AnalyticsEvent[]): void {
     if (typeof window === 'undefined') {
         return;
@@ -68,59 +82,63 @@ export function setPendingEvents(events: AnalyticsEvent[]): void {
     }
 }
 
-/**
- * Send batched events to server and clear storage on success
- * @param events - Events to flush
- */
-export async function flushEvents(events: AnalyticsEvent[]): Promise<void> {
-    if (events.length === 0) {
+export async function flushEvents(events: AnalyticsEvent[], presence?: PresenceData): Promise<void> {
+    if (events.length === 0 && !presence) {
         return;
     }
 
+    // Rate limiting: don't flush too frequently
+    const now = Date.now();
+    const lastFlush = getLastFlushTime();
+    if (now - lastFlush < MIN_FLUSH_DELAY && events.length < BATCH_SIZE) {
+        return; // Wait for batch size or longer delay
+    }
+
     try {
+        const userId = getOrCreateUserId();
+        const sessionId = getOrCreateSessionId();
+        const metadata = getDeviceMetadata();
+
+        const payload: Record<string, unknown> = { metadata, userId };
+
+        if (events.length > 0) {
+            payload.events = events;
+        }
+
+        if (presence) {
+            payload.presence = { ...presence, lastSeen: now, sessionId };
+        }
+
         await fetch('/api/track', {
-            body: JSON.stringify({ events }),
+            body: JSON.stringify(payload),
             headers: { 'Content-Type': 'application/json' },
             method: 'POST',
         });
 
-        // Clear ALL events from storage after successful flush
-        setPendingEvents([]);
+        if (events.length > 0) {
+            setPendingEvents([]);
+        }
+        setLastFlushTime(now);
     } catch (error) {
         console.error('Failed to send analytics', error);
-        // Keep events in storage on failure for retry
     }
 }
 
-/**
- * Add event to queue and optionally flush when batch size is reached
- * @param event - Event to queue
- */
 async function queueEvent(event: AnalyticsEvent): Promise<void> {
     const pending = getPendingEvents();
     pending.push(event);
     setPendingEvents(pending);
 
-    // Only flush if we've reached batch size
     if (pending.length >= BATCH_SIZE) {
         await flushEvents(pending);
     }
 }
 
-/**
- * Track a pageview (batched)
- * @param path - Route path
- */
 export async function trackPageView(path: string): Promise<void> {
     const event: AnalyticsEvent = { path, timestamp: Date.now(), type: 'pageview' };
     await queueEvent(event);
 }
 
-/**
- * Track custom event (batched)
- * @param name - Event name
- * @param data - Optional event data
- */
 export async function trackEvent(name: string, data?: Record<string, unknown>): Promise<void> {
     const event: AnalyticsEvent = {
         path: name,
@@ -131,17 +149,6 @@ export async function trackEvent(name: string, data?: Record<string, unknown>): 
     await queueEvent(event);
 }
 
-/**
- * Update user presence with location (real-time, not batched)
- * Includes optional city, state, country for map labels
- *
- * @param lat - Latitude coordinate
- * @param lon - Longitude coordinate
- * @param page - Current page path
- * @param city - Optional city name
- * @param state - Optional state/region name
- * @param country - Optional country name
- */
 export async function updatePresence(
     lat: number,
     lon: number,
@@ -150,33 +157,20 @@ export async function updatePresence(
     state?: string,
     country?: string,
 ): Promise<void> {
-    const sessionId = getOrCreateSessionId();
+    const presence: PresenceData = {
+        lat,
+        lon,
+        page,
+        ...(city && { city }),
+        ...(state && { state }),
+        ...(country && { country }),
+    };
 
-    try {
-        await fetch('/api/track', {
-            body: JSON.stringify({
-                presence: {
-                    lastSeen: Date.now(),
-                    lat,
-                    lon,
-                    page,
-                    sessionId,
-                    ...(city && { city }),
-                    ...(state && { state }),
-                    ...(country && { country }),
-                },
-            }),
-            headers: { 'Content-Type': 'application/json' },
-            method: 'POST',
-        });
-    } catch (error) {
-        console.error('Failed to update presence', error);
-    }
+    // Combine with any pending events
+    const pending = getPendingEvents();
+    await flushEvents(pending, presence);
 }
 
-/**
- * Force flush all pending events (e.g., on page unload or init)
- */
 export async function flushPendingEvents(): Promise<void> {
     const pending = getPendingEvents();
     if (pending.length > 0) {
@@ -184,20 +178,13 @@ export async function flushPendingEvents(): Promise<void> {
     }
 }
 
-/**
- * Initialize analytics - flush old events on app load and set up periodic flush
- * Call this once on app mount
- */
 export function initAnalytics(): void {
     if (typeof window === 'undefined') {
         return;
     }
 
-    // Flush any pending events from previous sessions
-    const pending = getPendingEvents();
-    if (pending.length > 0) {
-        flushEvents(pending).catch(console.error);
-    }
+    // Don't flush on init - let the first updatePresence handle it
+    // This avoids the double-call issue
 
     // Set up periodic flush
     setInterval(() => {

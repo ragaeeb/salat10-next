@@ -5,11 +5,10 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import WorldMap from '@/components/aceternity/world-map';
 import { Button } from '@/components/ui/button';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
-/**
- * Online user data with optional location labels
- */
 type OnlineUser = {
+    userId: string;
     lat: number;
     lon: number;
     page: string;
@@ -19,10 +18,6 @@ type OnlineUser = {
     country?: string;
 };
 
-/**
- * Get display label for user based on available location data
- * Priority: City > State > Country
- */
 function getUserLabel(user: OnlineUser): string | undefined {
     if (user.city) {
         return user.city;
@@ -36,9 +31,6 @@ function getUserLabel(user: OnlineUser): string | undefined {
     return undefined;
 }
 
-/**
- * Format time window display text
- */
 function formatTimeWindow(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     return minutes === 1 ? '1 min' : `${minutes} mins`;
@@ -47,7 +39,7 @@ function formatTimeWindow(seconds: number): string {
 export function OnlineClient() {
     const [users, setUsers] = useState<OnlineUser[]>([]);
     const [loading, setLoading] = useState(true);
-    const [ttl, setTtl] = useState<number>(300); // Default 5 minutes
+    const [ttl, setTtl] = useState<number>(300);
 
     useEffect(() => {
         const fetchOnlineUsers = async () => {
@@ -70,56 +62,65 @@ export function OnlineClient() {
         fetchOnlineUsers();
     }, []);
 
-    // Create dots for world map - one for each user
-    const dots = users.map((user) => ({
-        end: { lat: user.lat, lng: user.lon }, // Same point = just a dot
-        label: getUserLabel(user),
-        start: { lat: user.lat, lng: user.lon },
-    }));
+    // Create dots using userId as key to avoid duplicates
+    const dots: Array<{
+        start: { lat: number; lng: number; label?: string };
+        end: { lat: number; lng: number; label?: string };
+        label?: string;
+    }> = users.map((user) => {
+        const label = getUserLabel(user);
+        return {
+            end: { lat: user.lat, lng: user.lon },
+            start: { lat: user.lat, lng: user.lon },
+            ...(label && { label }),
+        };
+    });
 
     const timeWindow = formatTimeWindow(ttl);
     const userCount = users.length;
     const userText = userCount === 1 ? 'user' : 'users';
 
     return (
-        <div className="min-h-screen bg-background p-6">
-            <div className="mx-auto max-w-6xl space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="font-bold text-3xl">Users Online Now</h1>
-                        <p className="text-muted-foreground">
-                            {loading ? 'Loading...' : `${userCount} ${userText} online in the last ${timeWindow}`}
+        <TooltipProvider>
+            <div className="min-h-screen bg-background p-6">
+                <div className="mx-auto max-w-6xl space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="font-bold text-3xl">Users Online Now</h1>
+                            <p className="text-muted-foreground">
+                                {loading ? 'Loading...' : `${userCount} ${userText} online in the last ${timeWindow}`}
+                            </p>
+                        </div>
+                        <Button asChild size="sm" variant="outline">
+                            <Link href="/">
+                                <ChevronLeft className="mr-1 h-4 w-4" />
+                                Home
+                            </Link>
+                        </Button>
+                    </div>
+
+                    <div className="rounded-lg border border-border bg-card p-6">
+                        {loading ? (
+                            <div className="flex h-96 items-center justify-center">
+                                <p className="text-muted-foreground">Loading map...</p>
+                            </div>
+                        ) : users.length > 0 ? (
+                            <WorldMap dots={dots} />
+                        ) : (
+                            <div className="flex h-96 items-center justify-center">
+                                <p className="text-muted-foreground">No users online at the moment</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="rounded-lg border border-border bg-card p-4 text-muted-foreground text-sm">
+                        <p>
+                            Each dot represents an online user's location. Hover over dots to see location labels.
+                            Presence data expires after {timeWindow} of inactivity.
                         </p>
                     </div>
-                    <Button asChild size="sm" variant="outline">
-                        <Link href="/">
-                            <ChevronLeft className="mr-1 h-4 w-4" />
-                            Home
-                        </Link>
-                    </Button>
-                </div>
-
-                <div className="rounded-lg border border-border bg-card p-6">
-                    {loading ? (
-                        <div className="flex h-96 items-center justify-center">
-                            <p className="text-muted-foreground">Loading map...</p>
-                        </div>
-                    ) : users.length > 0 ? (
-                        <WorldMap dots={dots} />
-                    ) : (
-                        <div className="flex h-96 items-center justify-center">
-                            <p className="text-muted-foreground">No users online at the moment</p>
-                        </div>
-                    )}
-                </div>
-
-                <div className="rounded-lg border border-border bg-card p-4 text-muted-foreground text-sm">
-                    <p>
-                        Each dot represents an online user's location. Labels show the city, state, or country when
-                        available. Presence data expires after {timeWindow} of inactivity.
-                    </p>
                 </div>
             </div>
-        </div>
+        </TooltipProvider>
     );
 }

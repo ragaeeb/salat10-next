@@ -22,6 +22,7 @@ export const defaultSettings = {
     longitude: '',
     method: 'Other',
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC',
+    userId: '', // Will be initialized in store
 } as const;
 
 /* ================================
