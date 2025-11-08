@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/ragaeeb/salat10-next/compare/v1.5.1...v1.6.0) (2025-11-08)
+
+
+### Features
+
+* **presence:** Add user presence, menu updates, JSDocs and tests ([#11](https://github.com/ragaeeb/salat10-next/issues/11)) ([9276715](https://github.com/ragaeeb/salat10-next/commit/927671591e9e4f17a43e59687c62f773b500293d))
+
 ## [1.5.1](https://github.com/ragaeeb/salat10-next/compare/v1.5.0...v1.5.1) (2025-11-07)
 
 

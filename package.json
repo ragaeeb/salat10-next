@@ -54,5 +54,5 @@
         "start": "next start",
         "test": "NODE_ENV=development bun test --coverage --coverage-reporter=lcov"
     },
-    "version": "1.5.1"
+    "version": "1.6.0"
 }
