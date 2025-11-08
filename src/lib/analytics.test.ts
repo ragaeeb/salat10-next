@@ -127,7 +127,7 @@ describe('getPendingEvents()', () => {
     });
 
     it('should parse stored events', async () => {
-        const { api: local, store } = createStorageMock();
+        const { api: local } = createStorageMock();
         const { api: session } = createStorageMock();
         local.setItem('salat10_analytics', JSON.stringify([{ path: 'x', timestamp: 1, type: 'event' }]));
         setupClientWindow(local, session);
@@ -281,8 +281,10 @@ describe('updatePresence()', () => {
         const { api: session } = createStorageMock();
         setupClientWindow(local, session);
 
-        vi.spyOn(Date, 'now').mockReturnValue(999);
-        store.set('salat10_last_flush', '0');
+        // Set time far enough in the future to bypass rate limiting
+        const now = 100000;
+        vi.spyOn(Date, 'now').mockReturnValue(now);
+        store.set('salat10_last_flush', '0'); // Last flush was long ago
 
         const fetchSpy = vi.spyOn(globalThis as any, 'fetch').mockResolvedValue(new Response());
 
@@ -291,10 +293,11 @@ describe('updatePresence()', () => {
 
         await mod.updatePresence(1.23, 4.56, '/page');
 
+        expect(fetchSpy).toHaveBeenCalled();
         const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
         const body = JSON.parse((init!.body as string) || '{}');
         expect(body.presence).toMatchObject({ lat: 1.23, lon: 4.56, page: '/page', sessionId: 'sess-1' });
-        expect(body.presence.lastSeen).toBe(999);
+        expect(body.presence.lastSeen).toBe(now);
     });
 
     it('should log on failure without throwing', async () => {
@@ -302,7 +305,9 @@ describe('updatePresence()', () => {
         const { api: session } = createStorageMock();
         setupClientWindow(local, session);
 
-        vi.spyOn(Date, 'now').mockReturnValue(999);
+        // Set time to bypass rate limiting
+        const now = 100000;
+        vi.spyOn(Date, 'now').mockReturnValue(now);
         store.set('salat10_last_flush', '0');
 
         const mod = (await importFresh()) as typeof Analytics;
@@ -358,7 +363,6 @@ describe('initAnalytics()', () => {
         const intervalSpy = vi.spyOn(globalThis, 'setInterval').mockImplementation(((fn: TimerHandler, ms?: number) => {
             capturedDelay = Number(ms);
             capturedFn = fn as () => void;
-            // @ts-expect-error timer handle
             return 1;
         }) as any);
 
@@ -369,7 +373,7 @@ describe('initAnalytics()', () => {
 
         // Trigger the interval callback
         if (capturedFn) {
-            capturedFn();
+            (capturedFn as any)();
         }
 
         expect(getSpy).toHaveBeenCalled();

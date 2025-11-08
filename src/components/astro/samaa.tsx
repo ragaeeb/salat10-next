@@ -18,6 +18,43 @@ type SamaaProps = {
     currentDayIndex: number;
 };
 
+/**
+ * Samaa (Sky) composition component
+ *
+ * Main orchestrator for the animated sky system. Composes all sky layers including:
+ * - Base sky background with dynamic color
+ * - Fajr and sunset gradient overlays
+ * - Stars with optional shooting stars (comets)
+ * - Light rays during sunrise
+ * - Radial gradient enhancement
+ * - Crossfade layers for seamless day transitions
+ *
+ * Manages mobile optimization (reduced star density, longer comet delays) and
+ * controls comet visibility (only during Last Third of night).
+ *
+ * @param {SamaaProps} props - Component props
+ * @param {MotionValue<number>} props.scrollProgress - Normalized scroll progress (0-1) within day
+ * @param {Timeline | null} props.timeline - Current day's prayer timeline
+ * @param {number} props.pNow - Plain number version of scrollProgress for conditional logic
+ * @param {number} props.totalDays - Total number of days in buffer
+ * @param {number} props.currentDayIndex - Index of currently visible day
+ *
+ * @example
+ * ```tsx
+ * const { scrollProgress, pNow } = useScrollProgress(scrollY);
+ * const timeline = useTimeline(currentDay);
+ *
+ * return (
+ *   <Samaa
+ *     scrollProgress={scrollProgress}
+ *     timeline={timeline}
+ *     pNow={pNow}
+ *     totalDays={days.length}
+ *     currentDayIndex={currentDayIndex}
+ *   />
+ * );
+ * ```
+ */
 export const Samaa = ({ scrollProgress, timeline, pNow, totalDays, currentDayIndex }: SamaaProps) => {
     const [mounted, setMounted] = useState(false);
     const [isMobile, setIsMobile] = useState(false);

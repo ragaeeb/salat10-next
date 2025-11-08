@@ -4,6 +4,36 @@ import { FRAC, POS } from '@/lib/constants';
 import { invLerp, lerp } from '@/lib/utils';
 import type { Timeline } from '@/types/timeline';
 
+/**
+ * Hook to calculate moon position and opacity for timeline animation
+ *
+ * Manages moon motion from west to east (right to left) starting shortly before
+ * Maghrib. Uses spring physics for smooth, natural transitions. Moon appears
+ * progressively brighter as night deepens.
+ *
+ * Motion is linear (no arc) to differentiate from sun's daytime arc.
+ *
+ * @param {MotionValue<number>} scrollProgress - Normalized scroll progress (0-1) within current day
+ * @param {Timeline | null} timeline - Prayer time timeline for the current day, or null if not loaded
+ * @returns Moon animation values
+ * @property {MotionValue<number>} moonX - Horizontal position (spring-smoothed)
+ * @property {MotionValue<number>} moonY - Vertical position (constant, spring-smoothed for consistency)
+ * @property {MotionValue<number>} moonOpacity - Opacity value (0-1, spring-smoothed)
+ *
+ * @example
+ * ```tsx
+ * const { scrollProgress } = useScrollProgress(scrollY);
+ * const timeline = useTimeline(currentDay);
+ * const { moonX, moonY, moonOpacity } = useMoon(scrollProgress, timeline);
+ *
+ * return (
+ *   <motion.div
+ *     style={{ x: moonX, y: moonY, opacity: moonOpacity }}
+ *     className="moon"
+ *   />
+ * );
+ * ```
+ */
 export function useMoon(scrollProgress: MotionValue<number>, timeline: Timeline | null) {
     // Moon motion: LEFT <- RIGHT in a straight line
     const moonXRaw = useTransform(scrollProgress, (p) => {

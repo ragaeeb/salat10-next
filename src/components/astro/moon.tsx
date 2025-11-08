@@ -36,6 +36,49 @@ type MoonProps = {
     perspective?: number;
 };
 
+/**
+ * Animated moon component with phase control and 3D rotation
+ *
+ * Renders a realistic moon with:
+ * - Crater details and surface texture
+ * - Dynamic phase (full moon to crescent)
+ * - Color control (defaults to white)
+ * - Glow and halo effects
+ * - Optional 3D rotation for globe-like spin
+ * - Hardware-accelerated rendering with mix-blend-mode: screen
+ *
+ * Position and opacity are controlled via MotionValues for smooth timeline animation.
+ * Phase is animated by overlaying a second circle that masks the moon body.
+ *
+ * @param {MoonProps} props - Component props
+ * @param {number | MotionValue<number>} props.x - Horizontal position (percentage, 0-100)
+ * @param {number | MotionValue<number>} props.y - Vertical position (percentage, 0-100)
+ * @param {number | MotionValue<number>} props.opacity - Opacity (0-1)
+ * @param {MoonColor} [props.color] - RGB color channels, defaults to white (255, 255, 255)
+ * @param {number | MotionValue<number>} [props.phase=1] - Moon phase (1=full, 0.25=crescent)
+ * @param {number} [props.size=80] - Size in pixels (width and height)
+ * @param {number} [props.width] - Width override
+ * @param {number} [props.height] - Height override
+ * @param {string} [props.className] - Additional CSS classes
+ * @param {number | MotionValue<number>} [props.rotateX=0] - 3D rotation around X axis (degrees)
+ * @param {number | MotionValue<number>} [props.rotateY=0] - 3D rotation around Y axis (degrees)
+ * @param {number | MotionValue<number>} [props.rotateZ=0] - 3D rotation around Z axis (degrees)
+ * @param {number} [props.perspective=700] - 3D perspective distance
+ *
+ * @example
+ * ```tsx
+ * const { moonX, moonY, moonOpacity } = useMoon(scrollProgress, timeline);
+ * return (
+ *   <Moon
+ *     x={moonX}
+ *     y={moonY}
+ *     opacity={moonOpacity}
+ *     phase={0.75}
+ *     rotateY={moonX} // spin as it travels
+ *   />
+ * );
+ * ```
+ */
 export const Moon = memo<MoonProps>(function Moon({
     x,
     y,
@@ -151,6 +194,7 @@ export const Moon = memo<MoonProps>(function Moon({
                 style={{ color: fill, mixBlendMode: 'screen', willChange: 'transform, opacity' }}
                 focusable="false"
             >
+                <title>Moon</title>
                 <defs>
                     <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
                         <feGaussianBlur stdDeviation="8" result="blur" />

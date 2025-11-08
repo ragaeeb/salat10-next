@@ -6,6 +6,25 @@ import { memo } from 'react';
  * Fades to transparent so the base sky color (single source of truth) shows through at the top.
  */
 type FajrGradientProps = { opacity: number | MotionValue<number> };
+
+/**
+ * Fajr gradient overlay component
+ *
+ * Renders a warm horizon glow that appears during pre-dawn Fajr time.
+ * Gradient fades from warm orange/yellow at bottom to transparent at top,
+ * allowing the dark base sky color to show through naturally.
+ *
+ * Colors simulate the first light of dawn appearing on the eastern horizon.
+ *
+ * @param {FajrGradientProps} props - Component props
+ * @param {number | MotionValue<number>} props.opacity - Opacity control (0-1)
+ *
+ * @example
+ * ```tsx
+ * const { sunsetGradientOpacity } = useSky(scrollProgress, timeline);
+ * return <SunsetGradient opacity={sunsetGradientOpacity} />;
+ * ```
+ */
 export const FajrGradient = memo<FajrGradientProps>(({ opacity }) => (
     <motion.div
         className="pointer-events-none absolute inset-0 z-20"

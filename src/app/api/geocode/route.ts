@@ -43,6 +43,15 @@ function extractLocationDetails(result: GeocodeResult) {
 }
 
 /**
+ * Validate address format - reject suspicious patterns
+ */
+function isValidAddress(address: string): boolean {
+    // Reject HTML tags, script content, and other suspicious patterns
+    const invalidPatterns = [/<[^>]*>/, /<script/i, /javascript:/i, /on\w+=/i];
+    return !invalidPatterns.some((pattern) => pattern.test(address));
+}
+
+/**
  * GET /api/geocode
  * Convert address to coordinates using geocode.maps.co API
  *
@@ -68,6 +77,10 @@ export async function GET(request: NextRequest) {
 
     if (!address?.trim()) {
         return NextResponse.json({ error: 'Address parameter is required' }, { status: 400 });
+    }
+
+    if (!isValidAddress(address)) {
+        return NextResponse.json({ error: 'Invalid address format' }, { status: 400 });
     }
 
     try {
@@ -101,14 +114,22 @@ export async function GET(request: NextRequest) {
         // Extract location details
         const { city, state, country } = extractLocationDetails(result);
 
-        return NextResponse.json({
+        const responseData = {
             label: result.display_name,
             latitude,
             longitude,
             ...(city && { city }),
             ...(state && { state }),
             ...(country && { country }),
-        });
+        };
+
+        // Set CORS headers if origin is present
+        const headers: Record<string, string> = {};
+        if (origin) {
+            headers['Access-Control-Allow-Origin'] = origin;
+        }
+
+        return NextResponse.json(responseData, { headers });
     } catch (error) {
         console.error('Geocode error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

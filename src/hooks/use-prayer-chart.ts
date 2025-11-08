@@ -5,6 +5,36 @@ import { IS_DEV } from '@/lib/constants';
 
 import type { ChartSelectorOption, OptionsChangeHandler, Schedule } from '@/types/graph';
 
+/**
+ * Hook to render and manage interactive prayer time charts using uPlot
+ *
+ * Creates high-performance line charts showing prayer time trends over the year.
+ * Handles chart initialization, resizing, tooltips, and event selection.
+ * Supports both controlled and uncontrolled modes for event selection.
+ *
+ * @param {Schedule | null} schedule - Year schedule with prayer times for each day
+ * @param {string | null} selectedEvent - Currently selected prayer event (controlled mode), or null for uncontrolled
+ * @param {OptionsChangeHandler} [onOptionsChange] - Callback when available events change
+ * @param {(event: string) => void} [onSelectedEventChange] - Callback when selected event changes
+ * @returns Chart state and refs
+ * @property {React.RefObject<HTMLDivElement>} containerRef - Ref to attach to chart container div
+ * @property {string | null} activeEvent - Currently active/selected prayer event
+ * @property {object | null} chartConfig - Current chart configuration and data
+ * @property {object | null} prepared - Prepared chart data from schedule
+ *
+ * @example
+ * ```tsx
+ * const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+ * const { containerRef, activeEvent } = usePrayerChart(
+ *   schedule,
+ *   selectedEvent,
+ *   (options, defaultEvent) => console.log('Available:', options),
+ *   setSelectedEvent
+ * );
+ *
+ * return <div ref={containerRef} className="w-full h-96" />;
+ * ```
+ */
 export const usePrayerChart = (
     schedule: Schedule | null,
     selectedEvent: string | null,
