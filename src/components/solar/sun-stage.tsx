@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber';
-import { memo, useMemo } from 'react';
-import { Color, Object3D, Vector3 } from 'three';
+import { memo, useEffect, useMemo } from 'react';
+import { AdditiveBlending, CanvasTexture, Color, Object3D, SRGBColorSpace, SpriteMaterial, Vector3 } from 'three';
 import { degreesToRadians } from '@/lib/explanation/math';
 import type { SolarPosition } from '@/lib/solar-position';
 
@@ -52,7 +52,7 @@ const computeSceneParameters = (position: SolarPosition | null): SceneParameters
     const direction = new Vector3(
         Math.sin(azimuthRad) * horizontalMagnitude,
         Math.sin(altitudeRad),
-        -Math.cos(azimuthRad) * horizontalMagnitude,
+        Math.cos(azimuthRad) * horizontalMagnitude,
     ).normalize();
 
     const daylightFactor = (altitude + 18) / 108;
@@ -260,16 +260,91 @@ const SolarBody = ({ direction, color, isNight }: SolarBodyProps) => {
                 <meshBasicMaterial color={color} toneMapped={false} />
             </mesh>
             <mesh scale={[1, 1, 1]}>
-                <sphereGeometry args={[4.5, 32, 32]} />
+                <sphereGeometry args={[4.8, 32, 32]} />
                 <meshBasicMaterial
                     color={glowColor}
-                    opacity={isNight ? 0.4 : 0.65}
+                    opacity={isNight ? 0.4 : 0.7}
                     toneMapped={false}
                     transparent
                 />
             </mesh>
+            <SunBillboard color={color} isNight={isNight} />
         </group>
     );
+};
+
+type SunBillboardProps = {
+    color: string;
+    isNight: boolean;
+};
+
+const createSunTexture = () => {
+    if (typeof document === 'undefined') {
+        return null;
+    }
+    const canvas = document.createElement('canvas');
+    const size = 256;
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        return null;
+    }
+
+    const gradient = ctx.createRadialGradient(size / 2, size / 2, size * 0.1, size / 2, size / 2, size / 2);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    gradient.addColorStop(0.35, 'rgba(255, 244, 214, 0.96)');
+    gradient.addColorStop(0.65, 'rgba(255, 212, 128, 0.55)');
+    gradient.addColorStop(1, 'rgba(255, 180, 64, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+
+    const texture = new CanvasTexture(canvas);
+    texture.colorSpace = SRGBColorSpace;
+    texture.flipY = false;
+    texture.needsUpdate = true;
+    return texture;
+};
+
+const SunBillboard = ({ color, isNight }: SunBillboardProps) => {
+    const texture = useMemo(() => createSunTexture(), []);
+
+    useEffect(() => {
+        return () => {
+            texture?.dispose();
+        };
+    }, [texture]);
+
+    const material = useMemo(() => {
+        if (!texture) {
+            return null;
+        }
+        const spriteMaterial = new SpriteMaterial({
+            blending: AdditiveBlending,
+            depthWrite: false,
+            map: texture,
+            toneMapped: false,
+            transparent: true,
+        });
+        spriteMaterial.color.set(color);
+        spriteMaterial.opacity = isNight ? 0.55 : 0.9;
+        return spriteMaterial;
+    }, [color, isNight, texture]);
+
+    useEffect(() => {
+        return () => {
+            material?.dispose();
+        };
+    }, [material]);
+
+    if (!material) {
+        return null;
+    }
+
+    const scale = isNight ? 11 : 14;
+
+    return <sprite material={material} scale={[scale, scale, scale]} />;
 };
 
 /**
