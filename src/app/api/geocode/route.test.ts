@@ -100,13 +100,20 @@ describe('geocode route', () => {
                 Response.json([{ display_name: 'Toronto', lat: '43.6532', lon: '-79.3832' }]),
             ) as any;
 
-            const request = new NextRequest('http://localhost:3000/api/geocode?address=Toronto');
+            const originalEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = 'development';
 
-            const response = await GET(request);
-            expect(response.status).toBe(200);
+            try {
+                const request = new NextRequest('http://localhost:3000/api/geocode?address=Toronto');
 
-            const corsHeader = response.headers.get('Access-Control-Allow-Origin');
-            expect(corsHeader).toBeNull();
+                const response = await GET(request);
+                expect(response.status).toBe(200);
+
+                const corsHeader = response.headers.get('Access-Control-Allow-Origin');
+                expect(corsHeader).toBeNull();
+            } finally {
+                process.env.NODE_ENV = originalEnv;
+            }
         });
 
         it('should propagate geocode errors', async () => {

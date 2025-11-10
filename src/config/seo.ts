@@ -76,6 +76,14 @@ export const parallaxMetadata: Metadata = {
     title: 'Parallax View - Prayer Times Visualization',
 };
 
+// 3D solar view metadata
+export const solar3DMetadata: Metadata = {
+    alternates: { canonical: `${SITE_URL}/3d` },
+    description:
+        "Visualise the sun's altitude, azimuth, and Asr shadow lengths in an interactive 3D scene tailored to your location.",
+    title: '3D Solar Prayer View',
+};
+
 // Settings page metadata
 export const settingsMetadata: Metadata = {
     alternates: { canonical: `${SITE_URL}/settings` },

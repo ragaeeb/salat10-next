@@ -1,6 +1,6 @@
 'use client';
 
-import { IconCompass, IconSunMoon } from '@tabler/icons-react';
+import { IconCompass, IconCube, IconSunMoon } from '@tabler/icons-react';
 import { Settings2Icon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -58,6 +58,16 @@ export function PrayerTimesPageClient() {
                 >
                     <Link href="/v2">
                         <IconSunMoon />
+                    </Link>
+                </Button>
+                <Button
+                    asChild
+                    className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90"
+                    size="sm"
+                    variant="default"
+                >
+                    <Link href="/3d">
+                        <IconCube />
                     </Link>
                 </Button>
                 <Button
