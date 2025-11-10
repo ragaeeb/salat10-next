@@ -41,6 +41,13 @@ export function SolarSkyClient() {
 
     const { position, timestamp } = useSolarPosition({ latitude, longitude });
 
+    const coordinates = useMemo(() => {
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            return null;
+        }
+        return { latitude, longitude } as const;
+    }, [latitude, longitude]);
+
     const timetable = useMemo(() => {
         if (!hasValidCoordinates) {
             return null;
@@ -134,11 +141,14 @@ export function SolarSkyClient() {
                 </header>
 
                 <SunStage
+                    coordinates={coordinates}
                     isAsr={isAsr}
                     madhabLabel={madhabLabel}
                     position={position}
+                    prayerTimings={timetable?.timings ?? []}
                     shadowRatio={shadowRatio}
                     shadowThreshold={threshold}
+                    timeZone={timezone}
                 />
 
                 <SolarDetailsPanel

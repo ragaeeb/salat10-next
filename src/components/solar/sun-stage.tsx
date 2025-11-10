@@ -1,13 +1,19 @@
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
+import { addMinutes, startOfDay } from 'date-fns';
+import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import { memo, useEffect, useMemo } from 'react';
 import { AdditiveBlending, CanvasTexture, Color, Object3D, SRGBColorSpace, SpriteMaterial, Vector3 } from 'three';
+import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import type { FormattedTiming } from '@/lib/calculator';
 import { degreesToRadians } from '@/lib/explanation/math';
-import type { SolarPosition } from '@/lib/solar-position';
+import { getSolarPosition, type SolarPosition } from '@/lib/solar-position';
 
 const DEFAULT_DIRECTION = new Vector3(0.35, 0.75, 0.4).normalize();
 
+const SKY_RADIUS = 450_000;
 const SUN_DISTANCE = 60;
 const GNOMON_HEIGHT = 3.8;
+const SUN_PATH_RESOLUTION_MINUTES = 10;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -15,6 +21,22 @@ const wrapAzimuth = (azimuth: number) => {
     const normalized = ((azimuth % 360) + 360) % 360;
     return normalized;
 };
+
+const directionFromSolarPosition = (position: SolarPosition): Vector3 => {
+    const altitude = clamp(position.altitude, -18, 90);
+    const azimuth = wrapAzimuth(position.azimuth);
+    const altitudeRad = degreesToRadians(altitude);
+    const azimuthRad = degreesToRadians(azimuth);
+    const horizontalMagnitude = Math.cos(altitudeRad);
+
+    return new Vector3(
+        Math.sin(azimuthRad) * horizontalMagnitude,
+        Math.sin(altitudeRad),
+        Math.cos(azimuthRad) * horizontalMagnitude,
+    ).normalize();
+};
+
+const getSunWorldPosition = (direction: Vector3) => direction.clone().multiplyScalar(SUN_DISTANCE);
 
 type SceneParameters = {
     direction: Vector3;
@@ -26,6 +48,24 @@ type SceneParameters = {
     ground: string;
     highlight: string;
     isNight: boolean;
+};
+
+type SunPathPoint = {
+    date: Date;
+    altitude: number;
+    direction: Vector3;
+    isAboveHorizon: boolean;
+};
+
+type PrayerMarker = {
+    event: string;
+    label: string;
+    date: Date;
+    position: Vector3;
+    altitude: number;
+    isPast: boolean;
+    timeLabel: string;
+    isFard: boolean;
 };
 
 const computeSceneParameters = (position: SolarPosition | null): SceneParameters => {
@@ -43,17 +83,9 @@ const computeSceneParameters = (position: SolarPosition | null): SceneParameters
         } satisfies SceneParameters;
     }
 
+    const direction = directionFromSolarPosition(position);
     const altitude = clamp(position.altitude, -18, 90);
     const azimuth = wrapAzimuth(position.azimuth);
-    const altitudeRad = degreesToRadians(altitude);
-    const azimuthRad = degreesToRadians(azimuth);
-    const horizontalMagnitude = Math.cos(altitudeRad);
-
-    const direction = new Vector3(
-        Math.sin(azimuthRad) * horizontalMagnitude,
-        Math.sin(altitudeRad),
-        Math.cos(azimuthRad) * horizontalMagnitude,
-    ).normalize();
 
     const daylightFactor = (altitude + 18) / 108;
     const skyProgress = clamp((altitude + 6) / 72, 0, 1);
@@ -89,6 +121,67 @@ const computeSceneParameters = (position: SolarPosition | null): SceneParameters
     } satisfies SceneParameters;
 };
 
+const buildSunPath = (
+    coordinates: { latitude: number; longitude: number } | null,
+    timeZone: string,
+): SunPathPoint[] => {
+    if (!coordinates || !Number.isFinite(coordinates.latitude) || !Number.isFinite(coordinates.longitude)) {
+        return [];
+    }
+
+    const now = new Date();
+    const zonedNow = utcToZonedTime(now, timeZone);
+    const localStart = startOfDay(zonedNow);
+    const points: SunPathPoint[] = [];
+
+    for (let minutes = 0; minutes <= 24 * 60; minutes += SUN_PATH_RESOLUTION_MINUTES) {
+        const localSample = addMinutes(localStart, minutes);
+        const utcSample = zonedTimeToUtc(localSample, timeZone);
+        const samplePosition = getSolarPosition({
+            coordinates,
+            date: utcSample,
+        });
+        const direction = directionFromSolarPosition(samplePosition);
+        points.push({
+            altitude: samplePosition.altitude,
+            date: utcSample,
+            direction,
+            isAboveHorizon: samplePosition.altitude > 0,
+        });
+    }
+
+    return points;
+};
+
+const buildPrayerMarkers = (
+    timings: FormattedTiming[],
+    coordinates: { latitude: number; longitude: number } | null,
+): PrayerMarker[] => {
+    if (!coordinates || !Number.isFinite(coordinates.latitude) || !Number.isFinite(coordinates.longitude)) {
+        return [];
+    }
+
+    const now = Date.now();
+
+    return timings
+        .filter((timing) => timing.isFard || timing.event === 'sunrise')
+        .map((timing) => {
+            const solar = getSolarPosition({ coordinates, date: timing.value });
+            const direction = directionFromSolarPosition(solar);
+            return {
+                altitude: solar.altitude,
+                date: timing.value,
+                event: timing.event,
+                isFard: timing.isFard,
+                isPast: timing.value.getTime() <= now,
+                label: timing.label,
+                position: getSunWorldPosition(direction),
+                timeLabel: timing.time,
+            } satisfies PrayerMarker;
+        })
+        .filter((marker) => marker.altitude > -15);
+};
+
 type SunStageProps = {
     /** Current solar position */
     position: SolarPosition | null;
@@ -100,6 +193,12 @@ type SunStageProps = {
     shadowThreshold: number;
     /** Human readable madhab label */
     madhabLabel: string;
+    /** Observer coordinates used for solar calculations */
+    coordinates: { latitude: number; longitude: number } | null;
+    /** Timings for the current day's prayers */
+    prayerTimings: FormattedTiming[];
+    /** IANA time zone for the selected location */
+    timeZone: string;
 };
 
 type SceneLightingProps = {
@@ -142,6 +241,36 @@ const SceneLighting = ({ direction, color, ambientIntensity, sunIntensity, highl
             />
         </>
     );
+};
+
+type DynamicSkyProps = {
+    direction: Vector3;
+    altitude: number;
+    isNight: boolean;
+};
+
+const DynamicSkyDome = ({ direction, altitude, isNight }: DynamicSkyProps) => {
+    const sky = useMemo(() => {
+        const instance = new Sky();
+        instance.scale.setScalar(SKY_RADIUS);
+        return instance;
+    }, []);
+
+    const { gl } = useThree();
+
+    useEffect(() => {
+        const uniforms = sky.material.uniforms;
+        uniforms.turbidity.value = isNight ? 2.5 : 10 + (Math.max(altitude, 0) / 90) * 10;
+        uniforms.rayleigh.value = isNight ? 0.3 : 1.6;
+        uniforms.mieCoefficient.value = isNight ? 0.005 : 0.015;
+        uniforms.mieDirectionalG.value = 0.8;
+        uniforms.sunPosition.value.copy(direction.clone().multiplyScalar(SKY_RADIUS));
+
+        const daylight = clamp((altitude + 6) / 96, 0, 1);
+        gl.toneMappingExposure = 0.35 + daylight * 1.6;
+    }, [altitude, direction, gl, isNight, sky]);
+
+    return <primitive object={sky} />;
 };
 
 type SolarGroundProps = {
@@ -239,6 +368,75 @@ const Gnomon = ({ isAsr, shadowRatio, highlight, sunDirection }: GnomonProps) =>
                     <meshStandardMaterial color="#0f172a" opacity={0.45} roughness={0.8} transparent />
                 </mesh>
             ) : null}
+        </group>
+    );
+};
+
+type SunPathProps = {
+    path: SunPathPoint[];
+    highlight: string;
+};
+
+const SunPath = ({ path, highlight }: SunPathProps) => {
+    const positions = useMemo(() => {
+        if (path.length === 0) {
+            return null;
+        }
+        const array = new Float32Array(path.length * 3);
+        path.forEach((point, index) => {
+            const world = getSunWorldPosition(point.direction);
+            world.toArray(array, index * 3);
+        });
+        return array;
+    }, [path]);
+
+    if (!positions) {
+        return null;
+    }
+
+    return (
+        <line>
+            <bufferGeometry>
+                <bufferAttribute attach="attributes-position" array={positions} count={positions.length / 3} itemSize={3} />
+            </bufferGeometry>
+            <lineBasicMaterial color={highlight} opacity={0.25} transparent />
+        </line>
+    );
+};
+
+type PrayerMarkersProps = {
+    markers: PrayerMarker[];
+    highlight: string;
+};
+
+const PrayerMarkers = ({ markers, highlight }: PrayerMarkersProps) => {
+    if (markers.length === 0) {
+        return null;
+    }
+
+    return (
+        <group>
+            {markers.map((marker) => {
+                const color = marker.isPast ? '#cbd5f5' : highlight;
+                const sphereScale = marker.isPast ? 0.75 : 1;
+
+                const x = marker.position.x;
+                const y = marker.position.y;
+                const z = marker.position.z;
+
+                return (
+                    <group key={marker.event} position={[x, y, z]}>
+                        <mesh>
+                            <sphereGeometry args={[0.55 * sphereScale, 24, 24]} />
+                            <meshBasicMaterial color={color} toneMapped={false} />
+                        </mesh>
+                        <mesh position={[0, -y + 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                            <ringGeometry args={[0.4, 0.55, 48]} />
+                            <meshBasicMaterial color={color} opacity={0.35} transparent />
+                        </mesh>
+                    </group>
+                );
+            })}
         </group>
     );
 };
@@ -351,24 +549,33 @@ const SunBillboard = ({ color, isNight }: SunBillboardProps) => {
  * Immersive 3D scene showing the sun, realistic lighting, and the gnomon shadow used for Asr calculations.
  */
 export const SunStage = memo(
-    ({ position, isAsr, shadowRatio, shadowThreshold, madhabLabel }: SunStageProps) => {
+    ({
+        position,
+        isAsr,
+        shadowRatio,
+        shadowThreshold,
+        madhabLabel,
+        coordinates,
+        prayerTimings,
+        timeZone,
+    }: SunStageProps) => {
         const scene = useMemo(() => computeSceneParameters(position), [position]);
+        const sunPath = useMemo(() => buildSunPath(coordinates, timeZone), [coordinates, timeZone]);
+        const prayerMarkers = useMemo(() => buildPrayerMarkers(prayerTimings, coordinates), [coordinates, prayerTimings]);
 
         const statusLabel = isAsr ? 'Within Asr shadow length' : 'Before Asr shadow length';
         const altitudeLabel = position ? `${position.altitude.toFixed(1)}°` : '—';
         const azimuthLabel = position ? `${wrapAzimuth(position.azimuth).toFixed(0)}°` : '—';
         const shadowLabel = shadowRatio ? `${shadowRatio.toFixed(2)}×` : '—';
+        const daylightSpan = prayerMarkers.filter((marker) => marker.isFard || marker.event === 'sunrise');
 
         return (
             <div className="relative mx-auto w-full max-w-5xl">
                 <div className="relative aspect-[16/9] overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl">
-                    <Canvas
-                        camera={{ position: [10, 6, 12], fov: 45 }}
-                        dpr={[1, 2]}
-                        shadows
-                    >
+                    <Canvas camera={{ position: [10, 6, 12], fov: 45 }} dpr={[1, 2]} shadows>
                         <color attach="background" args={[scene.background]} />
                         <fog attach="fog" args={[scene.background, 45, 130]} />
+                        <DynamicSkyDome altitude={position?.altitude ?? -90} direction={scene.direction} isNight={scene.isNight} />
                         <SceneLighting
                             ambientIntensity={scene.ambientIntensity}
                             color={scene.sunColor}
@@ -378,6 +585,8 @@ export const SunStage = memo(
                             sunIntensity={scene.sunIntensity}
                         />
                         <SolarGround ground={scene.ground} horizon={scene.horizon} />
+                        <SunPath highlight={scene.highlight} path={sunPath} />
+                        <PrayerMarkers highlight={scene.highlight} markers={prayerMarkers} />
                         <Gnomon
                             highlight={scene.highlight}
                             isAsr={isAsr}
@@ -387,11 +596,11 @@ export const SunStage = memo(
                         <SolarBody color={scene.sunColor} direction={scene.direction} isNight={scene.isNight} />
                     </Canvas>
 
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/20" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/15" />
 
                     <div className="pointer-events-none absolute top-6 left-6 rounded-2xl bg-black/35 px-5 py-3 text-sm text-slate-100 backdrop-blur">
                         <div className="font-semibold uppercase tracking-wide text-slate-200">Sun Position</div>
-                        <div className="mt-1 flex gap-6 text-xs text-slate-200/80">
+                        <div className="mt-1 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-200/80">
                             <div>
                                 <div className="font-medium text-slate-100">Altitude</div>
                                 <div>{altitudeLabel}</div>
@@ -407,10 +616,52 @@ export const SunStage = memo(
                         </div>
                     </div>
 
-                    <div className="pointer-events-none absolute bottom-6 left-6 rounded-2xl bg-black/35 px-5 py-3 text-xs text-slate-200 backdrop-blur">
-                        <div className="font-semibold text-slate-100">{statusLabel}</div>
-                        <div className="mt-1 text-slate-200/80">
-                            {`Current ratio ${shadowLabel} · Threshold ${shadowThreshold.toFixed(2)}× (${madhabLabel})`}
+                    <div className="pointer-events-none absolute bottom-6 left-6 rounded-2xl bg-black/35 px-5 py-3 text-sm text-slate-100 backdrop-blur">
+                        <div className="font-semibold uppercase tracking-wide text-slate-200">Shadow length</div>
+                        <div className="mt-1 text-xs text-slate-200/80">
+                            <div className="font-medium text-slate-100">{statusLabel}</div>
+                            <div className="mt-1 flex gap-4">
+                                <span>
+                                    Current <span className="text-slate-100">{shadowLabel}</span>
+                                </span>
+                                <span>
+                                    Threshold <span className="text-slate-100">{shadowThreshold.toFixed(2)}×</span>
+                                </span>
+                            </div>
+                            <div className="mt-1 text-[0.7rem] uppercase tracking-[0.2em] text-slate-300/70">{madhabLabel}</div>
+                        </div>
+                    </div>
+
+                    {daylightSpan.length > 0 ? (
+                        <div className="pointer-events-none absolute right-6 top-6 max-w-xs rounded-2xl bg-black/35 px-5 py-3 text-xs text-slate-100 backdrop-blur">
+                            <div className="font-semibold uppercase tracking-wide text-slate-200">Prayer alignments</div>
+                            <ul className="mt-2 space-y-1 text-[0.75rem] text-slate-200/80">
+                                {daylightSpan.map((marker) => (
+                                    <li className="flex items-center justify-between gap-3" key={marker.event}>
+                                        <span className="flex items-center gap-2">
+                                            <span
+                                                className={`inline-flex h-2.5 w-2.5 rounded-full ${marker.isPast ? 'bg-slate-400/70' : 'bg-emerald-300/90'} ${marker.isFard ? 'shadow-[0_0_0_3px_rgba(16,185,129,0.25)]' : ''}`}
+                                            />
+                                            <span className="text-slate-100">{marker.label}</span>
+                                        </span>
+                                        <span className="tabular-nums text-slate-200/70">{marker.timeLabel}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : null}
+
+                    <div className="pointer-events-none absolute bottom-6 right-6 rounded-2xl bg-black/35 px-5 py-3 text-xs text-slate-100 backdrop-blur">
+                        <div className="font-semibold uppercase tracking-wide text-slate-200">Telemetry</div>
+                        <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-[0.75rem] text-slate-200/80">
+                            <span className="text-slate-400">Sun altitude</span>
+                            <span className="text-right text-slate-100">{altitudeLabel}</span>
+                            <span className="text-slate-400">Sun azimuth</span>
+                            <span className="text-right text-slate-100">{azimuthLabel}</span>
+                            <span className="text-slate-400">Shadow ratio</span>
+                            <span className="text-right text-slate-100">{shadowLabel}</span>
+                            <span className="text-slate-400">Asr threshold</span>
+                            <span className="text-right text-slate-100">{shadowThreshold.toFixed(2)}×</span>
                         </div>
                     </div>
                 </div>
