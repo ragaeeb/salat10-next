@@ -1,9 +1,9 @@
 import { Canvas, useThree } from '@react-three/fiber';
 import { addMinutes, startOfDay } from 'date-fns';
-import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { memo, useEffect, useMemo } from 'react';
 import { AdditiveBlending, CanvasTexture, Color, Object3D, SRGBColorSpace, SpriteMaterial, Vector3 } from 'three';
-import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import { Sky } from 'three/addons/objects/Sky.js';
 import type { FormattedTiming } from '@/lib/calculator';
 import { degreesToRadians } from '@/lib/explanation/math';
 import { getSolarPosition, type SolarPosition } from '@/lib/solar-position';
@@ -130,13 +130,13 @@ const buildSunPath = (
     }
 
     const now = new Date();
-    const zonedNow = utcToZonedTime(now, timeZone);
+    const zonedNow = toZonedTime(now, timeZone);
     const localStart = startOfDay(zonedNow);
     const points: SunPathPoint[] = [];
 
     for (let minutes = 0; minutes <= 24 * 60; minutes += SUN_PATH_RESOLUTION_MINUTES) {
         const localSample = addMinutes(localStart, minutes);
-        const utcSample = zonedTimeToUtc(localSample, timeZone);
+        const utcSample = fromZonedTime(localSample, timeZone);
         const samplePosition = getSolarPosition({
             coordinates,
             date: utcSample,
