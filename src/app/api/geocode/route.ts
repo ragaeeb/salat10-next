@@ -83,11 +83,15 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid address format' }, { status: 400 });
     }
 
+    const apiKey = process.env.GEOCODE_API_KEY;
+
+    if (!apiKey) {
+        console.error('Missing Geocode API key');
+        return NextResponse.json({ error: 'API Key not set' }, { status: 500 });
+    }
+
     try {
-        const apiKey = process.env.GEOCODE_API_KEY;
-        const url = apiKey
-            ? `https://geocode.maps.co/search?q=${encodeURIComponent(address)}&api_key=${apiKey}`
-            : `https://geocode.maps.co/search?q=${encodeURIComponent(address)}`;
+        const url = `https://geocode.maps.co/search?q=${encodeURIComponent(address)}&api_key=${apiKey}`;
 
         const response = await fetch(url);
 

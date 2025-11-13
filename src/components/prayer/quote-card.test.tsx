@@ -1,0 +1,260 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, mock, beforeEach, afterEach } from 'bun:test';
+import { QuoteCard } from './quote-card';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import type { Quote } from '@/types/quote';
+
+// Mock useMotivationalQuote hook
+const mockUseMotivationalQuote = mock(() => ({
+    quote: null,
+    loading: false,
+    error: false,
+}));
+
+mock.module('@/hooks/use-motivational-quote', () => ({
+    useMotivationalQuote: mockUseMotivationalQuote,
+}));
+
+// Mock toast
+const mockToastSuccess = mock(() => {});
+const mockToastError = mock(() => {});
+
+mock.module('sonner', () => ({
+    toast: {
+        success: mockToastSuccess,
+        error: mockToastError,
+    },
+}));
+
+// Mock TextAnimate component
+mock.module('@/components/magicui/text-animate', () => ({
+    TextAnimate: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+        <div data-testid="text-animate" className={className}>{children}</div>
+    ),
+}));
+
+// Mock formatCitation
+const mockFormatCitation = mock((quote: Quote) => {
+    const parts: string[] = [quote.title];
+    if (quote.part_number !== undefined && quote.part_page !== undefined) {
+        parts.push(`${quote.part_number}/${quote.part_page}`);
+    }
+    parts.push(quote.author);
+    return parts.join(', ');
+});
+
+mock.module('@/lib/quotes', () => ({
+    formatCitation: mockFormatCitation,
+}));
+
+// Mock clipboard API
+const mockWriteText = mock(() => Promise.resolve());
+
+beforeEach(() => {
+    // Mock navigator.clipboard using Object.defineProperty
+    Object.defineProperty(global, 'navigator', {
+        value: {
+            ...global.navigator,
+            clipboard: {
+                writeText: mockWriteText,
+            },
+        },
+        writable: true,
+        configurable: true,
+    });
+    mockWriteText.mockClear();
+    mockToastSuccess.mockClear();
+    mockToastError.mockClear();
+    mockFormatCitation.mockClear();
+});
+
+afterEach(() => {
+    mockUseMotivationalQuote.mockClear();
+});
+
+const renderWithProvider = (component: React.ReactElement) => {
+    return render(<TooltipProvider>{component}</TooltipProvider>);
+};
+
+const mockQuote: Quote = {
+    body: 'Test quote body',
+    title: 'Test Title',
+    author: 'Test Author',
+    url: 'https://example.com',
+};
+
+const mockQuoteWithoutUrl: Quote = {
+    body: 'Test quote body',
+    title: 'Test Title',
+    author: 'Test Author',
+};
+
+describe('QuoteCard', () => {
+    describe('rendering', () => {
+        it('should return null when quote is null', () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: null, loading: false, error: false });
+            const { container } = render(<QuoteCard />);
+
+            expect(container.firstChild).toBeNull();
+        });
+
+        it('should render quote card when quote is available', () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: mockQuote, loading: false, error: false });
+            renderWithProvider(<QuoteCard />);
+
+            expect(screen.getByText('Test quote body')).toBeDefined();
+        });
+
+        it('should render quote body', () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: mockQuote, loading: false, error: false });
+            renderWithProvider(<QuoteCard />);
+
+            const textAnimate = screen.getByTestId('text-animate');
+            expect(textAnimate.textContent).toBe('Test quote body');
+        });
+
+        it('should render citation', () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: mockQuote, loading: false, error: false });
+            mockFormatCitation.mockReturnValue('Test Title, Test Author');
+            renderWithProvider(<QuoteCard />);
+
+            expect(mockFormatCitation.mock.calls.length).toBeGreaterThan(0);
+        });
+
+        it('should render citation as link when URL is present', () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: mockQuote, loading: false, error: false });
+            mockFormatCitation.mockReturnValue('Test Title, Test Author');
+            renderWithProvider(<QuoteCard />);
+
+            const link = screen.getByRole('link');
+            expect(link).toBeDefined();
+            expect(link.getAttribute('href')).toBe('https://example.com');
+        });
+
+        it('should render citation as text when URL is not present', () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: mockQuoteWithoutUrl, loading: false, error: false });
+            mockFormatCitation.mockReturnValue('Test Title, Test Author');
+            renderWithProvider(<QuoteCard />);
+
+            const link = screen.queryByRole('link');
+            expect(link).toBeNull();
+            // Citation should still be rendered as text
+            expect(screen.getByText(/Test Author/)).toBeDefined();
+        });
+
+        it('should render copy button', () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: mockQuote, loading: false, error: false });
+            renderWithProvider(<QuoteCard />);
+
+            const copyButton = screen.getByRole('button', { name: /copy/i });
+            expect(copyButton).toBeDefined();
+        });
+
+        it('should render help text', () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: mockQuote, loading: false, error: false });
+            renderWithProvider(<QuoteCard />);
+
+            expect(screen.getByText(/Tap the copy icon to share with friends/)).toBeDefined();
+        });
+    });
+
+    describe('copy functionality', () => {
+        it('should copy quote to clipboard when copy button is clicked', async () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: mockQuote, loading: false, error: false });
+            mockFormatCitation.mockReturnValue('Test Title, Test Author');
+            renderWithProvider(<QuoteCard />);
+
+            const copyButton = screen.getByRole('button', { name: /copy/i });
+            fireEvent.click(copyButton);
+
+            await waitFor(() => {
+                expect(mockWriteText.mock.calls.length).toBe(1);
+            });
+
+            // Should include quote body, citation, and watermark
+            const copiedText = mockWriteText.mock.calls[0]![0] as string;
+            expect(copiedText).toContain('Test quote body');
+            expect(copiedText).toContain('Test Title, Test Author');
+        });
+
+        it('should show success toast on successful copy', async () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: mockQuote, loading: false, error: false });
+            mockFormatCitation.mockReturnValue('Test Title, Test Author');
+            renderWithProvider(<QuoteCard />);
+
+            const copyButton = screen.getByRole('button', { name: /copy/i });
+            fireEvent.click(copyButton);
+
+            await waitFor(() => {
+                expect(mockToastSuccess.mock.calls.length).toBe(1);
+                expect(mockToastSuccess.mock.calls[0]![0]).toBe('Copied');
+            });
+        });
+
+        it('should show error toast on copy failure', async () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: mockQuote, loading: false, error: false });
+            mockFormatCitation.mockReturnValue('Test Title, Test Author');
+            mockWriteText.mockRejectedValue(new Error('Clipboard error'));
+            renderWithProvider(<QuoteCard />);
+
+            const copyButton = screen.getByRole('button', { name: /copy/i });
+            fireEvent.click(copyButton);
+
+            await waitFor(() => {
+                expect(mockToastError.mock.calls.length).toBe(1);
+                expect(mockToastError.mock.calls[0]![0]).toBe('Error');
+            });
+        });
+
+        it('should not copy when quote is null', async () => {
+            mockUseMotivationalQuote.mockReturnValue({ quote: null, loading: false, error: false });
+            const { container } = render(<QuoteCard />);
+
+            // Component returns null, so no button to click
+            expect(container.firstChild).toBeNull();
+            expect(mockWriteText.mock.calls.length).toBe(0);
+        });
+    });
+
+    describe('edge cases', () => {
+        it('should handle quote without part numbers', () => {
+            const quoteWithoutParts: Quote = {
+                body: 'Test quote',
+                title: 'Test Title',
+                author: 'Test Author',
+            };
+            mockUseMotivationalQuote.mockReturnValue({ quote: quoteWithoutParts, loading: false, error: false });
+            mockFormatCitation.mockReturnValue('Test Title, Test Author');
+            renderWithProvider(<QuoteCard />);
+
+            expect(screen.getByText('Test quote')).toBeDefined();
+        });
+
+        it('should handle quote with empty body', () => {
+            const emptyQuote: Quote = {
+                body: '',
+                title: 'Test Title',
+                author: 'Test Author',
+            };
+            mockUseMotivationalQuote.mockReturnValue({ quote: emptyQuote, loading: false, error: false });
+            renderWithProvider(<QuoteCard />);
+
+            const textAnimate = screen.getByTestId('text-animate');
+            expect(textAnimate.textContent).toBe('');
+        });
+
+        it('should handle quote with very long body', () => {
+            const longQuote: Quote = {
+                body: 'A'.repeat(1000),
+                title: 'Test Title',
+                author: 'Test Author',
+            };
+            mockUseMotivationalQuote.mockReturnValue({ quote: longQuote, loading: false, error: false });
+            renderWithProvider(<QuoteCard />);
+
+            const textAnimate = screen.getByTestId('text-animate');
+            expect(textAnimate.textContent).toBe('A'.repeat(1000));
+        });
+    });
+});
+

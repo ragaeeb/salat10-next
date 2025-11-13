@@ -76,7 +76,7 @@ export const SERIES_COLORS: Record<string, string> = {
 
 export const FALLBACK_COLORS = ['#60a5fa', '#eab308', '#22c55e', '#a855f7', '#ec4899', '#3b82f6', '#f97316', '#ef4444'];
 
-export const IS_DEV = process.env.NODE_ENV !== 'production';
+export const IS_DEV = process.env.NODE_ENV === 'development';
 export const salatLabels = {
     asr: 'ʿAṣr',
     dhuhr: 'Dhuhr',

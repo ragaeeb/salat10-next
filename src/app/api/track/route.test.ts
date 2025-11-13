@@ -24,13 +24,16 @@ mock.module('@/lib/redis', () => ({
 
 describe('route', () => {
     const originalConsoleError = console.error;
+    const originalEnv = process.env.NODE_ENV;
 
     beforeAll(() => {
         console.error = mock(() => {});
+        process.env.NODE_ENV = 'development';
     });
 
     afterAll(() => {
         console.error = originalConsoleError;
+        process.env.NODE_ENV = originalEnv;
     });
 
     beforeEach(() => {
@@ -166,6 +169,9 @@ describe('route', () => {
 
     describe('POST', () => {
         it('should reject invalid origin', async () => {
+            const originalEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = 'production';
+
             const request = new NextRequest('http://localhost:3000/api/track', {
                 body: JSON.stringify({}),
                 headers: { origin: 'https://evil.com' },
@@ -173,6 +179,9 @@ describe('route', () => {
             });
 
             const response = await POST(request);
+            
+            process.env.NODE_ENV = originalEnv;
+            
             expect(response.status).toBe(403);
         });
 

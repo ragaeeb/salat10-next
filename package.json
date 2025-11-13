@@ -9,7 +9,7 @@
         "@radix-ui/react-slot": "^1.2.4",
         "@radix-ui/react-tooltip": "^1.2.8",
         "@tabler/icons-react": "^3.35.0",
-        "@types/bun": "^1.3.1",
+        "@types/bun": "^1.3.2",
         "@upstash/redis": "^1.35.6",
         "adhan": "^4.4.3",
         "class-variance-authority": "^0.7.1",
@@ -19,23 +19,27 @@
         "dotted-map": "^2.2.3",
         "lucide-react": "^0.553.0",
         "motion": "^12.23.24",
-        "next": "16.0.1",
+        "next": "16.0.3",
         "parse-duration": "^2.1.4",
         "react": "^19.2.0",
         "react-day-picker": "^9.11.1",
         "react-dom": "^19.2.0",
         "sonner": "^2.0.7",
-        "tailwind-merge": "^3.3.1",
+        "tailwind-merge": "^3.4.0",
         "tw-animate-css": "^1.4.0",
         "uplot": "^1.6.32",
         "zustand": "^5.0.8"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.3.4",
+        "@biomejs/biome": "2.3.5",
+        "@happy-dom/global-registrator": "^20.0.10",
         "@tailwindcss/postcss": "^4.1.17",
-        "@types/node": "^24.10.0",
-        "@types/react": "^19.2.2",
-        "@types/react-dom": "^19.2.2",
+        "@testing-library/dom": "^10.4.1",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.0",
+        "@types/node": "^24.10.1",
+        "@types/react": "^19.2.4",
+        "@types/react-dom": "^19.2.3",
         "tailwindcss": "^4.1.17",
         "typescript": "^5.9.3"
     },
@@ -52,7 +56,7 @@
         "dev": "next dev --turbopack",
         "lint": "biome check .",
         "start": "next start",
-        "test": "NODE_ENV=development bun test --coverage --coverage-reporter=lcov"
+        "test": "NODE_ENV=test bun test --coverage --coverage-reporter=lcov"
     },
     "version": "1.6.0"
 }
