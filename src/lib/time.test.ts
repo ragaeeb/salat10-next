@@ -37,7 +37,7 @@ describe('parseInitialDateRange', () => {
 
         expect(result.from.getMonth()).toBe(now.getMonth());
         expect(result.from.getDate()).toBe(1);
-        expect(result.to.getMonth()).toBe(now.getMonth() + 1 === 12 ? 0 : now.getMonth());
+        expect(result.to.getMonth()).toBe(now.getMonth());
     });
 
     it('should parse from and to params', () => {
