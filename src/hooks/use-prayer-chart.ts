@@ -5,6 +5,8 @@ import { IS_DEV } from '@/lib/constants';
 
 import type { ChartSelectorOption, OptionsChangeHandler, Schedule } from '@/types/graph';
 
+type UPlotConstructor = new (...args: any[]) => uPlot;
+
 /**
  * Hook to render and manage interactive prayer time charts using uPlot
  *
@@ -45,7 +47,7 @@ export const usePrayerChart = (
     const [internalSelectedEvent, setInternalSelectedEvent] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<uPlot | null>(null);
-    const uplotCtorRef = useRef<((typeof import('uplot'))['default']) | null>(null);
+    const uplotCtorRef = useRef<UPlotConstructor | null>(null);
 
     const isControlled = selectedEvent != null;
 
@@ -147,7 +149,10 @@ export const usePrayerChart = (
         const renderChart = async () => {
             if (!uplotCtorRef.current) {
                 const mod = await import('uplot');
-                uplotCtorRef.current = mod.default;
+                // uPlot is published as CJS; depending on bundler/runtime, dynamic import
+                // can return either the constructor directly or a namespace with `.default`.
+                const resolved = (mod as any).default ?? mod;
+                uplotCtorRef.current = resolved as UPlotConstructor;
             }
 
             if (disposed) {
