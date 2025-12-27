@@ -1,3 +1,13 @@
+## [1.6.1](https://github.com/ragaeeb/salat10-next/compare/v1.6.0...v1.6.1) (2025-12-27)
+
+
+### Bug Fixes
+
+* **deps:** Bump react version and dependencies ([e98decc](https://github.com/ragaeeb/salat10-next/commit/e98decc15a63137edfe4e64628f54213cc12330b))
+* **security:** Fix security vulnerability ([86ecafa](https://github.com/ragaeeb/salat10-next/commit/86ecafad9b70e2f0c1a83d18b1dcb62986265f7c))
+* **tests:** Fix failing CI tests ([470082c](https://github.com/ragaeeb/salat10-next/commit/470082c10307975f36844bd00761ed375a178b0f))
+* **tests:** Test should now pass in CI due to missing navigator ([318d2e1](https://github.com/ragaeeb/salat10-next/commit/318d2e1a309333e7b8f2fef16f367b362a0e8da6))
+
 # [1.6.0](https://github.com/ragaeeb/salat10-next/compare/v1.5.1...v1.6.0) (2025-11-08)
 
 
