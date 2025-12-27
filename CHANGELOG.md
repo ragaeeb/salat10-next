@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/ragaeeb/salat10-next/compare/v1.6.1...v1.6.2) (2025-12-27)
+
+
+### Bug Fixes
+
+* **build:** Fix build ([83791ca](https://github.com/ragaeeb/salat10-next/commit/83791ca970a90a325091e7fdeeb2b44bc86fd580))
+
 ## [1.6.1](https://github.com/ragaeeb/salat10-next/compare/v1.6.0...v1.6.1) (2025-12-27)
 
 
