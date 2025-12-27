@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import uPlot from 'uplot';
+import type uPlot from 'uplot';
 import { buildChartConfig, prepareChartData, setChartCursor } from '@/lib/chart';
 import { IS_DEV } from '@/lib/constants';
 
@@ -45,6 +45,7 @@ export const usePrayerChart = (
     const [internalSelectedEvent, setInternalSelectedEvent] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<uPlot | null>(null);
+    const uplotCtorRef = useRef<((typeof import('uplot'))['default']) | null>(null);
 
     const isControlled = selectedEvent != null;
 
@@ -91,6 +92,11 @@ export const usePrayerChart = (
     const chartConfig = useMemo(() => buildChartConfig(prepared, activeEvent), [prepared, activeEvent]);
 
     useEffect(() => {
+        // In SSR / non-DOM test environments we can't render a chart.
+        if (typeof document === 'undefined') {
+            return;
+        }
+
         const container = containerRef.current;
         if (!container) {
             return;
@@ -105,60 +111,106 @@ export const usePrayerChart = (
             return;
         }
 
-        if (chartRef.current) {
-            chartRef.current.destroy();
-            chartRef.current = null;
-            container.replaceChildren();
-        }
-
-        const tooltip = document.createElement('div');
-        tooltip.className =
-            'pointer-events-none absolute z-10 whitespace-nowrap rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-900 shadow-lg';
-        tooltip.style.display = 'none';
-        container.appendChild(tooltip);
-
-        const tooltipPlugin: uPlot.Plugin = {
-            hooks: {
-                setCursor: (chart) => {
-                    setChartCursor(chart, tooltip, chartConfig, container);
-                },
-            },
-        };
-
-        const rect = container.getBoundingClientRect();
-        const width = Math.max(Math.floor(rect.width || container.clientWidth), 0) || chartConfig.options.width || 800;
-        const height =
-            Math.max(Math.floor(rect.height || container.clientHeight), 0) || chartConfig.options.height || 480;
-        const basePlugins = chartConfig.options.plugins ?? [];
-        const opts: uPlot.Options = { ...chartConfig.options, height, plugins: [...basePlugins, tooltipPlugin], width };
-        const chart = new uPlot(opts, chartConfig.data, container);
-        chartRef.current = chart;
-
-        const handleMouseLeave = () => {
-            tooltip.style.display = 'none';
-        };
-        chart.root.addEventListener('mouseleave', handleMouseLeave);
-
+        let disposed = false;
+        let tooltip: HTMLDivElement | null = null;
         let observer: ResizeObserver | null = null;
-        if (typeof ResizeObserver !== 'undefined') {
-            observer = new ResizeObserver((entries) => {
-                const [entry] = entries;
-                if (!entry || !chartRef.current) {
-                    return;
+        let handleMouseLeave: (() => void) | null = null;
+
+        const destroyCurrent = () => {
+            observer?.disconnect();
+            observer = null;
+
+            if (chartRef.current) {
+                if (handleMouseLeave) {
+                    try {
+                        chartRef.current.root.removeEventListener('mouseleave', handleMouseLeave);
+                    } catch {
+                        // ignore
+                    }
                 }
-                const nextWidth = entry.contentRect.width;
-                const nextHeight = entry.contentRect.height || opts.height || height;
-                chartRef.current.setSize({ height: nextHeight, width: nextWidth });
-            });
-            observer.observe(container);
-        }
+                chartRef.current.destroy();
+                chartRef.current = null;
+            }
+
+            tooltip?.remove();
+            tooltip = null;
+
+            try {
+                container.replaceChildren();
+            } catch {
+                // ignore
+            }
+        };
+
+        destroyCurrent();
+
+        const renderChart = async () => {
+            if (!uplotCtorRef.current) {
+                const mod = await import('uplot');
+                uplotCtorRef.current = mod.default;
+            }
+
+            if (disposed) {
+                return;
+            }
+
+            const UPlotCtor = uplotCtorRef.current;
+            if (!UPlotCtor) {
+                return;
+            }
+
+            tooltip = document.createElement('div');
+            tooltip.className =
+                'pointer-events-none absolute z-10 whitespace-nowrap rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-900 shadow-lg';
+            tooltip.style.display = 'none';
+            container.appendChild(tooltip);
+
+            const tooltipPlugin: uPlot.Plugin = {
+                hooks: {
+                    setCursor: (chart) => {
+                        if (!tooltip) {
+                            return;
+                        }
+                        setChartCursor(chart, tooltip, chartConfig, container);
+                    },
+                },
+            };
+
+            const rect = container.getBoundingClientRect();
+            const width = Math.max(Math.floor(rect.width || container.clientWidth), 0) || chartConfig.options.width || 800;
+            const height =
+                Math.max(Math.floor(rect.height || container.clientHeight), 0) || chartConfig.options.height || 480;
+            const basePlugins = chartConfig.options.plugins ?? [];
+            const opts: uPlot.Options = { ...chartConfig.options, height, plugins: [...basePlugins, tooltipPlugin], width };
+            const chart = new UPlotCtor(opts, chartConfig.data, container);
+            chartRef.current = chart;
+
+            handleMouseLeave = () => {
+                if (tooltip) {
+                    tooltip.style.display = 'none';
+                }
+            };
+            chart.root.addEventListener('mouseleave', handleMouseLeave);
+
+            if (typeof ResizeObserver !== 'undefined') {
+                observer = new ResizeObserver((entries) => {
+                    const [entry] = entries;
+                    if (!entry || !chartRef.current) {
+                        return;
+                    }
+                    const nextWidth = entry.contentRect.width;
+                    const nextHeight = entry.contentRect.height || opts.height || height;
+                    chartRef.current.setSize({ height: nextHeight, width: nextWidth });
+                });
+                observer.observe(container);
+            }
+        };
+
+        void renderChart();
 
         return () => {
-            observer?.disconnect();
-            chart.root.removeEventListener('mouseleave', handleMouseLeave);
-            tooltip.remove();
-            chart.destroy();
-            chartRef.current = null;
+            disposed = true;
+            destroyCurrent();
         };
     }, [chartConfig]);
 

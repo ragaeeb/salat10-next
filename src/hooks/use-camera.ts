@@ -38,6 +38,17 @@ export function useCamera() {
     const [state, setState] = useState<CameraState>({ error: null, isReady: false, stream: null });
 
     const startCamera = useCallback(async () => {
+        // Guard for non-browser runtimes (SSR/tests). Some CI environments may not
+        // provide `navigator` as a global even if a DOM shim exists.
+        if (typeof navigator === 'undefined') {
+            setState({
+                error: 'Camera is only available in a browser environment.',
+                isReady: false,
+                stream: null,
+            });
+            return;
+        }
+
         // Feature detection - check if getUserMedia exists
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             // Try older API as fallback for some browsers
