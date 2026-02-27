@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/ragaeeb/salat10-next/compare/v1.6.2...v1.7.0) (2026-02-27)
+
+
+### Features
+
+* add E2E Playwright tests for all pages ([0e0fe49](https://github.com/ragaeeb/salat10-next/commit/0e0fe490cac0840ba8d182c14c7b253948aed316))
+
 ## [1.6.2](https://github.com/ragaeeb/salat10-next/compare/v1.6.1...v1.6.2) (2025-12-27)
 
 
