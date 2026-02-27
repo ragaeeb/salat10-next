@@ -3,7 +3,7 @@
 import { Calendar as CalendarIcon, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useId, useMemo, useState } from 'react';
+import { useId, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { PrayerTimetableTable } from '@/components/timetable/prayer-timetable-table';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,7 @@ export function TimetableClient({ initialFrom, initialTo }: TimetableClientProps
     const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: initialFrom, to: initialTo });
     const [dateFormat, setDateFormat] = useState<string>(() => searchParams.get('dateFormat') ?? 'short');
 
-    const schedule = useMemo(() => {
+    const schedule = (() => {
         if (!dateRange?.from || !dateRange?.to) {
             return null;
         }
@@ -62,31 +62,25 @@ export function TimetableClient({ initialFrom, initialTo }: TimetableClientProps
         }
 
         return { dates: times, label: generateScheduleLabel(dateRange.from, dateRange.to) };
-    }, [config, dateRange]);
+    })();
 
-    const handleDateRangeChange = useCallback(
-        (newRange: DateRange | undefined) => {
-            if (!newRange?.from || !newRange?.to) {
-                return;
-            }
+    const handleDateRangeChange = (newRange: DateRange | undefined) => {
+        if (!newRange?.from || !newRange?.to) {
+            return;
+        }
 
-            setDateRange(newRange);
+        setDateRange(newRange);
 
-            const params = updateDateRangeParams(searchParams, newRange.from, newRange.to);
-            router.replace(`/timetable?${params.toString()}`, { scroll: false });
-        },
-        [router, searchParams],
-    );
+        const params = updateDateRangeParams(searchParams, newRange.from, newRange.to);
+        router.replace(`/timetable?${params.toString()}`, { scroll: false });
+    };
 
-    const handleDateFormatChange = useCallback(
-        (format: string) => {
-            setDateFormat(format);
-            const params = new URLSearchParams(searchParams.toString());
-            params.set('dateFormat', format);
-            router.replace(`/timetable?${params.toString()}`, { scroll: false });
-        },
-        [router, searchParams],
-    );
+    const handleDateFormatChange = (format: string) => {
+        setDateFormat(format);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('dateFormat', format);
+        router.replace(`/timetable?${params.toString()}`, { scroll: false });
+    };
 
     const dateRangeDisplay = formatDateRangeDisplay(dateRange);
 

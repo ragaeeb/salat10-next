@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, type MotionProps, motion, type Variants } from 'motion/react';
-import { type ElementType, memo, useMemo } from 'react';
+import { type ElementType, memo } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -201,7 +201,7 @@ const TextAnimateBase = ({
 }: TextAnimateProps) => {
     const MotionComponent = motion.create(Component);
 
-    const segments = useMemo(() => {
+    const segments = (() => {
         if (!children) {
             return [];
         }
@@ -216,16 +216,14 @@ const TextAnimateBase = ({
             default:
                 return [children];
         }
-    }, [by, children]);
+    })();
 
-    const keyedSegments = useMemo(() => {
-        const counts = new Map<string, number>();
-        return segments.map((segment) => {
-            const count = counts.get(segment) ?? 0;
-            counts.set(segment, count + 1);
-            return { id: `${by}-${segment}-${count}`, text: segment };
-        });
-    }, [by, segments]);
+    const counts = new Map<string, number>();
+    const keyedSegments = segments.map((segment) => {
+        const count = counts.get(segment) ?? 0;
+        counts.set(segment, count + 1);
+        return { id: `${by}-${segment}-${count}`, text: segment };
+    });
 
     const finalVariants = variants
         ? {

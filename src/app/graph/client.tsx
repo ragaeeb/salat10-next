@@ -3,7 +3,7 @@
 import { Calendar as CalendarIcon, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { PrayerLineChart } from '@/components/prayer-line-chart';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ export function GraphClient({ initialFrom, initialTo }: GraphClientProps) {
 
     const eventParam = searchParams.get('event');
 
-    const schedule = useMemo(() => {
+    const schedule = (() => {
         if (!dateRange?.from || !dateRange?.to) {
             return null;
         }
@@ -45,42 +45,33 @@ export function GraphClient({ initialFrom, initialTo }: GraphClientProps) {
         }
 
         return { dates: times, label: generateScheduleLabel(dateRange.from, dateRange.to) };
-    }, [config, dateRange]);
+    })();
 
-    const handleDateRangeChange = useCallback(
-        (newRange: DateRange | undefined) => {
-            if (!newRange?.from || !newRange?.to) {
-                return;
-            }
+    const handleDateRangeChange = (newRange: DateRange | undefined) => {
+        if (!newRange?.from || !newRange?.to) {
+            return;
+        }
 
-            setDateRange(newRange);
+        setDateRange(newRange);
 
-            const params = updateDateRangeParams(searchParams, newRange.from, newRange.to);
+        const params = updateDateRangeParams(searchParams, newRange.from, newRange.to);
+        router.replace(`/graph?${params.toString()}`, { scroll: false });
+    };
+
+    const handleOptionsChange = (options: { event: string; label: string }[], _defaultEvent: string | null) => {
+        setEventOptions(options);
+    };
+
+    const handleEventChange = (event: string) => {
+        pendingEventRef.current = event;
+        setSelectedEvent(event);
+        const current = searchParams.get('event');
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('event', event);
+        if (current !== event) {
             router.replace(`/graph?${params.toString()}`, { scroll: false });
-        },
-        [router, searchParams],
-    );
-
-    const handleOptionsChange = useCallback(
-        (options: { event: string; label: string }[], _defaultEvent: string | null) => {
-            setEventOptions(options);
-        },
-        [],
-    );
-
-    const handleEventChange = useCallback(
-        (event: string) => {
-            pendingEventRef.current = event;
-            setSelectedEvent(event);
-            const current = searchParams.get('event');
-            const params = new URLSearchParams(searchParams.toString());
-            params.set('event', event);
-            if (current !== event) {
-                router.replace(`/graph?${params.toString()}`, { scroll: false });
-            }
-        },
-        [router, searchParams],
-    );
+        }
+    };
 
     useEffect(() => {
         if (!eventOptions.length) {

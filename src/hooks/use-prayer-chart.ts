@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type uPlot from 'uplot';
 import { buildChartConfig, prepareChartData, setChartCursor } from '@/lib/chart';
 import { IS_DEV } from '@/lib/constants';
@@ -43,7 +43,7 @@ export const usePrayerChart = (
     onOptionsChange?: OptionsChangeHandler,
     onSelectedEventChange?: (event: string) => void,
 ) => {
-    const prepared = useMemo(() => prepareChartData(schedule), [schedule]);
+    const prepared = prepareChartData(schedule);
     const [internalSelectedEvent, setInternalSelectedEvent] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<uPlot | null>(null);
@@ -80,7 +80,7 @@ export const usePrayerChart = (
         }
     }, [prepared, isControlled, internalSelectedEvent, selectedEvent, onOptionsChange, onSelectedEventChange]);
 
-    const activeEvent = useMemo(() => {
+    const activeEvent = (() => {
         if (!prepared?.series.length) {
             return null;
         }
@@ -89,9 +89,9 @@ export const usePrayerChart = (
             return resolved;
         }
         return prepared.series[0]?.event ?? null;
-    }, [prepared, selectedEvent, internalSelectedEvent, isControlled]);
+    })();
 
-    const chartConfig = useMemo(() => buildChartConfig(prepared, activeEvent), [prepared, activeEvent]);
+    const chartConfig = buildChartConfig(prepared, activeEvent);
 
     useEffect(() => {
         // In SSR / non-DOM test environments we can't render a chart.
@@ -182,11 +182,17 @@ export const usePrayerChart = (
             };
 
             const rect = container.getBoundingClientRect();
-            const width = Math.max(Math.floor(rect.width || container.clientWidth), 0) || chartConfig.options.width || 800;
+            const width =
+                Math.max(Math.floor(rect.width || container.clientWidth), 0) || chartConfig.options.width || 800;
             const height =
                 Math.max(Math.floor(rect.height || container.clientHeight), 0) || chartConfig.options.height || 480;
             const basePlugins = chartConfig.options.plugins ?? [];
-            const opts: uPlot.Options = { ...chartConfig.options, height, plugins: [...basePlugins, tooltipPlugin], width };
+            const opts: uPlot.Options = {
+                ...chartConfig.options,
+                height,
+                plugins: [...basePlugins, tooltipPlugin],
+                width,
+            };
             const chart = new UPlotCtor(opts, chartConfig.data, container);
             chartRef.current = chart;
 

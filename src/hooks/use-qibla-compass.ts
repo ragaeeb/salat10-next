@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { isIOSDevice, smoothHeading } from '@/lib/qibla';
 
 export type PermissionState = 'prompt' | 'granted' | 'denied';
@@ -65,7 +65,7 @@ export function useQiblaCompass() {
     const isIOS = useRef(isIOSDevice());
 
     // Setup orientation listener
-    const setupOrientationListener = useCallback(() => {
+    const setupOrientationListener = () => {
         const handler = (event: DeviceOrientationEvent) => {
             let heading: number | null = null;
             let quality: number | null = null;
@@ -111,10 +111,10 @@ export function useQiblaCompass() {
             // Fallback for browsers without absolute
             window.addEventListener('deviceorientation', handler, true);
         }
-    }, []);
+    };
 
     // Request orientation permission (primarily for iOS)
-    const requestPermission = useCallback(async () => {
+    const requestPermission = async () => {
         try {
             // Check if requestPermission exists (iOS 13+)
             const DeviceOrientationEventTyped = DeviceOrientationEvent as unknown as DeviceOrientationEventiOS;
@@ -147,7 +147,7 @@ export function useQiblaCompass() {
                 permissionState: 'denied',
             }));
         }
-    }, [setupOrientationListener]);
+    };
 
     // Smooth heading updates
     useEffect(() => {

@@ -1,6 +1,6 @@
 'use client';
 import type React from 'react';
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface StarProps {
@@ -31,25 +31,22 @@ export const StarsBackground: React.FC<StarBackgroundProps> = ({
     const [stars, setStars] = useState<StarProps[]>([]);
     const canvasRef: RefObject<HTMLCanvasElement | null> = useRef<HTMLCanvasElement>(null);
 
-    const generateStars = useCallback(
-        (width: number, height: number): StarProps[] => {
-            const area = width * height;
-            const numStars = Math.floor(area * starDensity);
-            return Array.from({ length: numStars }, () => {
-                const shouldTwinkle = allStarsTwinkle || Math.random() < twinkleProbability;
-                return {
-                    opacity: Math.random() * 0.5 + 0.5,
-                    radius: Math.random() * 0.5 + 1, // Increased from 0.05 + 0.5 to 0.5 + 1
-                    twinkleSpeed: shouldTwinkle
-                        ? minTwinkleSpeed + Math.random() * (maxTwinkleSpeed - minTwinkleSpeed)
-                        : null,
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                };
-            });
-        },
-        [starDensity, allStarsTwinkle, twinkleProbability, minTwinkleSpeed, maxTwinkleSpeed],
-    );
+    const generateStars = (width: number, height: number): StarProps[] => {
+        const area = width * height;
+        const numStars = Math.floor(area * starDensity);
+        return Array.from({ length: numStars }, () => {
+            const shouldTwinkle = allStarsTwinkle || Math.random() < twinkleProbability;
+            return {
+                opacity: Math.random() * 0.5 + 0.5,
+                radius: Math.random() * 0.5 + 1, // Increased from 0.05 + 0.5 to 0.5 + 1
+                twinkleSpeed: shouldTwinkle
+                    ? minTwinkleSpeed + Math.random() * (maxTwinkleSpeed - minTwinkleSpeed)
+                    : null,
+                x: Math.random() * width,
+                y: Math.random() * height,
+            };
+        });
+    };
 
     useEffect(() => {
         const updateStars = () => {

@@ -1,5 +1,5 @@
 import { useScroll } from 'motion/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DAY_HEIGHT_PX, DISTANCE_FROM_TOP_BOTTOM } from '@/lib/constants';
 import { timeToScroll } from '@/lib/timeline';
 import type { DayData } from '@/types/timeline';
@@ -102,9 +102,9 @@ export const useScrollTracking = (days: DayData[]) => {
     const [showLoadNext, setShowLoadNext] = useState(false);
     const { scrollProgress, pNow } = useScrollProgress(scrollY);
 
-    const onAddPrevDay = useCallback(() => {
+    const onAddPrevDay = () => {
         window.scrollTo({ behavior: 'auto', left: 0, top: lastScrollY.current + DAY_HEIGHT_PX });
-    }, []);
+    };
 
     return { currentDayIndex, onAddPrevDay, pNow, scrollProgress, showLoadNext, showLoadPrev, totalHeight };
 };

@@ -2,7 +2,7 @@
 
 import { AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { QiblaArrow } from '@/components/qibla/arrow';
 import { QiblaInfoCard } from '@/components/qibla/info-card';
 import { PermissionsCard } from '@/components/qibla/permissions-card';
@@ -38,37 +38,19 @@ export function QiblaFinderClient() {
     }, [hasHydrated, hasValidCoordinates, router]);
 
     // Calculate Qibla bearing
-    const qiblaBearing = useMemo(() => {
-        if (!hasValidCoordinates) {
-            return 0;
-        }
-        return calculateQibla(latitude, longitude);
-    }, [hasValidCoordinates, latitude, longitude]);
+    const qiblaBearing = hasValidCoordinates ? calculateQibla(latitude, longitude) : 0;
 
     // Calculate relative rotation and alignment
-    const relativeRotation = useMemo(() => {
-        if (compass.smoothedHeading === null) {
-            return null;
-        }
-        return calculateRelativeRotation(qiblaBearing, compass.smoothedHeading);
-    }, [qiblaBearing, compass.smoothedHeading]);
+    const relativeRotation =
+        compass.smoothedHeading === null ? null : calculateRelativeRotation(qiblaBearing, compass.smoothedHeading);
 
-    const isAligned = useMemo(() => {
-        if (relativeRotation === null) {
-            return false;
-        }
-        return isPointingAtQibla(relativeRotation);
-    }, [relativeRotation]);
+    const isAligned = relativeRotation === null ? false : isPointingAtQibla(relativeRotation);
 
     // Determine compass quality
-    const quality = useMemo(() => {
-        // iOS: use webkitCompassAccuracy if available
-        if (compass.isIOS && compass.calibrationQuality !== null) {
-            return getIOSCompassQuality(compass.calibrationQuality);
-        }
-        // Android/other: calculate from heading stability
-        return calculateHeadingStability(compass.headingHistory);
-    }, [compass.isIOS, compass.calibrationQuality, compass.headingHistory]);
+    const quality =
+        compass.isIOS && compass.calibrationQuality !== null
+            ? getIOSCompassQuality(compass.calibrationQuality)
+            : calculateHeadingStability(compass.headingHistory);
 
     // Show calibration prompt if quality is poor
     const showCalibration = quality?.text.includes('Poor') || quality?.text.includes('Unstable');

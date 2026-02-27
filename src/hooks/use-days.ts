@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { type CalculationConfig, daily } from '@/lib/calculator';
 import { MAX_BUFFERED_DAYS, salatLabels } from '@/lib/constants';
 import type { DayData, Timing } from '@/types/timeline';
@@ -40,26 +40,23 @@ export function useDayBuffer(config: CalculationConfig) {
      * @param {Date} date - Date to calculate prayer times for
      * @returns {DayData} Day data including timings and next Fajr
      */
-    const loadDay = useCallback(
-        (date: Date): DayData => {
-            // Ensure we're working with a clean date at noon to avoid DST/timezone issues
-            const year = date.getFullYear();
-            const month = date.getMonth();
-            const day = date.getDate();
-            const safeDate = new Date(year, month, day, 12, 0, 0, 0);
+    const loadDay = (date: Date): DayData => {
+        // Ensure we're working with a clean date at noon to avoid DST/timezone issues
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const day = date.getDate();
+        const safeDate = new Date(year, month, day, 12, 0, 0, 0);
 
-            // Calculate next day's date
-            const nextDate = new Date(year, month, day + 1, 12, 0, 0, 0);
+        // Calculate next day's date
+        const nextDate = new Date(year, month, day + 1, 12, 0, 0, 0);
 
-            const nextRes = daily(salatLabels, config, nextDate);
-            const nextFajr = nextRes.timings.find((t: Timing) => t.event === 'fajr')?.value ?? null;
+        const nextRes = daily(salatLabels, config, nextDate);
+        const nextFajr = nextRes.timings.find((t: Timing) => t.event === 'fajr')?.value ?? null;
 
-            const todayRes = daily(salatLabels, config, safeDate);
+        const todayRes = daily(salatLabels, config, safeDate);
 
-            return { date: safeDate, dayIndex: dayIndexCounter.current++, nextFajr, timings: todayRes.timings };
-        },
-        [config],
-    );
+        return { date: safeDate, dayIndex: dayIndexCounter.current++, nextFajr, timings: todayRes.timings };
+    };
 
     // Initialize with the correct day for current prayer time
     useEffect(() => {
@@ -96,7 +93,7 @@ export function useDayBuffer(config: CalculationConfig) {
      * Add one day before the current buffer (user scrolling backward in time)
      * Maintains maximum buffer size by trimming from the end
      */
-    const addPreviousDay = useCallback(() => {
+    const addPreviousDay = () => {
         setDays((prev) => {
             const firstDate = prev[0]!.date;
             const newDate = new Date(firstDate);
@@ -104,13 +101,13 @@ export function useDayBuffer(config: CalculationConfig) {
             const newDay = loadDay(newDate);
             return [newDay, ...prev].slice(0, MAX_BUFFERED_DAYS);
         });
-    }, [loadDay]);
+    };
 
     /**
      * Add one day after the current buffer (user scrolling forward in time)
      * Maintains maximum buffer size by trimming from the start
      */
-    const addNextDay = useCallback(() => {
+    const addNextDay = () => {
         setDays((prev) => {
             const lastDate = prev[prev.length - 1]!.date;
             const newDate = new Date(lastDate);
@@ -119,7 +116,7 @@ export function useDayBuffer(config: CalculationConfig) {
             const next = [...prev, newDay];
             return next.length > MAX_BUFFERED_DAYS ? next.slice(next.length - MAX_BUFFERED_DAYS) : next;
         });
-    }, [loadDay]);
+    };
 
     return { addNextDay, addPreviousDay, days };
 }

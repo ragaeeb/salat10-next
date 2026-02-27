@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface CameraState {
     stream: MediaStream | null;
@@ -37,15 +37,11 @@ export function useCamera() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [state, setState] = useState<CameraState>({ error: null, isReady: false, stream: null });
 
-    const startCamera = useCallback(async () => {
+    const startCamera = async () => {
         // Guard for non-browser runtimes (SSR/tests). Some CI environments may not
         // provide `navigator` as a global even if a DOM shim exists.
         if (typeof navigator === 'undefined') {
-            setState({
-                error: 'Camera is only available in a browser environment.',
-                isReady: false,
-                stream: null,
-            });
+            setState({ error: 'Camera is only available in a browser environment.', isReady: false, stream: null });
             return;
         }
 
@@ -94,7 +90,7 @@ export function useCamera() {
 
             setState({ error: userFriendlyMessage, isReady: false, stream: null });
         }
-    }, []);
+    };
 
     // Start camera on mount
     useEffect(() => {

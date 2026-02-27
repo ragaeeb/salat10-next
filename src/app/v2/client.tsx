@@ -1,6 +1,5 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
 import { Samaa } from '@/components/astro/samaa';
 import { Controls } from '@/components/controls';
 import { CurrentPhase } from '@/components/current-phase';
@@ -23,13 +22,13 @@ export function ParallaxClient() {
         useScrollTracking(days);
 
     // Handle loading previous day with scroll adjustment
-    const handleLoadPrev = useCallback(() => {
+    const handleLoadPrev = () => {
         addPreviousDay();
         onAddPrevDay();
-    }, [addPreviousDay, onAddPrevDay]);
+    };
 
     const currentDay = days[currentDayIndex];
-    const timeline = useMemo(() => (currentDay ? buildTimeline(currentDay) : null), [currentDay]);
+    const timeline = currentDay ? buildTimeline(currentDay) : null;
 
     return (
         <>

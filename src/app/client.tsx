@@ -4,7 +4,7 @@ import { IconCompass, IconSunMoon } from '@tabler/icons-react';
 import { Settings2Icon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QuoteCard } from '@/components/prayer/quote-card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ export function PrayerTimesPageClient() {
     const activeEvent = useActiveEvent();
     const { viewDate, timings, dateLabel, handlePrevDay, handleNextDay, handleToday } = useDayNavigation();
 
-    const hijri = useMemo(() => writeIslamicDate(0, viewDate), [viewDate]);
+    const hijri = writeIslamicDate(0, viewDate);
 
     useEffect(() => {
         if (hasHydrated && !hasValidCoordinates) {
