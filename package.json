@@ -64,5 +64,5 @@
         "test:e2e:ui": "npx playwright test --ui",
         "test:e2e:debug": "npx playwright test --debug"
     },
-    "version": "1.7.0"
+    "version": "1.7.1"
 }

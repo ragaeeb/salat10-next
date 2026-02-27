@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/ragaeeb/salat10-next/compare/v1.7.0...v1.7.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* update E2E tests to pass all 48 tests ([207be7b](https://github.com/ragaeeb/salat10-next/commit/207be7bed6e448aaa669891ff9c6bce98fbb9a9b))
+
 # [1.7.0](https://github.com/ragaeeb/salat10-next/compare/v1.6.2...v1.7.0) (2026-02-27)
 
 
