@@ -206,7 +206,6 @@ const matchesBefore = (quote: Quote, data: ComputedPrayerData): boolean => {
 
     const nightEvents = ['isha', 'middleOfTheNight', 'lastThirdOfTheNight'];
     const isInNightEvent = nightEvents.includes(currentEvent);
-    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
     let currentIndex = -1;
 

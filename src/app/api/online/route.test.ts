@@ -5,7 +5,7 @@ import { fetchPresenceData, GET, getActiveSessionIds } from './route';
 // Mock redis module
 const mockRedis = {
     exec: mock(async () => []),
-    hgetall: mock((key: string) => mockRedis),
+    hgetall: mock((_key: string) => mockRedis),
     pipeline: mock(() => mockRedis),
     zrange: mock(async () => []),
 };
@@ -120,9 +120,9 @@ describe('route', () => {
             });
 
             const response = await GET(request);
-            
+
             process.env.NODE_ENV = originalEnv;
-            
+
             expect(response.status).toBe(403);
 
             const data = await response.json();

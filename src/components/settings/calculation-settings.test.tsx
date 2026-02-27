@@ -1,7 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, mock } from 'bun:test';
-import { CalculationSettings } from './calculation-settings';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { Settings } from '@/types/settings';
+import { CalculationSettings } from './calculation-settings';
 
 // Mock detectMethodFor and methodPresets
 // Note: detectMethodFor uses tolerance matching, so we need to match actual preset values
@@ -9,11 +9,11 @@ const mockDetectMethodFor = mock((config: any) => {
     // Match actual preset values with tolerance
     const METHOD_TOLERANCE = 0.01;
     const presets = {
-        NorthAmerica: { fajrAngle: 15, ishaAngle: 15, ishaInterval: 0 },
         MuslimWorldLeague: { fajrAngle: 18, ishaAngle: 17, ishaInterval: 0 },
+        NorthAmerica: { fajrAngle: 15, ishaAngle: 15, ishaInterval: 0 },
         Other: { fajrAngle: 12, ishaAngle: 12, ishaInterval: 0 },
     };
-    
+
     for (const [method, values] of Object.entries(presets)) {
         const intervalMatches = Math.abs(values.ishaInterval - config.ishaInterval) < METHOD_TOLERANCE;
         const fajrMatches = Math.abs(values.fajrAngle - config.fajrAngle) < METHOD_TOLERANCE;
@@ -26,22 +26,19 @@ const mockDetectMethodFor = mock((config: any) => {
 });
 
 const mockMethodPresets = {
-    NorthAmerica: { fajrAngle: 15, ishaAngle: 15, ishaInterval: 0 },
     MuslimWorldLeague: { fajrAngle: 18, ishaAngle: 17, ishaInterval: 0 },
+    NorthAmerica: { fajrAngle: 15, ishaAngle: 15, ishaInterval: 0 },
     Other: { fajrAngle: 12, ishaAngle: 12, ishaInterval: 0 },
 };
 
-mock.module('@/lib/settings', () => ({
-    detectMethodFor: mockDetectMethodFor,
-    methodPresets: mockMethodPresets,
-}));
+mock.module('@/lib/settings', () => ({ detectMethodFor: mockDetectMethodFor, methodPresets: mockMethodPresets }));
 
 // Mock CALCULATION_METHOD_OPTIONS
 mock.module('@/lib/constants', () => ({
     CALCULATION_METHOD_OPTIONS: [
-        { value: 'NorthAmerica', label: 'North America - ISNA (15°, 15°)' },
-        { value: 'MuslimWorldLeague', label: 'Muslim World League (18°, 17°)' },
-        { value: 'Other', label: 'Other' },
+        { label: 'North America - ISNA (15°, 15°)', value: 'NorthAmerica' },
+        { label: 'Muslim World League (18°, 17°)', value: 'MuslimWorldLeague' },
+        { label: 'Other', value: 'Other' },
     ],
 }));
 
@@ -159,7 +156,7 @@ describe('CalculationSettings', () => {
 
             expect(onSettingsChange.mock.calls.length).toBe(1);
             const updater = onSettingsChange.mock.calls[0]![0] as (prev: Settings) => Settings;
-            const updated = updater(mockSettings);
+            updater(mockSettings);
             // Method should be auto-detected
             expect(mockDetectMethodFor.mock.calls.length).toBeGreaterThan(0);
         });
@@ -357,4 +354,3 @@ describe('CalculationSettings', () => {
         });
     });
 });
-

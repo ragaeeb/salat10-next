@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'bun:test';
-import { PrayerTimetableTable } from './prayer-timetable-table';
+import { render, screen } from '@testing-library/react';
 import type { monthly, yearly } from '@/lib/calculator';
+import { PrayerTimetableTable } from './prayer-timetable-table';
 
 type Schedule = ReturnType<typeof monthly> | ReturnType<typeof yearly>;
 
@@ -10,23 +10,59 @@ const createMockSchedule = (): Schedule => ({
         {
             date: new Date('2024-03-15T00:00:00'),
             timings: [
-                { event: 'fajr', label: 'Fajr', time: '5:30 AM', isFard: true, value: new Date('2024-03-15T05:30:00') },
-                { event: 'sunrise', label: 'Sunrise', time: '6:45 AM', isFard: false, value: new Date('2024-03-15T06:45:00') },
-                { event: 'dhuhr', label: 'Dhuhr', time: '12:30 PM', isFard: true, value: new Date('2024-03-15T12:30:00') },
-                { event: 'asr', label: 'Asr', time: '4:00 PM', isFard: true, value: new Date('2024-03-15T16:00:00') },
-                { event: 'maghrib', label: 'Maghrib', time: '6:30 PM', isFard: true, value: new Date('2024-03-15T18:30:00') },
-                { event: 'isha', label: 'Isha', time: '8:00 PM', isFard: true, value: new Date('2024-03-15T20:00:00') },
+                { event: 'fajr', isFard: true, label: 'Fajr', time: '5:30 AM', value: new Date('2024-03-15T05:30:00') },
+                {
+                    event: 'sunrise',
+                    isFard: false,
+                    label: 'Sunrise',
+                    time: '6:45 AM',
+                    value: new Date('2024-03-15T06:45:00'),
+                },
+                {
+                    event: 'dhuhr',
+                    isFard: true,
+                    label: 'Dhuhr',
+                    time: '12:30 PM',
+                    value: new Date('2024-03-15T12:30:00'),
+                },
+                { event: 'asr', isFard: true, label: 'Asr', time: '4:00 PM', value: new Date('2024-03-15T16:00:00') },
+                {
+                    event: 'maghrib',
+                    isFard: true,
+                    label: 'Maghrib',
+                    time: '6:30 PM',
+                    value: new Date('2024-03-15T18:30:00'),
+                },
+                { event: 'isha', isFard: true, label: 'Isha', time: '8:00 PM', value: new Date('2024-03-15T20:00:00') },
             ],
         },
         {
             date: new Date('2024-03-16T00:00:00'),
             timings: [
-                { event: 'fajr', label: 'Fajr', time: '5:29 AM', isFard: true, value: new Date('2024-03-16T05:29:00') },
-                { event: 'sunrise', label: 'Sunrise', time: '6:44 AM', isFard: false, value: new Date('2024-03-16T06:44:00') },
-                { event: 'dhuhr', label: 'Dhuhr', time: '12:30 PM', isFard: true, value: new Date('2024-03-16T12:30:00') },
-                { event: 'asr', label: 'Asr', time: '4:01 PM', isFard: true, value: new Date('2024-03-16T16:01:00') },
-                { event: 'maghrib', label: 'Maghrib', time: '6:31 PM', isFard: true, value: new Date('2024-03-16T18:31:00') },
-                { event: 'isha', label: 'Isha', time: '8:01 PM', isFard: true, value: new Date('2024-03-16T20:01:00') },
+                { event: 'fajr', isFard: true, label: 'Fajr', time: '5:29 AM', value: new Date('2024-03-16T05:29:00') },
+                {
+                    event: 'sunrise',
+                    isFard: false,
+                    label: 'Sunrise',
+                    time: '6:44 AM',
+                    value: new Date('2024-03-16T06:44:00'),
+                },
+                {
+                    event: 'dhuhr',
+                    isFard: true,
+                    label: 'Dhuhr',
+                    time: '12:30 PM',
+                    value: new Date('2024-03-16T12:30:00'),
+                },
+                { event: 'asr', isFard: true, label: 'Asr', time: '4:01 PM', value: new Date('2024-03-16T16:01:00') },
+                {
+                    event: 'maghrib',
+                    isFard: true,
+                    label: 'Maghrib',
+                    time: '6:31 PM',
+                    value: new Date('2024-03-16T18:31:00'),
+                },
+                { event: 'isha', isFard: true, label: 'Isha', time: '8:01 PM', value: new Date('2024-03-16T20:01:00') },
             ],
         },
     ],
@@ -92,11 +128,7 @@ describe('PrayerTimetableTable', () => {
 
         it('should format dates using custom dateFormat', () => {
             const schedule = createMockSchedule();
-            const customFormat: Intl.DateTimeFormatOptions = {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-            };
+            const customFormat: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
             render(<PrayerTimetableTable schedule={schedule} timeZone="America/New_York" dateFormat={customFormat} />);
 
             // Should render dates with custom format
@@ -106,11 +138,7 @@ describe('PrayerTimetableTable', () => {
 
         it('should handle ISO format dateFormat', () => {
             const schedule = createMockSchedule();
-            const isoFormat: Intl.DateTimeFormatOptions = {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-            };
+            const isoFormat: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
             render(<PrayerTimetableTable schedule={schedule} timeZone="America/New_York" dateFormat={isoFormat} />);
 
             // ISO format should be YYYY-MM-DD
@@ -136,17 +164,53 @@ describe('PrayerTimetableTable', () => {
                     {
                         date: new Date('2024-03-15T00:00:00'),
                         timings: [
-                            { event: 'fajr', label: 'Fajr', time: '5:30 AM', isFard: true, value: new Date('2024-03-15T05:30:00') },
-                            { event: 'sunrise', label: 'Sunrise', time: '6:45 AM', isFard: false, value: new Date('2024-03-15T06:45:00') },
-                            { event: 'dhuhr', label: 'Dhuhr', time: '12:30 PM', isFard: true, value: new Date('2024-03-15T12:30:00') },
-                            { event: 'asr', label: 'Asr', time: '4:00 PM', isFard: true, value: new Date('2024-03-15T16:00:00') },
+                            {
+                                event: 'fajr',
+                                isFard: true,
+                                label: 'Fajr',
+                                time: '5:30 AM',
+                                value: new Date('2024-03-15T05:30:00'),
+                            },
+                            {
+                                event: 'sunrise',
+                                isFard: false,
+                                label: 'Sunrise',
+                                time: '6:45 AM',
+                                value: new Date('2024-03-15T06:45:00'),
+                            },
+                            {
+                                event: 'dhuhr',
+                                isFard: true,
+                                label: 'Dhuhr',
+                                time: '12:30 PM',
+                                value: new Date('2024-03-15T12:30:00'),
+                            },
+                            {
+                                event: 'asr',
+                                isFard: true,
+                                label: 'Asr',
+                                time: '4:00 PM',
+                                value: new Date('2024-03-15T16:00:00'),
+                            },
                         ],
                     },
                     {
                         date: new Date('2024-03-16T00:00:00'),
                         timings: [
-                            { event: 'fajr', label: 'Fajr', time: '5:29 AM', isFard: true, value: new Date('2024-03-16T05:29:00') },
-                            { event: 'dhuhr', label: 'Dhuhr', time: '12:30 PM', isFard: true, value: new Date('2024-03-16T12:30:00') },
+                            {
+                                event: 'fajr',
+                                isFard: true,
+                                label: 'Fajr',
+                                time: '5:29 AM',
+                                value: new Date('2024-03-16T05:29:00'),
+                            },
+                            {
+                                event: 'dhuhr',
+                                isFard: true,
+                                label: 'Dhuhr',
+                                time: '12:30 PM',
+                                value: new Date('2024-03-16T12:30:00'),
+                            },
                             // Missing sunrise and asr - should show em dash
                         ],
                     },
@@ -156,19 +220,12 @@ describe('PrayerTimetableTable', () => {
 
             // Should show em dash for missing timings in second row
             const tableCells = screen.getAllByRole('cell');
-            const hasEmDash = tableCells.some(cell => cell.textContent === '—');
+            const hasEmDash = tableCells.some((cell) => cell.textContent === '—');
             expect(hasEmDash).toBe(true);
         });
 
         it('should handle empty timings array', () => {
-            const scheduleWithEmpty: Schedule = {
-                dates: [
-                    {
-                        date: new Date('2024-03-15T00:00:00'),
-                        timings: [],
-                    },
-                ],
-            };
+            const scheduleWithEmpty: Schedule = { dates: [{ date: new Date('2024-03-15T00:00:00'), timings: [] }] };
             render(<PrayerTimetableTable schedule={scheduleWithEmpty} timeZone="America/New_York" />);
 
             // Should render table header but no data rows with timings
@@ -178,9 +235,7 @@ describe('PrayerTimetableTable', () => {
 
     describe('edge cases', () => {
         it('should handle schedule with single date', () => {
-            const singleDateSchedule: Schedule = {
-                dates: [createMockSchedule().dates[0]!],
-            };
+            const singleDateSchedule: Schedule = { dates: [createMockSchedule().dates[0]!] };
             render(<PrayerTimetableTable schedule={singleDateSchedule} timeZone="America/New_York" />);
 
             expect(screen.getByText('Fajr')).toBeDefined();
@@ -194,12 +249,48 @@ describe('PrayerTimetableTable', () => {
                     return {
                         date: dateObj,
                         timings: [
-                            { event: 'fajr', label: 'Fajr', time: '5:30 AM', isFard: true, value: new Date(2024, 2, day, 5, 30) },
-                            { event: 'sunrise', label: 'Sunrise', time: '6:45 AM', isFard: false, value: new Date(2024, 2, day, 6, 45) },
-                            { event: 'dhuhr', label: 'Dhuhr', time: '12:30 PM', isFard: true, value: new Date(2024, 2, day, 12, 30) },
-                            { event: 'asr', label: 'Asr', time: '4:00 PM', isFard: true, value: new Date(2024, 2, day, 16, 0) },
-                            { event: 'maghrib', label: 'Maghrib', time: '6:30 PM', isFard: true, value: new Date(2024, 2, day, 18, 30) },
-                            { event: 'isha', label: 'Isha', time: '8:00 PM', isFard: true, value: new Date(2024, 2, day, 20, 0) },
+                            {
+                                event: 'fajr',
+                                isFard: true,
+                                label: 'Fajr',
+                                time: '5:30 AM',
+                                value: new Date(2024, 2, day, 5, 30),
+                            },
+                            {
+                                event: 'sunrise',
+                                isFard: false,
+                                label: 'Sunrise',
+                                time: '6:45 AM',
+                                value: new Date(2024, 2, day, 6, 45),
+                            },
+                            {
+                                event: 'dhuhr',
+                                isFard: true,
+                                label: 'Dhuhr',
+                                time: '12:30 PM',
+                                value: new Date(2024, 2, day, 12, 30),
+                            },
+                            {
+                                event: 'asr',
+                                isFard: true,
+                                label: 'Asr',
+                                time: '4:00 PM',
+                                value: new Date(2024, 2, day, 16, 0),
+                            },
+                            {
+                                event: 'maghrib',
+                                isFard: true,
+                                label: 'Maghrib',
+                                time: '6:30 PM',
+                                value: new Date(2024, 2, day, 18, 30),
+                            },
+                            {
+                                event: 'isha',
+                                isFard: true,
+                                label: 'Isha',
+                                time: '8:00 PM',
+                                value: new Date(2024, 2, day, 20, 0),
+                            },
                         ],
                     };
                 }),
@@ -217,9 +308,9 @@ describe('PrayerTimetableTable', () => {
 
             for (const tz of timeZones) {
                 const { unmount } = render(<PrayerTimetableTable schedule={schedule} timeZone={tz} />);
-                
+
                 expect(screen.getByText('Date')).toBeDefined();
-                
+
                 unmount();
             }
         });
@@ -230,16 +321,46 @@ describe('PrayerTimetableTable', () => {
                     {
                         date: new Date('2024-03-15T00:00:00'),
                         timings: [
-                            { event: 'fajr', label: 'Fajr', time: '5:30 AM', isFard: true, value: new Date('2024-03-15T05:30:00') },
-                            { event: 'dhuhr', label: 'Dhuhr', time: '12:30 PM', isFard: true, value: new Date('2024-03-15T12:30:00') },
+                            {
+                                event: 'fajr',
+                                isFard: true,
+                                label: 'Fajr',
+                                time: '5:30 AM',
+                                value: new Date('2024-03-15T05:30:00'),
+                            },
+                            {
+                                event: 'dhuhr',
+                                isFard: true,
+                                label: 'Dhuhr',
+                                time: '12:30 PM',
+                                value: new Date('2024-03-15T12:30:00'),
+                            },
                         ],
                     },
                     {
                         date: new Date('2024-03-16T00:00:00'),
                         timings: [
-                            { event: 'fajr', label: 'Fajr', time: '5:29 AM', isFard: true, value: new Date('2024-03-16T05:29:00') },
-                            { event: 'sunrise', label: 'Sunrise', time: '6:44 AM', isFard: false, value: new Date('2024-03-16T06:44:00') },
-                            { event: 'dhuhr', label: 'Dhuhr', time: '12:30 PM', isFard: true, value: new Date('2024-03-16T12:30:00') },
+                            {
+                                event: 'fajr',
+                                isFard: true,
+                                label: 'Fajr',
+                                time: '5:29 AM',
+                                value: new Date('2024-03-16T05:29:00'),
+                            },
+                            {
+                                event: 'sunrise',
+                                isFard: false,
+                                label: 'Sunrise',
+                                time: '6:44 AM',
+                                value: new Date('2024-03-16T06:44:00'),
+                            },
+                            {
+                                event: 'dhuhr',
+                                isFard: true,
+                                label: 'Dhuhr',
+                                time: '12:30 PM',
+                                value: new Date('2024-03-16T12:30:00'),
+                            },
                         ],
                     },
                 ],
@@ -280,4 +401,3 @@ describe('PrayerTimetableTable', () => {
         });
     });
 });
-

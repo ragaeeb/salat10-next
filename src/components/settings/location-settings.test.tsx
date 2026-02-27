@@ -60,7 +60,7 @@ beforeEach(() => {
     mockFetch.mockClear();
     mockToastSuccess.mockClear();
     mockToastError.mockClear();
-    
+
     // Spy on console methods to suppress output
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
@@ -71,7 +71,7 @@ beforeEach(() => {
         configurable: true,
         value: {
             geolocation: {
-                getCurrentPosition: mock((success: any, error: any) => {
+                getCurrentPosition: mock((success: any, _error: any) => {
                     // Default to success
                     success({ coords: { latitude: 43.6532, longitude: -79.3832 } });
                 }),
@@ -85,7 +85,7 @@ afterEach(() => {
     mockFetch.mockClear();
     mockToastSuccess.mockClear();
     mockToastError.mockClear();
-    
+
     // Restore console methods
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
@@ -549,7 +549,7 @@ describe('LocationSettings', () => {
         });
 
         it('should handle permission denied error', async () => {
-            const mockGetCurrentPosition = mock((success: any, error: any) => {
+            const mockGetCurrentPosition = mock((_success: any, error: any) => {
                 const geolocationError = {
                     code: 1, // PERMISSION_DENIED
                     PERMISSION_DENIED: 1,
@@ -586,7 +586,7 @@ describe('LocationSettings', () => {
         });
 
         it('should handle position unavailable error', async () => {
-            const mockGetCurrentPosition = mock((success: any, error: any) => {
+            const mockGetCurrentPosition = mock((_success: any, error: any) => {
                 const geolocationError = {
                     code: 2, // POSITION_UNAVAILABLE
                     PERMISSION_DENIED: 1,
@@ -623,7 +623,7 @@ describe('LocationSettings', () => {
         });
 
         it('should handle timeout error', async () => {
-            const mockGetCurrentPosition = mock((success: any, error: any) => {
+            const mockGetCurrentPosition = mock((_success: any, error: any) => {
                 const geolocationError = {
                     code: 3, // TIMEOUT
                     PERMISSION_DENIED: 1,

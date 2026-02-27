@@ -216,19 +216,18 @@ describe('hijri', () => {
             expect(dayDiff === 1 || (dayDiff < 0 && monthChanged)).toBe(true);
         });
 
-        it.each([-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5])(
-            'should maintain consistency for adjustment %i',
-            (adjustment) => {
-                const base = new Date('2024-03-11T00:00:00Z');
-                const explanation = explainHijriConversion(adjustment, base);
+        it.each([
+            -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5,
+        ])('should maintain consistency for adjustment %i', (adjustment) => {
+            const base = new Date('2024-03-11T00:00:00Z');
+            const explanation = explainHijriConversion(adjustment, base);
 
-                expect(explanation.islamic.day).toBeGreaterThan(0);
-                expect(explanation.islamic.day).toBeLessThanOrEqual(30);
-                expect(explanation.islamic.monthIndex).toBeGreaterThanOrEqual(0);
-                expect(explanation.islamic.monthIndex).toBeLessThanOrEqual(11);
-                expect(explanation.islamic.year).toBeGreaterThan(1400);
-            },
-        );
+            expect(explanation.islamic.day).toBeGreaterThan(0);
+            expect(explanation.islamic.day).toBeLessThanOrEqual(30);
+            expect(explanation.islamic.monthIndex).toBeGreaterThanOrEqual(0);
+            expect(explanation.islamic.monthIndex).toBeLessThanOrEqual(11);
+            expect(explanation.islamic.year).toBeGreaterThan(1400);
+        });
 
         it('should handle historical dates correctly', () => {
             const historical = new Date('2000-01-01T00:00:00Z');
@@ -273,18 +272,20 @@ describe('hijri', () => {
             expect(largePositive.year - largeNegative.year).toBeCloseTo(2, 0);
         });
 
-        it.each(['2024-01-01', '2024-03-11', '2024-06-15', '2024-12-31'])(
-            'should be consistent between functions for %s',
-            (dateStr) => {
-                const date = new Date(`${dateStr}T00:00:00Z`);
-                const written = writeIslamicDate(0, date);
-                const explained = explainHijriConversion(0, date);
+        it.each([
+            '2024-01-01',
+            '2024-03-11',
+            '2024-06-15',
+            '2024-12-31',
+        ])('should be consistent between functions for %s', (dateStr) => {
+            const date = new Date(`${dateStr}T00:00:00Z`);
+            const written = writeIslamicDate(0, date);
+            const explained = explainHijriConversion(0, date);
 
-                expect(written.date).toBe(explained.islamic.day);
-                expect(written.month).toBe(explained.islamic.monthName);
-                expect(written.year).toBe(explained.islamic.year);
-                expect(written.day).toBe(explained.weekdayName);
-            },
-        );
+            expect(written.date).toBe(explained.islamic.day);
+            expect(written.month).toBe(explained.islamic.monthName);
+            expect(written.year).toBe(explained.islamic.year);
+            expect(written.day).toBe(explained.weekdayName);
+        });
     });
 });

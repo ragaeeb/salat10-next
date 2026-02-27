@@ -1,5 +1,5 @@
-import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'bun:test';
+import { renderHook } from '@testing-library/react';
 import { useCamera } from './use-camera';
 
 /**
@@ -8,7 +8,6 @@ import { useCamera } from './use-camera';
  * These tests verify the hook's structure and basic error handling.
  */
 describe('useCamera', () => {
-
     describe('initialization', () => {
         it('should return videoRef, stream, error, isReady, and startCamera', () => {
             const { result } = renderHook(() => useCamera());
@@ -40,7 +39,9 @@ describe('useCamera', () => {
             expect(result.current.stream === null || typeof result.current.stream === 'object').toBe(true);
             expect(result.current.error === null || typeof result.current.error === 'string').toBe(true);
             expect(result.current.videoRef).toBeDefined();
-            expect(result.current.videoRef.current === null || typeof result.current.videoRef.current === 'object').toBe(true);
+            expect(
+                result.current.videoRef.current === null || typeof result.current.videoRef.current === 'object',
+            ).toBe(true);
         });
 
         it('should provide startCamera function', () => {
@@ -56,4 +57,3 @@ describe('useCamera', () => {
         });
     });
 });
-

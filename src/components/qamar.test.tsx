@@ -1,8 +1,8 @@
+import { describe, expect, it } from 'bun:test';
 import { render } from '@testing-library/react';
 import { motionValue } from 'motion/react';
-import { describe, expect, it } from 'bun:test';
-import { Qamar } from './qamar';
 import type { Timeline } from '@/types/timeline';
+import { Qamar } from './qamar';
 
 const mockTimeline: Timeline = {
     asr: 0.6,
@@ -64,12 +64,14 @@ describe('Qamar', () => {
 
             for (const value of testValues) {
                 const scrollProgress = motionValue(value);
-                const { unmount, container } = render(<Qamar scrollProgress={scrollProgress} timeline={mockTimeline} />);
-                
+                const { unmount, container } = render(
+                    <Qamar scrollProgress={scrollProgress} timeline={mockTimeline} />,
+                );
+
                 // Should render without crashing
                 const svg = container.querySelector('svg');
                 expect(svg).toBeDefined();
-                
+
                 unmount();
             }
         });
@@ -100,4 +102,3 @@ describe('Qamar', () => {
         });
     });
 });
-

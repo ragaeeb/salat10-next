@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'bun:test';
 import { render } from '@testing-library/react';
 import { motionValue } from 'motion/react';
-import { describe, expect, it } from 'bun:test';
 import { SkyBackground } from './sky';
 
 describe('SkyBackground', () => {
@@ -48,10 +48,10 @@ describe('SkyBackground', () => {
 
             for (const color of colors) {
                 const { unmount, container } = render(<SkyBackground skyColor={color} />);
-                
+
                 const div = container.querySelector('div');
                 expect(div).toBeDefined();
-                
+
                 unmount();
             }
         });
@@ -65,10 +65,9 @@ describe('SkyBackground', () => {
 
             // Update color
             colorValue.set('rgb(200, 100, 50)');
-            
+
             // Component should still render
             expect(div).toBeDefined();
         });
     });
 });
-

@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'bun:test';
 import { render } from '@testing-library/react';
 import { motionValue } from 'motion/react';
-import { describe, expect, it } from 'bun:test';
 import { FajrGradient } from './fajr-sky';
 
 describe('FajrGradient', () => {
@@ -65,7 +65,7 @@ describe('FajrGradient', () => {
 
             // Update opacity
             opacityValue.set(0.9);
-            
+
             // Component should still render
             expect(div).toBeDefined();
         });
@@ -81,4 +81,3 @@ describe('FajrGradient', () => {
         });
     });
 });
-

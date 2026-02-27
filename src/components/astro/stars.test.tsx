@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'bun:test';
 import { render, waitFor } from '@testing-library/react';
 import { motionValue } from 'motion/react';
-import { describe, expect, it } from 'bun:test';
 import { StarsLayer } from './stars';
 
 describe('StarsLayer', () => {
@@ -59,13 +59,13 @@ describe('StarsLayer', () => {
     describe('disabled prop', () => {
         it('should return null when disabled is true', () => {
             const { container } = render(<StarsLayer opacity={1} disabled={true} />);
-            
+
             // Component returns null immediately when disabled
             // When disabled=true, the component returns null before rendering anything
             // So the container should only have the root wrapper, no stars content
             // Check that we don't have the motion.div with z-10 class
-            const starsDiv = Array.from(container.querySelectorAll('div')).find(
-                (div) => div.className?.includes('z-10')
+            const starsDiv = Array.from(container.querySelectorAll('div')).find((div) =>
+                div.className?.includes('z-10'),
             );
             expect(starsDiv).toBeUndefined();
         });
@@ -110,7 +110,7 @@ describe('StarsLayer', () => {
 
             // Update opacity
             opacityValue.set(0.9);
-            
+
             // Component should still render
             await waitFor(() => {
                 const div = container.querySelector('div');
@@ -153,4 +153,3 @@ describe('StarsLayer', () => {
         });
     });
 });
-

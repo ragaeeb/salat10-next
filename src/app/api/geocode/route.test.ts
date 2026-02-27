@@ -38,9 +38,9 @@ describe('geocode route', () => {
             });
 
             const response = await GET(request);
-            
+
             process.env.NODE_ENV = originalEnv;
-            
+
             expect(response.status).toBe(403);
 
             const data = await response.json();

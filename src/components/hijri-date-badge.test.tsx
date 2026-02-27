@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'bun:test';
+import { render, screen } from '@testing-library/react';
 import { HijriDateBadge } from './hijri-date-badge';
 
 describe('HijriDateBadge', () => {
@@ -38,11 +38,11 @@ describe('HijriDateBadge', () => {
 
             for (const date of dates) {
                 const { unmount } = render(<HijriDateBadge date={date} />);
-                
+
                 // Should render without crashing
                 const badge = screen.getByText(/\(/);
                 expect(badge).toBeDefined();
-                
+
                 unmount();
             }
         });
@@ -75,19 +75,19 @@ describe('HijriDateBadge', () => {
         it('should memoize hijriLabel based on date', () => {
             const date1 = new Date('2024-03-15T12:00:00');
             const { rerender } = render(<HijriDateBadge date={date1} />);
-            
+
             const firstText = screen.getByText(/\(/).textContent;
 
             // Rerender with same date
             rerender(<HijriDateBadge date={date1} />);
-            
+
             const secondText = screen.getByText(/\(/).textContent;
             expect(secondText).toBe(firstText);
 
             // Rerender with different date
             const date2 = new Date('2024-03-16T12:00:00');
             rerender(<HijriDateBadge date={date2} />);
-            
+
             const thirdText = screen.getByText(/\(/).textContent;
             // Text should be different for different date
             expect(thirdText).not.toBe(firstText);
@@ -115,17 +115,14 @@ describe('HijriDateBadge', () => {
 
     describe('edge cases', () => {
         it('should handle dates at year boundaries', () => {
-            const dates = [
-                new Date('2023-12-31T23:59:59'),
-                new Date('2024-01-01T00:00:00'),
-            ];
+            const dates = [new Date('2023-12-31T23:59:59'), new Date('2024-01-01T00:00:00')];
 
             for (const date of dates) {
                 const { unmount } = render(<HijriDateBadge date={date} />);
-                
+
                 const badge = screen.getByText(/\(/);
                 expect(badge).toBeDefined();
-                
+
                 unmount();
             }
         });
@@ -140,11 +137,11 @@ describe('HijriDateBadge', () => {
 
             for (const date of dates) {
                 const { unmount } = render(<HijriDateBadge date={date} />);
-                
+
                 const badge = screen.getByText(/\(/);
                 expect(badge).toBeDefined();
                 expect(badge.textContent).toBeTruthy();
-                
+
                 unmount();
             }
         });
@@ -166,4 +163,3 @@ describe('HijriDateBadge', () => {
         });
     });
 });
-

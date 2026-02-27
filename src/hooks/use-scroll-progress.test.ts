@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'bun:test';
 import { renderHook, waitFor } from '@testing-library/react';
 import { motionValue } from 'motion/react';
-import { describe, expect, it } from 'bun:test';
 import { DAY_HEIGHT_PX } from '@/lib/constants';
 import { useScrollProgress } from './use-scroll-progress';
 
@@ -157,7 +157,7 @@ describe('useScrollProgress', () => {
 
         it('should handle very large scroll positions', () => {
             const scrollY = motionValue(DAY_HEIGHT_PX * 100);
-            const { result } = renderHook(() => useScrollProgress(scrollY));
+            renderHook(() => useScrollProgress(scrollY));
 
             // DAY_HEIGHT_PX * 100 % DAY_HEIGHT_PX = 0, so progress = 0
             // To test clamping, use a value that gives > 0.999
@@ -188,4 +188,3 @@ describe('useScrollProgress', () => {
         });
     });
 });
-

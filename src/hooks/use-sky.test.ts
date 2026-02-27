@@ -1,8 +1,8 @@
+import { describe, expect, it } from 'bun:test';
 import { renderHook } from '@testing-library/react';
 import { motionValue } from 'motion/react';
-import { describe, expect, it } from 'bun:test';
-import { useSky } from './use-sky';
 import type { Timeline } from '@/types/timeline';
+import { useSky } from './use-sky';
 
 const mockTimeline: Timeline = {
     asr: 0.6,
@@ -285,10 +285,9 @@ describe('useSky', () => {
 
         it('should react to timeline changes', () => {
             const scrollProgress = motionValue(0.5);
-            const { result, rerender } = renderHook(
-                ({ timeline }) => useSky(scrollProgress, timeline),
-                { initialProps: { timeline: mockTimeline } }
-            );
+            const { result, rerender } = renderHook(({ timeline }) => useSky(scrollProgress, timeline), {
+                initialProps: { timeline: mockTimeline },
+            });
 
             const initialColor = result.current.skyColor.get();
             expect(initialColor).toBe('rgba(150, 215, 245, 0.32)');
@@ -341,16 +340,16 @@ describe('useSky', () => {
                 // Should not throw and should return valid values
                 expect(typeof result.current.skyColor.get()).toBe('string');
                 expect(result.current.skyColor.get()).toContain('rgba');
-                
+
                 expect(result.current.starsOpacity.get()).toBeGreaterThanOrEqual(0);
                 expect(result.current.starsOpacity.get()).toBeLessThanOrEqual(1);
-                
+
                 expect(result.current.fajrGradientOpacity.get()).toBeGreaterThanOrEqual(0);
                 expect(result.current.fajrGradientOpacity.get()).toBeLessThanOrEqual(1);
-                
+
                 expect(result.current.sunsetGradientOpacity.get()).toBeGreaterThanOrEqual(0);
                 expect(result.current.sunsetGradientOpacity.get()).toBeLessThanOrEqual(1);
-                
+
                 expect(result.current.lightRaysOpacity.get()).toBeGreaterThanOrEqual(0);
                 expect(result.current.lightRaysOpacity.get()).toBeLessThanOrEqual(0.4);
             }
@@ -441,4 +440,3 @@ describe('useSky', () => {
         });
     });
 });
-

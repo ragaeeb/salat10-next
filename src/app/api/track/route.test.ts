@@ -5,11 +5,11 @@ import { POST, processAnalyticsEvents, updatePresenceData, validatePresenceData 
 // Mock redis module
 const mockRedis = {
     exec: mock(async () => []),
-    expire: mock((key: string, ttl: number) => mockRedis),
-    hset: mock((key: string, data: Record<string, unknown>) => mockRedis),
-    incr: mock((key: string) => mockRedis),
+    expire: mock((_key: string, _ttl: number) => mockRedis),
+    hset: mock((_key: string, _data: Record<string, unknown>) => mockRedis),
+    incr: mock((_key: string) => mockRedis),
     pipeline: mock(() => mockRedis),
-    zadd: mock((key: string, data: { member: string; score: number }) => mockRedis),
+    zadd: mock((_key: string, _data: { member: string; score: number }) => mockRedis),
 };
 
 mock.module('@/lib/redis', () => ({
@@ -179,9 +179,9 @@ describe('route', () => {
             });
 
             const response = await POST(request);
-            
+
             process.env.NODE_ENV = originalEnv;
-            
+
             expect(response.status).toBe(403);
         });
 
