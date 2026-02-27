@@ -30,8 +30,8 @@ test.describe('Settings Page (/settings)', () => {
 
         await expect(page.getByRole('heading', { name: /Location.*Settings/i })).toBeVisible({ timeout: 10000 });
 
-        // Should show calculation method options
-        await expect(page.getByText(/Fajr/i)).toBeVisible();
+        // Should show Fajr angle input
+        await expect(page.getByText('Fajr angle (°)')).toBeVisible();
     });
 
     test('shows reset defaults button', async ({ pageWithOttawa: page }) => {

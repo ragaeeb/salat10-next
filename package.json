@@ -60,7 +60,7 @@
         "lint": "biome check .",
         "start": "next start",
         "test": "NODE_ENV=test bun -c ./bunfig.toml -r ./happydom.ts -r ./testing-library.ts test --coverage --coverage-reporter=lcov",
-        "test:e2e": "bun run build && npx playwright test",
+        "test:e2e": "next build && npx playwright test",
         "test:e2e:ui": "npx playwright test --ui",
         "test:e2e:debug": "npx playwright test --debug"
     },

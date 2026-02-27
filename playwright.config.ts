@@ -22,7 +22,7 @@ export default defineConfig({
         video: 'retain-on-failure',
     },
     webServer: {
-        command: 'bun x next start -p 3002',
+        command: './node_modules/.bin/next start -p 3002',
         reuseExistingServer: !process.env.CI,
         timeout: 60000,
         url: 'http://localhost:3002',

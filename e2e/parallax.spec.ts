@@ -27,11 +27,9 @@ test.describe('Parallax View (/v2)', () => {
 
         await page.waitForLoadState('networkidle', { timeout: 15000 });
 
-        // Should show prayer phase info (one of the prayer names)
-        const phaseText = page
-            .getByText(/Fajr|Sunrise|Dhuhr|Asr|Maghrib|Isha|Night/i)
-            .first();
-        await expect(phaseText).toBeVisible({ timeout: 10000 });
+        // Should show prayer time (AM/PM format) in the current phase display
+        const timeText = page.getByText(/\d+:\d+ [AP]M/).first();
+        await expect(timeText).toBeVisible({ timeout: 10000 });
     });
 
     test('has scrollable content', async ({ pageWithOttawa: page }) => {
