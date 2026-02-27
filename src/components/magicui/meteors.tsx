@@ -69,7 +69,7 @@ export const Meteors = ({
                 >
                     {/* Meteor tail */}
                     <div
-                        className="-z-10 -translate-y-1/2 pointer-events-none absolute top-1/2 h-px w-[60px]"
+                        className="pointer-events-none absolute top-1/2 -z-10 h-px w-[60px] -translate-y-1/2"
                         style={{
                             // pure white trail with stronger glow
                             background:

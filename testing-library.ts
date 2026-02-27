@@ -7,11 +7,7 @@ expect.extend(matchers);
 // Ensure window.event exists before cleanup runs
 // React Testing Library's cleanup tries to access window.event
 if (typeof window !== 'undefined' && !window.event) {
-    Object.defineProperty(window, 'event', {
-        value: undefined,
-        writable: true,
-        configurable: true,
-    });
+    Object.defineProperty(window, 'event', { configurable: true, value: undefined, writable: true });
 }
 
 // Optional: cleans up `render` after each test
@@ -20,7 +16,7 @@ afterEach(() => {
     if (typeof window !== 'undefined') {
         try {
             cleanup();
-        } catch (error) {
+        } catch (_error) {
             // Ignore cleanup errors - they're often harmless
             // and related to React Testing Library's internal state
         }

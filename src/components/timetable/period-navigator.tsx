@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { type ReactNode, useCallback } from 'react';
+import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 
@@ -14,8 +14,8 @@ export type PeriodNavigatorProps = {
 };
 
 export function PeriodNavigator({ label, onNavigate, previousDisabled, nextDisabled, addon }: PeriodNavigatorProps) {
-    const handlePrevious = useCallback(() => onNavigate(-1), [onNavigate]);
-    const handleNext = useCallback(() => onNavigate(1), [onNavigate]);
+    const handlePrevious = () => onNavigate(-1);
+    const handleNext = () => onNavigate(1);
 
     return (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/80 p-3 shadow">
@@ -30,7 +30,7 @@ export function PeriodNavigator({ label, onNavigate, previousDisabled, nextDisab
                 <span aria-hidden>Prev</span>
             </Button>
             <div className="flex flex-1 flex-wrap items-center justify-center gap-3">
-                <p className="text-center text-lg font-semibold text-foreground sm:text-xl">{label}</p>
+                <p className="text-center font-semibold text-foreground text-lg sm:text-xl">{label}</p>
                 {addon ? <div className="flex items-center justify-center">{addon}</div> : null}
             </div>
             <Button variant="ghost" className="flex items-center gap-1" onClick={handleNext} disabled={nextDisabled}>

@@ -1,9 +1,9 @@
+import { describe, expect, it } from 'bun:test';
 import { renderHook } from '@testing-library/react';
 import { motionValue } from 'motion/react';
-import { describe, expect, it } from 'bun:test';
 import { FRAC, POS } from '@/lib/constants';
-import { useMoon } from './use-moon';
 import type { Timeline } from '@/types/timeline';
+import { useMoon } from './use-moon';
 
 const mockTimeline: Timeline = {
     asr: 0.6,
@@ -168,10 +168,9 @@ describe('useMoon', () => {
 
         it('should react to timeline changes', () => {
             const scrollProgress = motionValue(0.8);
-            const { result, rerender } = renderHook(
-                ({ timeline }) => useMoon(scrollProgress, timeline),
-                { initialProps: { timeline: mockTimeline } }
-            );
+            const { result, rerender } = renderHook(({ timeline }) => useMoon(scrollProgress, timeline), {
+                initialProps: { timeline: mockTimeline },
+            });
 
             // With timeline, moon should have some opacity at 0.8 (after maghrib)
             const initialOpacity = result.current.moonOpacity.get();
@@ -184,7 +183,7 @@ describe('useMoon', () => {
             const opacityAfterNull = result.current.moonOpacity.get();
             // Spring animation may still show previous value, so we check it's less than initial
             expect(opacityAfterNull).toBeLessThanOrEqual(initialOpacity);
-            
+
             // Moon X should be EAST_X when timeline is null, but spring animation smooths it
             const moonXAfterNull = result.current.moonX.get();
             // Spring animation smooths the transition, so it may not be exactly EAST_X immediately
@@ -283,4 +282,3 @@ describe('useMoon', () => {
         });
     });
 });
-

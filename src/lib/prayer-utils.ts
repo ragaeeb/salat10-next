@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { type CalculationConfig, daily, formatTimeRemaining, getActiveEvent, getTimeUntilNext } from '@/lib/calculator';
 import { useCurrentData, useSettings } from '@/store/usePrayerStore';
 import { type SalatEvent, salatLabels } from './constants';
@@ -14,24 +14,22 @@ const useCurrentTimings = () => {
     const currentData = useCurrentData();
     const settings = useSettings();
 
-    return useMemo(() => {
-        if (!currentData) {
-            return [];
-        }
+    if (!currentData) {
+        return [];
+    }
 
-        const config: CalculationConfig = {
-            fajrAngle: Number.parseFloat(settings.fajrAngle),
-            ishaAngle: Number.parseFloat(settings.ishaAngle),
-            ishaInterval: Number.parseFloat(settings.ishaInterval),
-            latitude: settings.latitude,
-            longitude: settings.longitude,
-            method: settings.method,
-            timeZone: settings.timeZone,
-        };
+    const config: CalculationConfig = {
+        fajrAngle: Number.parseFloat(settings.fajrAngle),
+        ishaAngle: Number.parseFloat(settings.ishaAngle),
+        ishaInterval: Number.parseFloat(settings.ishaInterval),
+        latitude: settings.latitude,
+        longitude: settings.longitude,
+        method: settings.method,
+        timeZone: settings.timeZone,
+    };
 
-        const result = daily(salatLabels, config, currentData.date);
-        return result.timings;
-    }, [currentData, settings]);
+    const result = daily(salatLabels, config, currentData.date);
+    return result.timings;
 };
 
 /**
@@ -44,19 +42,17 @@ const useCurrentTimings = () => {
 export const useTimingsForDate = (date: Date) => {
     const settings = useSettings();
 
-    return useMemo(() => {
-        const config: CalculationConfig = {
-            fajrAngle: Number.parseFloat(settings.fajrAngle),
-            ishaAngle: Number.parseFloat(settings.ishaAngle),
-            ishaInterval: Number.parseFloat(settings.ishaInterval),
-            latitude: settings.latitude,
-            longitude: settings.longitude,
-            method: settings.method,
-            timeZone: settings.timeZone,
-        };
+    const config: CalculationConfig = {
+        fajrAngle: Number.parseFloat(settings.fajrAngle),
+        ishaAngle: Number.parseFloat(settings.ishaAngle),
+        ishaInterval: Number.parseFloat(settings.ishaInterval),
+        latitude: settings.latitude,
+        longitude: settings.longitude,
+        method: settings.method,
+        timeZone: settings.timeZone,
+    };
 
-        return daily(salatLabels, config, date);
-    }, [date, settings]);
+    return daily(salatLabels, config, date);
 };
 
 /**
@@ -194,38 +190,33 @@ export const useDayNavigation = () => {
 
     const previewResult = useTimingsForDate(viewDate ?? new Date());
 
-    const isViewingToday = useMemo(() => {
-        if (!currentData || viewDate === null) {
-            return true;
-        }
-        return isSameDay(viewDate, currentData.date);
-    }, [viewDate, currentData]);
+    const isViewingToday = !currentData || viewDate === null ? true : isSameDay(viewDate, currentData.date);
 
     const timings = isViewingToday ? currentTimings : previewResult.timings;
     const dateLabel = isViewingToday && currentData ? formatDate(currentData.date) : previewResult.date;
     const effectiveDate = viewDate ?? (currentData?.date || new Date());
 
-    const handlePrevDay = useCallback(() => {
+    const handlePrevDay = () => {
         setViewDate((prev) => {
             const base = prev ?? new Date();
             const next = new Date(base);
             next.setDate(base.getDate() - 1);
             return next;
         });
-    }, []);
+    };
 
-    const handleNextDay = useCallback(() => {
+    const handleNextDay = () => {
         setViewDate((prev) => {
             const base = prev ?? new Date();
             const next = new Date(base);
             next.setDate(base.getDate() + 1);
             return next;
         });
-    }, []);
+    };
 
-    const handleToday = useCallback(() => {
+    const handleToday = () => {
         setViewDate(null);
-    }, []);
+    };
 
     return { dateLabel, handleNextDay, handlePrevDay, handleToday, timings, viewDate: effectiveDate };
 };
@@ -239,16 +230,13 @@ export const useDayNavigation = () => {
 export const useCalculationConfig = (): CalculationConfig => {
     const settings = useSettings();
 
-    return useMemo(
-        () => ({
-            fajrAngle: Number.parseFloat(settings.fajrAngle),
-            ishaAngle: Number.parseFloat(settings.ishaAngle),
-            ishaInterval: Number.parseFloat(settings.ishaInterval),
-            latitude: settings.latitude,
-            longitude: settings.longitude,
-            method: settings.method,
-            timeZone: settings.timeZone,
-        }),
-        [settings],
-    );
+    return {
+        fajrAngle: Number.parseFloat(settings.fajrAngle),
+        ishaAngle: Number.parseFloat(settings.ishaAngle),
+        ishaInterval: Number.parseFloat(settings.ishaInterval),
+        latitude: settings.latitude,
+        longitude: settings.longitude,
+        method: settings.method,
+        timeZone: settings.timeZone,
+    };
 };

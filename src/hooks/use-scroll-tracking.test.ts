@@ -1,29 +1,44 @@
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
-import { DAY_HEIGHT_PX, DISTANCE_FROM_TOP_BOTTOM, salatLabels } from '@/lib/constants';
+import { Coordinates } from 'adhan';
 import { daily } from '@/lib/calculator';
-import { useScrollTracking } from './use-scroll-tracking';
-import type { DayData } from '@/types/timeline';
-import { Coordinates, PrayerTimes, SunnahTimes } from 'adhan';
+import { DAY_HEIGHT_PX, salatLabels } from '@/lib/constants';
 import { createParameters } from '@/lib/settings';
+import type { DayData } from '@/types/timeline';
+import { useScrollTracking } from './use-scroll-tracking';
 
 // Helper to create mock day data
 const createMockDayData = (date: Date): DayData => {
-    const coords = new Coordinates(43.6532, -79.3832);
+    const _coords = new Coordinates(43.6532, -79.3832);
     const params = createParameters({ fajrAngle: 15, ishaAngle: 15, ishaInterval: 0, method: 'MuslimWorldLeague' });
-    const todayRes = daily(salatLabels, { ...params, latitude: '43.6532', longitude: '-79.3832', method: 'MuslimWorldLeague', timeZone: 'America/Toronto' }, date);
-    
+    const todayRes = daily(
+        salatLabels,
+        {
+            ...params,
+            latitude: '43.6532',
+            longitude: '-79.3832',
+            method: 'MuslimWorldLeague',
+            timeZone: 'America/Toronto',
+        },
+        date,
+    );
+
     const nextDate = new Date(date);
     nextDate.setDate(nextDate.getDate() + 1);
-    const nextRes = daily(salatLabels, { ...params, latitude: '43.6532', longitude: '-79.3832', method: 'MuslimWorldLeague', timeZone: 'America/Toronto' }, nextDate);
+    const nextRes = daily(
+        salatLabels,
+        {
+            ...params,
+            latitude: '43.6532',
+            longitude: '-79.3832',
+            method: 'MuslimWorldLeague',
+            timeZone: 'America/Toronto',
+        },
+        nextDate,
+    );
     const nextFajr = nextRes.timings.find((t) => t.event === 'fajr')?.value ?? null;
 
-    return {
-        date,
-        dayIndex: 0,
-        nextFajr,
-        timings: todayRes.timings,
-    };
+    return { date, dayIndex: 0, nextFajr, timings: todayRes.timings };
 };
 
 describe('useScrollTracking', () => {
@@ -31,13 +46,9 @@ describe('useScrollTracking', () => {
         // Mock window.scrollTo
         window.scrollTo = () => {};
         window.history.scrollRestoration = 'auto';
-        
+
         // Mock window.innerHeight
-        Object.defineProperty(window, 'innerHeight', {
-            writable: true,
-            configurable: true,
-            value: 800,
-        });
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800, writable: true });
     });
 
     afterEach(() => {
@@ -70,7 +81,7 @@ describe('useScrollTracking', () => {
         it('should initialize scroll position to current time', async () => {
             const days: DayData[] = [createMockDayData(new Date())];
             const scrollToSpy = { called: false };
-            
+
             window.scrollTo = () => {
                 scrollToSpy.called = true;
             };
@@ -92,10 +103,7 @@ describe('useScrollTracking', () => {
 
     describe('currentDayIndex tracking', () => {
         it('should update currentDayIndex based on scroll position', async () => {
-            const days: DayData[] = [
-                createMockDayData(new Date()),
-                createMockDayData(new Date()),
-            ];
+            const days: DayData[] = [createMockDayData(new Date()), createMockDayData(new Date())];
             const { result } = renderHook(() => useScrollTracking(days));
 
             // Simulate scrolling to second day
@@ -147,7 +155,7 @@ describe('useScrollTracking', () => {
         it('should adjust scroll position when previous day is added', () => {
             const days: DayData[] = [createMockDayData(new Date())];
             const scrollToSpy = { called: false, top: 0 };
-            
+
             window.scrollTo = ({ top }: { top?: number }) => {
                 scrollToSpy.called = true;
                 scrollToSpy.top = top ?? 0;
@@ -200,7 +208,7 @@ describe('useScrollTracking', () => {
             const { unmount } = renderHook(() => useScrollTracking(days));
 
             expect(window.history.scrollRestoration).toBe('manual');
-            
+
             unmount();
 
             expect(window.history.scrollRestoration).toBe('auto');
@@ -222,4 +230,3 @@ describe('useScrollTracking', () => {
         });
     });
 });
-

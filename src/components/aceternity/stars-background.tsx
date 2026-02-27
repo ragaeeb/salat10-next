@@ -1,24 +1,43 @@
 'use client';
 import type React from 'react';
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-interface StarProps {
-    x: number;
-    y: number;
-    radius: number;
-    opacity: number;
-    twinkleSpeed: number | null;
-}
+type StarProps = { x: number; y: number; radius: number; opacity: number; twinkleSpeed: number | null };
 
-interface StarBackgroundProps {
+type StarBackgroundProps = {
     starDensity?: number;
     allStarsTwinkle?: boolean;
     twinkleProbability?: number;
     minTwinkleSpeed?: number;
     maxTwinkleSpeed?: number;
     className?: string;
-}
+};
+
+type StarGenerationOptions = {
+    allStarsTwinkle: boolean;
+    maxTwinkleSpeed: number;
+    minTwinkleSpeed: number;
+    starDensity: number;
+    twinkleProbability: number;
+};
+
+const generateStars = (width: number, height: number, options: StarGenerationOptions): StarProps[] => {
+    const { allStarsTwinkle, maxTwinkleSpeed, minTwinkleSpeed, starDensity, twinkleProbability } = options;
+    const area = width * height;
+    const numStars = Math.floor(area * starDensity);
+
+    return Array.from({ length: numStars }, () => {
+        const shouldTwinkle = allStarsTwinkle || Math.random() < twinkleProbability;
+        return {
+            opacity: Math.random() * 0.5 + 0.5,
+            radius: Math.random() * 0.5 + 1, // Increased from 0.05 + 0.5 to 0.5 + 1
+            twinkleSpeed: shouldTwinkle ? minTwinkleSpeed + Math.random() * (maxTwinkleSpeed - minTwinkleSpeed) : null,
+            x: Math.random() * width,
+            y: Math.random() * height,
+        };
+    });
+};
 
 export const StarsBackground: React.FC<StarBackgroundProps> = ({
     starDensity = 0.00015,
@@ -30,26 +49,6 @@ export const StarsBackground: React.FC<StarBackgroundProps> = ({
 }) => {
     const [stars, setStars] = useState<StarProps[]>([]);
     const canvasRef: RefObject<HTMLCanvasElement | null> = useRef<HTMLCanvasElement>(null);
-
-    const generateStars = useCallback(
-        (width: number, height: number): StarProps[] => {
-            const area = width * height;
-            const numStars = Math.floor(area * starDensity);
-            return Array.from({ length: numStars }, () => {
-                const shouldTwinkle = allStarsTwinkle || Math.random() < twinkleProbability;
-                return {
-                    opacity: Math.random() * 0.5 + 0.5,
-                    radius: Math.random() * 0.5 + 1, // Increased from 0.05 + 0.5 to 0.5 + 1
-                    twinkleSpeed: shouldTwinkle
-                        ? minTwinkleSpeed + Math.random() * (maxTwinkleSpeed - minTwinkleSpeed)
-                        : null,
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                };
-            });
-        },
-        [starDensity, allStarsTwinkle, twinkleProbability, minTwinkleSpeed, maxTwinkleSpeed],
-    );
 
     useEffect(() => {
         const updateStars = () => {
@@ -63,7 +62,15 @@ export const StarsBackground: React.FC<StarBackgroundProps> = ({
                 const { width, height } = canvas.getBoundingClientRect();
                 canvas.width = width;
                 canvas.height = height;
-                setStars(generateStars(width, height));
+                setStars(
+                    generateStars(width, height, {
+                        allStarsTwinkle,
+                        maxTwinkleSpeed,
+                        minTwinkleSpeed,
+                        starDensity,
+                        twinkleProbability,
+                    }),
+                );
             }
         };
 
@@ -79,7 +86,7 @@ export const StarsBackground: React.FC<StarBackgroundProps> = ({
                 resizeObserver.unobserve(canvasRef.current);
             }
         };
-    }, [starDensity, allStarsTwinkle, twinkleProbability, minTwinkleSpeed, maxTwinkleSpeed, generateStars]);
+    }, [allStarsTwinkle, maxTwinkleSpeed, minTwinkleSpeed, starDensity, twinkleProbability]);
 
     useEffect(() => {
         const canvas = canvasRef.current;

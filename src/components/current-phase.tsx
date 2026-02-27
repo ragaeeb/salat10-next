@@ -26,7 +26,7 @@ export const CurrentPhase = ({ scrollProgress, timeline, currentDay, timeZone }:
     }, [scrollProgress, timeline, currentDay, timeZone]);
 
     return (
-        <div className="-translate-x-1/2 -translate-y-1/2 pointer-events-none absolute top-1/2 left-1/2 z-25">
+        <div className="pointer-events-none absolute top-1/2 left-1/2 z-25 -translate-x-1/2 -translate-y-1/2">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={phaseInfo.label}

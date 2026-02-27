@@ -1,9 +1,9 @@
-import { renderHook } from '@testing-library/react';
-import { type MotionValue, motionValue } from 'motion/react';
 import { describe, expect, it } from 'bun:test';
-import { useSun } from './use-sun';
-import type { Timeline } from '@/types/timeline';
+import { renderHook } from '@testing-library/react';
+import { motionValue } from 'motion/react';
 import { POS } from '@/lib/constants';
+import type { Timeline } from '@/types/timeline';
+import { useSun } from './use-sun';
 
 const mockTimeline: Timeline = {
     asr: 0.6,
@@ -96,12 +96,12 @@ describe('useSun', () => {
             const { result } = renderHook(() => useSun(scrollProgress, mockTimeline));
 
             const y = result.current.sunY.get();
-            
+
             // Should be at peak (lowest Y value)
             // Check nearby values are higher (closer to LOW_Y)
             const beforeNoon = motionValue(noon - 0.05);
             const { result: beforeResult } = renderHook(() => useSun(beforeNoon, mockTimeline));
-            
+
             const afterNoon = motionValue(noon + 0.05);
             const { result: afterResult } = renderHook(() => useSun(afterNoon, mockTimeline));
 
@@ -204,10 +204,9 @@ describe('useSun', () => {
 
         it('should react to timeline changes for color values', () => {
             const scrollProgress = motionValue(0.5);
-            const { result, rerender } = renderHook(
-                ({ timeline }) => useSun(scrollProgress, timeline),
-                { initialProps: { timeline: mockTimeline } }
-            );
+            const { result, rerender } = renderHook(({ timeline }) => useSun(scrollProgress, timeline), {
+                initialProps: { timeline: mockTimeline },
+            });
 
             const initialColorR = result.current.sunColorR.get();
             expect(initialColorR).toBe(255);
@@ -290,4 +289,3 @@ describe('useSun', () => {
         });
     });
 });
-

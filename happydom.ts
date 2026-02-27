@@ -7,32 +7,34 @@ GlobalRegistrator.register();
 // (CI can differ from local).
 if (typeof window !== 'undefined') {
     if (typeof (globalThis as any).navigator === 'undefined') {
-        Object.defineProperty(globalThis, 'navigator', {
-            value: window.navigator,
-            writable: true,
-            configurable: true,
-        });
+        Object.defineProperty(globalThis, 'navigator', { configurable: true, value: window.navigator, writable: true });
     }
 
     // Some animation/sensor libs expect these globals to exist.
-    if (typeof (globalThis as any).requestAnimationFrame === 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    if (
+        typeof (globalThis as any).requestAnimationFrame === 'undefined' &&
+        typeof window.requestAnimationFrame === 'function'
+    ) {
         (globalThis as any).requestAnimationFrame = window.requestAnimationFrame.bind(window);
     }
-    if (typeof (globalThis as any).cancelAnimationFrame === 'undefined' && typeof window.cancelAnimationFrame === 'function') {
+    if (
+        typeof (globalThis as any).cancelAnimationFrame === 'undefined' &&
+        typeof window.cancelAnimationFrame === 'function'
+    ) {
         (globalThis as any).cancelAnimationFrame = window.cancelAnimationFrame.bind(window);
     }
 
     // `motion/react` (and others) can consult matchMedia.
     if (typeof window.matchMedia !== 'function') {
         window.matchMedia = ((query: string) => ({
+            addEventListener: () => {},
+            addListener: () => {},
+            dispatchEvent: () => false,
             matches: false,
             media: query,
             onchange: null,
-            addEventListener: () => {},
             removeEventListener: () => {},
-            addListener: () => {},
             removeListener: () => {},
-            dispatchEvent: () => false,
         })) as any;
     }
 }
@@ -42,10 +44,6 @@ if (typeof window !== 'undefined') {
 // This needs to be set up before any React Testing Library code runs
 if (typeof window !== 'undefined') {
     if (!window.event) {
-        Object.defineProperty(window, 'event', {
-            value: undefined,
-            writable: true,
-            configurable: true,
-        });
+        Object.defineProperty(window, 'event', { configurable: true, value: undefined, writable: true });
     }
 }

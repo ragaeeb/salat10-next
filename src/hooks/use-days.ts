@@ -1,7 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { type CalculationConfig, daily } from '@/lib/calculator';
 import { MAX_BUFFERED_DAYS, salatLabels } from '@/lib/constants';
 import type { DayData, Timing } from '@/types/timeline';
+
+const buildDayData = (date: Date, config: CalculationConfig, dayIndex: number): DayData => {
+    // Ensure we're working with a clean date at noon to avoid DST/timezone issues
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+    const safeDate = new Date(year, month, day, 12, 0, 0, 0);
+
+    // Calculate next day's date
+    const nextDate = new Date(year, month, day + 1, 12, 0, 0, 0);
+    const nextRes = daily(salatLabels, config, nextDate);
+    const nextFajr = nextRes.timings.find((t: Timing) => t.event === 'fajr')?.value ?? null;
+    const todayRes = daily(salatLabels, config, safeDate);
+
+    return { date: safeDate, dayIndex, nextFajr, timings: todayRes.timings };
+};
 
 /**
  * Hook to manage a sliding window buffer of prayer time days
@@ -30,9 +46,10 @@ import type { DayData, Timing } from '@/types/timeline';
  * // Call addPreviousDay when user scrolls near top
  * ```
  */
-export function useDayBuffer(config: CalculationConfig) {
+export const useDayBuffer = (config: CalculationConfig) => {
     const [days, setDays] = useState<DayData[]>([]);
     const dayIndexCounter = useRef(0);
+    const { fajrAngle, ishaAngle, ishaInterval, latitude, longitude, method, timeZone } = config;
 
     /**
      * Load prayer times for a specific date
@@ -40,32 +57,21 @@ export function useDayBuffer(config: CalculationConfig) {
      * @param {Date} date - Date to calculate prayer times for
      * @returns {DayData} Day data including timings and next Fajr
      */
-    const loadDay = useCallback(
-        (date: Date): DayData => {
-            // Ensure we're working with a clean date at noon to avoid DST/timezone issues
-            const year = date.getFullYear();
-            const month = date.getMonth();
-            const day = date.getDate();
-            const safeDate = new Date(year, month, day, 12, 0, 0, 0);
-
-            // Calculate next day's date
-            const nextDate = new Date(year, month, day + 1, 12, 0, 0, 0);
-
-            const nextRes = daily(salatLabels, config, nextDate);
-            const nextFajr = nextRes.timings.find((t: Timing) => t.event === 'fajr')?.value ?? null;
-
-            const todayRes = daily(salatLabels, config, safeDate);
-
-            return { date: safeDate, dayIndex: dayIndexCounter.current++, nextFajr, timings: todayRes.timings };
-        },
-        [config],
-    );
+    const loadDay = (date: Date): DayData => {
+        const dayData = buildDayData(
+            date,
+            { fajrAngle, ishaAngle, ishaInterval, latitude, longitude, method, timeZone },
+            dayIndexCounter.current,
+        );
+        dayIndexCounter.current += 1;
+        return dayData;
+    };
 
     // Initialize with the correct day for current prayer time
     useEffect(() => {
         // Don't initialize if coordinates are invalid
-        const lat = Number.parseFloat(config.latitude);
-        const lon = Number.parseFloat(config.longitude);
+        const lat = Number.parseFloat(latitude);
+        const lon = Number.parseFloat(longitude);
         if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
             setDays([]);
             return;
@@ -76,7 +82,11 @@ export function useDayBuffer(config: CalculationConfig) {
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
         // Check today's Fajr time
-        const todayData = loadDay(today);
+        const todayData = buildDayData(
+            today,
+            { fajrAngle, ishaAngle, ishaInterval, latitude, longitude, method, timeZone },
+            dayIndexCounter.current,
+        );
         const todayFajr = todayData.timings.find((t) => t.event === 'fajr')?.value;
 
         let initialDay = today;
@@ -88,38 +98,51 @@ export function useDayBuffer(config: CalculationConfig) {
         }
 
         dayIndexCounter.current = 0;
-        const initialDayData = loadDay(initialDay);
+        const initialDayData = buildDayData(
+            initialDay,
+            { fajrAngle, ishaAngle, ishaInterval, latitude, longitude, method, timeZone },
+            dayIndexCounter.current,
+        );
+        dayIndexCounter.current += 1;
         setDays([initialDayData]);
-    }, [loadDay, config.latitude, config.longitude]);
+    }, [fajrAngle, ishaAngle, ishaInterval, latitude, longitude, method, timeZone]);
 
     /**
      * Add one day before the current buffer (user scrolling backward in time)
      * Maintains maximum buffer size by trimming from the end
      */
-    const addPreviousDay = useCallback(() => {
+    const addPreviousDay = () => {
         setDays((prev) => {
-            const firstDate = prev[0]!.date;
+            const firstDate = prev[0]?.date;
+            if (!firstDate) {
+                return prev;
+            }
+
             const newDate = new Date(firstDate);
             newDate.setDate(newDate.getDate() - 1);
             const newDay = loadDay(newDate);
             return [newDay, ...prev].slice(0, MAX_BUFFERED_DAYS);
         });
-    }, [loadDay]);
+    };
 
     /**
      * Add one day after the current buffer (user scrolling forward in time)
      * Maintains maximum buffer size by trimming from the start
      */
-    const addNextDay = useCallback(() => {
+    const addNextDay = () => {
         setDays((prev) => {
-            const lastDate = prev[prev.length - 1]!.date;
+            const lastDate = prev[prev.length - 1]?.date;
+            if (!lastDate) {
+                return prev;
+            }
+
             const newDate = new Date(lastDate);
             newDate.setDate(newDate.getDate() + 1);
             const newDay = loadDay(newDate);
             const next = [...prev, newDay];
             return next.length > MAX_BUFFERED_DAYS ? next.slice(next.length - MAX_BUFFERED_DAYS) : next;
         });
-    }, [loadDay]);
+    };
 
     return { addNextDay, addPreviousDay, days };
-}
+};

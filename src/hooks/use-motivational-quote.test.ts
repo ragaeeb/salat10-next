@@ -1,12 +1,12 @@
-import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'bun:test';
+import { renderHook } from '@testing-library/react';
 import { useMotivationalQuote } from './use-motivational-quote';
 
 /**
  * Note: This hook depends on:
  * 1. useCurrentData() from the Zustand store
  * 2. quotes.json import
- * 
+ *
  * Since these are external dependencies, we test the hook's structure
  * and behavior rather than mocking the entire store. Integration tests
  * would be better suited for testing the full quote filtering logic.
@@ -54,4 +54,3 @@ describe('useMotivationalQuote', () => {
         });
     });
 });
-

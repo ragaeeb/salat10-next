@@ -1,10 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-interface CameraState {
-    stream: MediaStream | null;
-    error: string | null;
-    isReady: boolean;
-}
+type CameraState = { stream: MediaStream | null; error: string | null; isReady: boolean };
+
+const toUserFriendlyCameraError = (errorMessage: string): string => {
+    if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission denied')) {
+        return 'Camera permission denied. Please allow camera access in your browser settings.';
+    }
+
+    if (errorMessage.includes('NotFoundError')) {
+        return 'No camera found on this device.';
+    }
+
+    if (errorMessage.includes('NotReadableError')) {
+        return 'Camera is already in use by another application.';
+    }
+
+    return `Camera access denied: ${errorMessage}`;
+};
 
 /**
  * Hook to manage device camera access for AR experiences
@@ -33,19 +45,15 @@ interface CameraState {
  * );
  * ```
  */
-export function useCamera() {
+export const useCamera = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [state, setState] = useState<CameraState>({ error: null, isReady: false, stream: null });
 
-    const startCamera = useCallback(async () => {
+    const startCamera = useRef(async () => {
         // Guard for non-browser runtimes (SSR/tests). Some CI environments may not
         // provide `navigator` as a global even if a DOM shim exists.
         if (typeof navigator === 'undefined') {
-            setState({
-                error: 'Camera is only available in a browser environment.',
-                isReady: false,
-                stream: null,
-            });
+            setState({ error: 'Camera is only available in a browser environment.', isReady: false, stream: null });
             return;
         }
 
@@ -80,21 +88,9 @@ export function useCamera() {
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-
-            // Provide more helpful error messages
-            let userFriendlyMessage = `Camera access denied: ${errorMessage}`;
-
-            if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission denied')) {
-                userFriendlyMessage = 'Camera permission denied. Please allow camera access in your browser settings.';
-            } else if (errorMessage.includes('NotFoundError')) {
-                userFriendlyMessage = 'No camera found on this device.';
-            } else if (errorMessage.includes('NotReadableError')) {
-                userFriendlyMessage = 'Camera is already in use by another application.';
-            }
-
-            setState({ error: userFriendlyMessage, isReady: false, stream: null });
+            setState({ error: toUserFriendlyCameraError(errorMessage), isReady: false, stream: null });
         }
-    }, []);
+    }).current;
 
     // Start camera on mount
     useEffect(() => {
@@ -114,4 +110,4 @@ export function useCamera() {
     }, []);
 
     return { videoRef, ...state, startCamera };
-}
+};

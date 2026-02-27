@@ -32,6 +32,7 @@ export const AxialTiltDiagram = ({ width = 400, height = 350, className = '' }: 
     const earthY = 180;
     const earthRadius = 50;
     const tiltAngle = 23.4; // degrees
+    const sunRayOffsets = [-60, -30, 0, 30, 60];
 
     return (
         <svg
@@ -84,13 +85,13 @@ export const AxialTiltDiagram = ({ width = 400, height = 350, className = '' }: 
 
             {/* Sun rays coming from left */}
             <g opacity="0.3">
-                {[...Array(5)].map((_, i) => (
+                {sunRayOffsets.map((offset) => (
                     <line
-                        key={i}
+                        key={`sun-ray-${offset}`}
                         x1="0"
-                        y1={earthY - 60 + i * 30}
+                        y1={earthY + offset}
                         x2="120"
-                        y2={earthY - 60 + i * 30}
+                        y2={earthY + offset}
                         stroke="#fbbf24"
                         strokeWidth="2"
                     />

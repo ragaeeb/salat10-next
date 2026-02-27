@@ -3,7 +3,7 @@
 import { Coordinates } from 'adhan';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MultiStepLoader } from '@/components/aceternity/multi-step-loader';
 import { Button } from '@/components/ui/button';
 import { buildPrayerTimeExplanation } from '@/lib/explanation';
@@ -22,7 +22,8 @@ export function ExplanationsClient() {
     const [error, setError] = useState<string | null>(null);
     const [showLoader, setShowLoader] = useState(false);
 
-    const currentDate = useMemo(() => new Date(), []);
+    const currentDateRef = useRef(new Date());
+    const currentDate = currentDateRef.current;
 
     useEffect(() => {
         // Wait for hydration before processing

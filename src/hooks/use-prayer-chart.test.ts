@@ -1,54 +1,76 @@
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, beforeEach, mock } from 'bun:test';
-import { usePrayerChart } from './use-prayer-chart';
 import type { Schedule } from '@/types/graph';
-
-// Mock uPlot - Note: This test file may need manual mocking setup
-// For now, we'll test the hook structure without full uPlot integration
-const mockUPlot = mock((opts: any, data: any, container: HTMLElement) => {
-    return {
-        destroy: () => {},
-        setSize: () => {},
-        root: container,
-    };
-});
+import { usePrayerChart } from './use-prayer-chart';
 
 // Mock ResizeObserver
 const mockObserve = mock(() => {});
 const mockDisconnect = mock(() => {});
-global.ResizeObserver = function (callback: ResizeObserverCallback) {
-    return {
-        observe: mockObserve,
-        disconnect: mockDisconnect,
-    } as ResizeObserver;
-} as any;
+global.ResizeObserver = ((_callback: ResizeObserverCallback) =>
+    ({ disconnect: mockDisconnect, observe: mockObserve }) as ResizeObserver) as any;
 
 const mockSchedule: Schedule = {
-    period: 'month',
     dates: [
         {
             date: '2024-03-15',
             timings: [
-                { event: 'fajr', label: 'Fajr', value: new Date('2024-03-15T05:30:00'), time: '5:30 AM', isFard: true },
-                { event: 'sunrise', label: 'Sunrise', value: new Date('2024-03-15T06:45:00'), time: '6:45 AM', isFard: false },
-                { event: 'dhuhr', label: 'Dhuhr', value: new Date('2024-03-15T12:30:00'), time: '12:30 PM', isFard: true },
-                { event: 'asr', label: 'Asr', value: new Date('2024-03-15T16:00:00'), time: '4:00 PM', isFard: true },
-                { event: 'maghrib', label: 'Maghrib', value: new Date('2024-03-15T18:30:00'), time: '6:30 PM', isFard: true },
-                { event: 'isha', label: 'Isha', value: new Date('2024-03-15T19:45:00'), time: '7:45 PM', isFard: true },
+                { event: 'fajr', isFard: true, label: 'Fajr', time: '5:30 AM', value: new Date('2024-03-15T05:30:00') },
+                {
+                    event: 'sunrise',
+                    isFard: false,
+                    label: 'Sunrise',
+                    time: '6:45 AM',
+                    value: new Date('2024-03-15T06:45:00'),
+                },
+                {
+                    event: 'dhuhr',
+                    isFard: true,
+                    label: 'Dhuhr',
+                    time: '12:30 PM',
+                    value: new Date('2024-03-15T12:30:00'),
+                },
+                { event: 'asr', isFard: true, label: 'Asr', time: '4:00 PM', value: new Date('2024-03-15T16:00:00') },
+                {
+                    event: 'maghrib',
+                    isFard: true,
+                    label: 'Maghrib',
+                    time: '6:30 PM',
+                    value: new Date('2024-03-15T18:30:00'),
+                },
+                { event: 'isha', isFard: true, label: 'Isha', time: '7:45 PM', value: new Date('2024-03-15T19:45:00') },
             ],
         },
         {
             date: '2024-03-16',
             timings: [
-                { event: 'fajr', label: 'Fajr', value: new Date('2024-03-16T05:29:00'), time: '5:29 AM', isFard: true },
-                { event: 'sunrise', label: 'Sunrise', value: new Date('2024-03-16T06:44:00'), time: '6:44 AM', isFard: false },
-                { event: 'dhuhr', label: 'Dhuhr', value: new Date('2024-03-16T12:29:00'), time: '12:29 PM', isFard: true },
-                { event: 'asr', label: 'Asr', value: new Date('2024-03-16T15:59:00'), time: '3:59 PM', isFard: true },
-                { event: 'maghrib', label: 'Maghrib', value: new Date('2024-03-16T18:29:00'), time: '6:29 PM', isFard: true },
-                { event: 'isha', label: 'Isha', value: new Date('2024-03-16T19:44:00'), time: '7:44 PM', isFard: true },
+                { event: 'fajr', isFard: true, label: 'Fajr', time: '5:29 AM', value: new Date('2024-03-16T05:29:00') },
+                {
+                    event: 'sunrise',
+                    isFard: false,
+                    label: 'Sunrise',
+                    time: '6:44 AM',
+                    value: new Date('2024-03-16T06:44:00'),
+                },
+                {
+                    event: 'dhuhr',
+                    isFard: true,
+                    label: 'Dhuhr',
+                    time: '12:29 PM',
+                    value: new Date('2024-03-16T12:29:00'),
+                },
+                { event: 'asr', isFard: true, label: 'Asr', time: '3:59 PM', value: new Date('2024-03-16T15:59:00') },
+                {
+                    event: 'maghrib',
+                    isFard: true,
+                    label: 'Maghrib',
+                    time: '6:29 PM',
+                    value: new Date('2024-03-16T18:29:00'),
+                },
+                { event: 'isha', isFard: true, label: 'Isha', time: '7:44 PM', value: new Date('2024-03-16T19:44:00') },
             ],
         },
     ],
+    period: 'month',
 };
 
 describe('usePrayerChart', () => {
@@ -56,22 +78,25 @@ describe('usePrayerChart', () => {
 
     beforeEach(() => {
         mockContainer = document.createElement('div');
-        
+
         // Use Object.defineProperty for readonly properties
-        Object.defineProperty(mockContainer, 'clientWidth', { value: 800, configurable: true });
-        Object.defineProperty(mockContainer, 'clientHeight', { value: 480, configurable: true });
-        
-        mockContainer.getBoundingClientRect = mock(() => ({
-            width: 800,
-            height: 480,
-            top: 0,
-            left: 0,
-            bottom: 480,
-            right: 800,
-            x: 0,
-            y: 0,
-            toJSON: () => ({})
-        } as DOMRect));
+        Object.defineProperty(mockContainer, 'clientWidth', { configurable: true, value: 800 });
+        Object.defineProperty(mockContainer, 'clientHeight', { configurable: true, value: 480 });
+
+        mockContainer.getBoundingClientRect = mock(
+            () =>
+                ({
+                    bottom: 480,
+                    height: 480,
+                    left: 0,
+                    right: 800,
+                    toJSON: () => ({}),
+                    top: 0,
+                    width: 800,
+                    x: 0,
+                    y: 0,
+                }) as DOMRect,
+        );
     });
 
     describe('initialization', () => {
@@ -112,14 +137,16 @@ describe('usePrayerChart', () => {
 
             // Should default to first available event
             await waitFor(() => {
-                expect(result.current.activeEvent === null || typeof result.current.activeEvent === 'string').toBe(true);
+                expect(result.current.activeEvent === null || typeof result.current.activeEvent === 'string').toBe(
+                    true,
+                );
             });
         });
 
         it('should update activeEvent when controlled selectedEvent changes', () => {
             const { result, rerender } = renderHook(
                 ({ selectedEvent }) => usePrayerChart(mockSchedule, selectedEvent),
-                { initialProps: { selectedEvent: 'fajr' } }
+                { initialProps: { selectedEvent: 'fajr' } },
             );
 
             expect(result.current.activeEvent).toBe('fajr');
@@ -211,10 +238,9 @@ describe('usePrayerChart', () => {
             }
 
             // Change activeEvent to trigger chart recreation
-            const { rerender } = renderHook(
-                ({ selectedEvent }) => usePrayerChart(mockSchedule, selectedEvent),
-                { initialProps: { selectedEvent: 'fajr' } }
-            );
+            const { rerender } = renderHook(({ selectedEvent }) => usePrayerChart(mockSchedule, selectedEvent), {
+                initialProps: { selectedEvent: 'fajr' },
+            });
 
             rerender({ selectedEvent: 'dhuhr' });
 
@@ -244,7 +270,7 @@ describe('usePrayerChart', () => {
 
     describe('edge cases', () => {
         it('should handle empty schedule', () => {
-            const emptySchedule: Schedule = { period: 'month', dates: [] };
+            const emptySchedule: Schedule = { dates: [], period: 'month' };
             const { result } = renderHook(() => usePrayerChart(emptySchedule, null));
 
             expect(result.current.prepared).toBeNull();
@@ -262,24 +288,35 @@ describe('usePrayerChart', () => {
         });
 
         it('should handle schedule changes', () => {
-            const { result, rerender } = renderHook(
-                ({ schedule }) => usePrayerChart(schedule, null),
-                { initialProps: { schedule: mockSchedule } }
-            );
+            const { result, rerender } = renderHook(({ schedule }) => usePrayerChart(schedule, null), {
+                initialProps: { schedule: mockSchedule },
+            });
 
             const initialPrepared = result.current.prepared;
 
             const newSchedule: Schedule = {
-                period: 'month',
                 dates: [
                     {
                         date: '2024-03-17',
                         timings: [
-                            { event: 'fajr', label: 'Fajr', value: new Date('2024-03-17T05:28:00'), time: '5:28 AM', isFard: true },
-                            { event: 'dhuhr', label: 'Dhuhr', value: new Date('2024-03-17T12:28:00'), time: '12:28 PM', isFard: true },
+                            {
+                                event: 'fajr',
+                                isFard: true,
+                                label: 'Fajr',
+                                time: '5:28 AM',
+                                value: new Date('2024-03-17T05:28:00'),
+                            },
+                            {
+                                event: 'dhuhr',
+                                isFard: true,
+                                label: 'Dhuhr',
+                                time: '12:28 PM',
+                                value: new Date('2024-03-17T12:28:00'),
+                            },
                         ],
                     },
                 ],
+                period: 'month',
             };
 
             rerender({ schedule: newSchedule });
@@ -317,4 +354,3 @@ describe('usePrayerChart', () => {
         });
     });
 });
-

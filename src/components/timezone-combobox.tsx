@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronsUpDown, Globe2 } from 'lucide-react';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -25,7 +25,7 @@ export function TimezoneCombobox({ value, onChange, ariaLabelledBy }: TimezoneCo
         setZones(supported);
     }, []);
 
-    const selected = useMemo(() => value?.trim() || 'UTC', [value]);
+    const selected = value?.trim() || 'UTC';
 
     const handleSelect = (zone: string) => {
         startTransition(() => {

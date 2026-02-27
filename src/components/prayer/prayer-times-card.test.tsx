@@ -1,21 +1,21 @@
-import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, mock } from 'bun:test';
-import { PrayerTimesCard } from './prayer-times-card';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { FormattedTiming } from '@/lib/calculator';
 import type { SalatEvent } from '@/lib/constants';
+import { PrayerTimesCard } from './prayer-times-card';
 
 // Mock the useCountdownToNext hook
 const mockUseCountdownToNext = mock(() => '2h 30m until Fajr');
 
-mock.module('@/lib/prayer-utils', () => ({
-    useCountdownToNext: mockUseCountdownToNext,
-}));
+mock.module('@/lib/prayer-utils', () => ({ useCountdownToNext: mockUseCountdownToNext }));
 
 // Mock child components
 mock.module('@/components/magicui/aurora-text', () => ({
     AuroraText: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-        <span data-testid="aurora-text" className={className}>{children}</span>
+        <span data-testid="aurora-text" className={className}>
+            {children}
+        </span>
     ),
 }));
 
@@ -26,12 +26,12 @@ mock.module('@/components/magicui/meteors', () => ({
 }));
 
 const mockTimings: FormattedTiming[] = [
-    { event: 'fajr', label: 'Fajr', time: '5:30 AM', isFard: true, value: new Date('2024-03-15T05:30:00') },
-    { event: 'sunrise', label: 'Sunrise', time: '6:45 AM', isFard: false, value: new Date('2024-03-15T06:45:00') },
-    { event: 'dhuhr', label: 'Dhuhr', time: '12:30 PM', isFard: true, value: new Date('2024-03-15T12:30:00') },
-    { event: 'asr', label: 'Asr', time: '4:00 PM', isFard: true, value: new Date('2024-03-15T16:00:00') },
-    { event: 'maghrib', label: 'Maghrib', time: '6:30 PM', isFard: true, value: new Date('2024-03-15T18:30:00') },
-    { event: 'isha', label: 'Isha', time: '8:00 PM', isFard: true, value: new Date('2024-03-15T20:00:00') },
+    { event: 'fajr', isFard: true, label: 'Fajr', time: '5:30 AM', value: new Date('2024-03-15T05:30:00') },
+    { event: 'sunrise', isFard: false, label: 'Sunrise', time: '6:45 AM', value: new Date('2024-03-15T06:45:00') },
+    { event: 'dhuhr', isFard: true, label: 'Dhuhr', time: '12:30 PM', value: new Date('2024-03-15T12:30:00') },
+    { event: 'asr', isFard: true, label: 'Asr', time: '4:00 PM', value: new Date('2024-03-15T16:00:00') },
+    { event: 'maghrib', isFard: true, label: 'Maghrib', time: '6:30 PM', value: new Date('2024-03-15T18:30:00') },
+    { event: 'isha', isFard: true, label: 'Isha', time: '8:00 PM', value: new Date('2024-03-15T20:00:00') },
 ];
 
 const renderWithProvider = (component: React.ReactElement) => {
@@ -213,12 +213,11 @@ describe('PrayerTimesCard', () => {
 
             for (const event of events) {
                 const { unmount } = renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent={event} />);
-                
+
                 expect(screen.getByText('Fajr')).toBeDefined();
-                
+
                 unmount();
             }
         });
     });
 });
-

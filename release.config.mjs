@@ -9,6 +9,7 @@ const release = {
             '@semantic-release/git',
             {
                 assets: ['package.json', 'CHANGELOG.md'],
+                // biome-ignore lint/suspicious/noTemplateCurlyInString: Required for semantic release
                 message: 'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
             },
         ],

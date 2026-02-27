@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Compass } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo } from 'react';
+
 import { CalculationSettings } from '@/components/settings/calculation-settings';
 import { LocationSettings } from '@/components/settings/location-settings';
 import { Button } from '@/components/ui/button';
@@ -24,13 +24,13 @@ export function SettingsClient() {
     const updateSetting = usePrayerStore((state) => state.updateSetting);
     const resetSettings = usePrayerStore((state) => state.resetSettings);
 
-    const currentSettingsJson = useMemo(() => {
-        const parse = (value: string) => {
-            const numeric = Number.parseFloat(value);
-            return Number.isFinite(numeric) ? numeric : value;
-        };
+    const parse = (value: string) => {
+        const numeric = Number.parseFloat(value);
+        return Number.isFinite(numeric) ? numeric : value;
+    };
 
-        const display = {
+    const currentSettingsJson = JSON.stringify(
+        {
             address: settings.address,
             fajrAngle: parse(settings.fajrAngle),
             ishaAngle: parse(settings.ishaAngle),
@@ -39,10 +39,10 @@ export function SettingsClient() {
             longitude: parse(settings.longitude),
             method: settings.method,
             timeZone: settings.timeZone,
-        };
-
-        return JSON.stringify(display, null, 2);
-    }, [settings]);
+        },
+        null,
+        2,
+    );
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-background px-4 py-6 md:px-6 md:py-10">

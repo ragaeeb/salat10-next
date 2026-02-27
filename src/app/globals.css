@@ -2,15 +2,16 @@
 @import "tw-animate-css";
 
 /* Force light color scheme everywhere */
-:root { color-scheme: light; }
+:root {
+    color-scheme: light;
+}
 
 html[data-darkreader-mode],
 html[data-darkreader-scheme] {
-  filter: none !important;
-  background: var(--background) !important;
-  color: var(--foreground) !important;
+    filter: none;
+    background: var(--background);
+    color: var(--foreground);
 }
-
 
 @custom-variant dark (&:is(.dark *));
 
@@ -138,13 +139,11 @@ html[data-darkreader-scheme] {
     }
 }
 
-/* biome-ignore lint/correctness/noUnknownTypeSelector: view transitions require experimental pseudo-elements */
 ::view-transition-old(root) {
     animation: none;
     mix-blend-mode: normal;
 }
 
-/* biome-ignore lint/correctness/noUnknownTypeSelector: view transitions require experimental pseudo-elements */
 ::view-transition-new(root) {
     animation: none;
     mix-blend-mode: normal;

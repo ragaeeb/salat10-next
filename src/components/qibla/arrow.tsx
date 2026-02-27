@@ -23,7 +23,8 @@ export function QiblaArrow({ relativeRotation, isAligned }: QiblaArrowProps) {
                 className="transition-transform duration-200 ease-out"
                 style={{ filter: 'drop-shadow(0 0 10px rgba(0,0,0,0.5))', transform: `rotate(${relativeRotation}deg)` }}
             >
-                <svg width="80" height="200" viewBox="0 0 80 200" className="opacity-90">
+                <svg width="80" height="200" viewBox="0 0 80 200" className="opacity-90" role="img">
+                    <title>Qibla direction arrow</title>
                     {/* Arrow shaft */}
                     <rect x="35" y="40" width="10" height="160" fill="white" />
                     {/* Arrow head */}
@@ -46,7 +47,7 @@ export function QiblaArrow({ relativeRotation, isAligned }: QiblaArrowProps) {
 
             {/* Success indicator when aligned */}
             {isAligned && (
-                <div className="-translate-x-1/2 -translate-y-1/2 pointer-events-none absolute top-1/2 left-1/2 transform animate-pulse rounded-full bg-green-500/20 p-8 backdrop-blur-sm">
+                <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform animate-pulse rounded-full bg-green-500/20 p-8 backdrop-blur-sm">
                     <CheckCircle className="h-16 w-16 text-green-400" />
                 </div>
             )}

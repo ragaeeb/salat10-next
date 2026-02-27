@@ -1,7 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { monthly, yearly } from '@/lib/calculator';
 
@@ -49,7 +47,7 @@ const buildColumns = (schedule: Schedule | null) => {
 const findTiming = (timings: TimingEntry[], event: string) => timings.find((timing) => timing.event === event);
 
 export function PrayerTimetableTable({ schedule, timeZone, dateFormat }: PrayerTimetableTableProps) {
-    const columns = useMemo(() => buildColumns(schedule), [schedule]);
+    const columns = buildColumns(schedule);
 
     if (!schedule) {
         return null;

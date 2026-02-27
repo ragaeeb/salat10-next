@@ -1,8 +1,8 @@
+import { describe, expect, it } from 'bun:test';
 import { act, render, waitFor } from '@testing-library/react';
 import { motionValue } from 'motion/react';
-import { describe, expect, it } from 'bun:test';
-import { CurrentPhase } from './current-phase';
 import type { DayData, Timeline } from '@/types/timeline';
+import { CurrentPhase } from './current-phase';
 
 // Mock ShinyText component
 const mockShinyText = ({ children, className }: { children: React.ReactNode; className?: string }) => (
@@ -13,9 +13,8 @@ const mockShinyText = ({ children, className }: { children: React.ReactNode; cla
 
 // Mock module
 import { mock } from 'bun:test';
-mock.module('@/components/magicui/shiny-text', () => ({
-    ShinyText: mockShinyText,
-}));
+
+mock.module('@/components/magicui/shiny-text', () => ({ ShinyText: mockShinyText }));
 
 const mockTimeline: Timeline = {
     asr: 0.6,
@@ -46,7 +45,12 @@ describe('CurrentPhase', () => {
         it('should render without crashing with valid props', () => {
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <CurrentPhase scrollProgress={scrollProgress} timeline={mockTimeline} currentDay={mockDayData} timeZone="America/New_York" />
+                <CurrentPhase
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    currentDay={mockDayData}
+                    timeZone="America/New_York"
+                />,
             );
 
             // Should render container div
@@ -57,7 +61,12 @@ describe('CurrentPhase', () => {
         it('should render ShinyText component', async () => {
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <CurrentPhase scrollProgress={scrollProgress} timeline={mockTimeline} currentDay={mockDayData} timeZone="America/New_York" />
+                <CurrentPhase
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    currentDay={mockDayData}
+                    timeZone="America/New_York"
+                />,
             );
 
             await waitFor(() => {
@@ -70,8 +79,13 @@ describe('CurrentPhase', () => {
     describe('phase updates', () => {
         it('should update phase label when scrollProgress changes', async () => {
             const scrollProgress = motionValue(0.1);
-            const { container, rerender } = render(
-                <CurrentPhase scrollProgress={scrollProgress} timeline={mockTimeline} currentDay={mockDayData} timeZone="America/New_York" />
+            const { container } = render(
+                <CurrentPhase
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    currentDay={mockDayData}
+                    timeZone="America/New_York"
+                />,
             );
 
             await waitFor(() => {
@@ -93,7 +107,12 @@ describe('CurrentPhase', () => {
         it('should display time when phaseInfo.time is set', async () => {
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <CurrentPhase scrollProgress={scrollProgress} timeline={mockTimeline} currentDay={mockDayData} timeZone="America/New_York" />
+                <CurrentPhase
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    currentDay={mockDayData}
+                    timeZone="America/New_York"
+                />,
             );
 
             // Wait for component to initialize and potentially render time
@@ -109,10 +128,13 @@ describe('CurrentPhase', () => {
             });
 
             // Component should still render after change
-            await waitFor(() => {
-                const wrapper = container.querySelector('div');
-                expect(wrapper).toBeDefined();
-            }, { timeout: 1000 });
+            await waitFor(
+                () => {
+                    const wrapper = container.querySelector('div');
+                    expect(wrapper).toBeDefined();
+                },
+                { timeout: 1000 },
+            );
         });
     });
 
@@ -120,7 +142,12 @@ describe('CurrentPhase', () => {
         it('should render without crashing with null timeline', () => {
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <CurrentPhase scrollProgress={scrollProgress} timeline={null} currentDay={mockDayData} timeZone="America/New_York" />
+                <CurrentPhase
+                    scrollProgress={scrollProgress}
+                    timeline={null}
+                    currentDay={mockDayData}
+                    timeZone="America/New_York"
+                />,
             );
 
             // Should render container
@@ -131,12 +158,16 @@ describe('CurrentPhase', () => {
         it('should not update phase when timeline is null', async () => {
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <CurrentPhase scrollProgress={scrollProgress} timeline={null} currentDay={mockDayData} timeZone="America/New_York" />
+                <CurrentPhase
+                    scrollProgress={scrollProgress}
+                    timeline={null}
+                    currentDay={mockDayData}
+                    timeZone="America/New_York"
+                />,
             );
 
             // Phase info should remain empty
             await waitFor(() => {
-                const shinyText = container.querySelector('[data-testid="shiny-text"]');
                 // May or may not render, but should not crash
                 expect(container.querySelector('div')).toBeDefined();
             });
@@ -147,7 +178,12 @@ describe('CurrentPhase', () => {
         it('should render without crashing with undefined currentDay', () => {
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <CurrentPhase scrollProgress={scrollProgress} timeline={mockTimeline} currentDay={undefined} timeZone="America/New_York" />
+                <CurrentPhase
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    currentDay={undefined}
+                    timeZone="America/New_York"
+                />,
             );
 
             // Should render container
@@ -160,7 +196,12 @@ describe('CurrentPhase', () => {
         it('should handle scrollProgress at 0', async () => {
             const scrollProgress = motionValue(0);
             const { container } = render(
-                <CurrentPhase scrollProgress={scrollProgress} timeline={mockTimeline} currentDay={mockDayData} timeZone="America/New_York" />
+                <CurrentPhase
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    currentDay={mockDayData}
+                    timeZone="America/New_York"
+                />,
             );
 
             await waitFor(() => {
@@ -172,7 +213,12 @@ describe('CurrentPhase', () => {
         it('should handle scrollProgress at 1', async () => {
             const scrollProgress = motionValue(1);
             const { container } = render(
-                <CurrentPhase scrollProgress={scrollProgress} timeline={mockTimeline} currentDay={mockDayData} timeZone="America/New_York" />
+                <CurrentPhase
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    currentDay={mockDayData}
+                    timeZone="America/New_York"
+                />,
             );
 
             await waitFor(() => {
@@ -187,7 +233,12 @@ describe('CurrentPhase', () => {
 
             for (const tz of timeZones) {
                 const { unmount, container } = render(
-                    <CurrentPhase scrollProgress={scrollProgress} timeline={mockTimeline} currentDay={mockDayData} timeZone={tz} />
+                    <CurrentPhase
+                        scrollProgress={scrollProgress}
+                        timeline={mockTimeline}
+                        currentDay={mockDayData}
+                        timeZone={tz}
+                    />,
                 );
 
                 await waitFor(() => {
@@ -204,7 +255,12 @@ describe('CurrentPhase', () => {
         it('should render AnimatePresence wrapper', () => {
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <CurrentPhase scrollProgress={scrollProgress} timeline={mockTimeline} currentDay={mockDayData} timeZone="America/New_York" />
+                <CurrentPhase
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    currentDay={mockDayData}
+                    timeZone="America/New_York"
+                />,
             );
 
             // Should have motion.div elements
@@ -213,4 +269,3 @@ describe('CurrentPhase', () => {
         });
     });
 });
-

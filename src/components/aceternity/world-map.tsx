@@ -1,7 +1,7 @@
 import DottedMap from 'dotted-map';
 import { motion } from 'motion/react';
 import Image from 'next/image';
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MapProps {
@@ -19,10 +19,8 @@ export default function WorldMap({ dots = [], lineColor }: MapProps) {
 
     const arcColor = lineColor ?? '#ffffff';
 
-    const svgMap = useMemo(() => {
-        const map = new DottedMap({ grid: 'diagonal', height: 100 });
-        return map.getSVG({ backgroundColor: 'transparent', color: '#ffffff66', radius: 0.22, shape: 'circle' });
-    }, []);
+    const map = new DottedMap({ grid: 'diagonal', height: 100 });
+    const svgMap = map.getSVG({ backgroundColor: 'transparent', color: '#ffffff66', radius: 0.22, shape: 'circle' });
 
     const projectPoint = (lat: number, lng: number) => {
         const x = (lng + 180) * (800 / 360);
@@ -143,7 +141,7 @@ export default function WorldMap({ dots = [], lineColor }: MapProps) {
                             <TooltipTrigger asChild>
                                 <button
                                     type="button"
-                                    className="-translate-x-1/2 -translate-y-1/2 absolute h-8 w-8 cursor-pointer rounded-full hover:bg-white/10"
+                                    className="absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full hover:bg-white/10"
                                     style={{ left, top }}
                                     aria-label={label}
                                 />

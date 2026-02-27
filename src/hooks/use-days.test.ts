@@ -1,14 +1,16 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { MAX_BUFFERED_DAYS, salatLabels } from '@/lib/constants';
-import { daily } from '@/lib/calculator';
-import { useDayBuffer } from './use-days';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { CalculationConfig } from '@/lib/calculator';
+import { MAX_BUFFERED_DAYS } from '@/lib/constants';
+import { useDayBuffer } from './use-days';
 
 // Suppress React act warnings during tests
 let consoleErrorSpy: ReturnType<typeof spyOn>;
+let originalConsoleError: typeof console.error;
 
 beforeEach(() => {
+    originalConsoleError = console.error.bind(console);
+
     // Spy on console.error to suppress React act warnings
     consoleErrorSpy = spyOn(console, 'error').mockImplementation((message, ...args) => {
         // Only suppress React act warnings, let other errors through
@@ -16,7 +18,7 @@ beforeEach(() => {
             return;
         }
         // Call the original console.error for other messages
-        consoleErrorSpy.getMockImplementation()?.(message, ...args);
+        originalConsoleError(message, ...args);
     });
 });
 
@@ -33,19 +35,6 @@ const mockConfig: CalculationConfig = {
     longitude: '-79.3832',
     method: 'MuslimWorldLeague',
     timeZone: 'America/Toronto',
-};
-
-// Helper to create mock day data (matches use-days.ts implementation)
-const createMockDayData = (date: Date, config: CalculationConfig) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const day = date.getDate();
-    const safeDate = new Date(year, month, day, 12, 0, 0, 0);
-    const nextDate = new Date(year, month, day + 1, 12, 0, 0, 0);
-    const nextRes = daily(salatLabels, config, nextDate);
-    const nextFajr = nextRes.timings.find((t) => t.event === 'fajr')?.value ?? null;
-    const todayRes = daily(salatLabels, config, safeDate);
-    return { date: safeDate, dayIndex: 0, nextFajr, timings: todayRes.timings };
 };
 
 describe('useDayBuffer', () => {
@@ -65,11 +54,7 @@ describe('useDayBuffer', () => {
         });
 
         it('should initialize with empty array when coordinates are invalid', async () => {
-            const invalidConfig: CalculationConfig = {
-                ...mockConfig,
-                latitude: 'invalid',
-                longitude: 'invalid',
-            };
+            const invalidConfig: CalculationConfig = { ...mockConfig, latitude: 'invalid', longitude: 'invalid' };
 
             const { result } = renderHook(() => useDayBuffer(invalidConfig));
 
@@ -150,10 +135,13 @@ describe('useDayBuffer', () => {
             });
 
             // Wait for state to settle
-            await waitFor(() => {
-                // Days should be > 1 since we added multiple
-                expect(result.current.days.length).toBeGreaterThanOrEqual(1);
-            }, { timeout: 2000 });
+            await waitFor(
+                () => {
+                    // Days should be > 1 since we added multiple
+                    expect(result.current.days.length).toBeGreaterThanOrEqual(1);
+                },
+                { timeout: 2000 },
+            );
 
             // Buffer should never exceed MAX_BUFFERED_DAYS due to slice(0, MAX_BUFFERED_DAYS)
             expect(result.current.days.length).toBeLessThanOrEqual(MAX_BUFFERED_DAYS);
@@ -217,10 +205,13 @@ describe('useDayBuffer', () => {
             });
 
             // Wait for state to settle
-            await waitFor(() => {
-                // Days should be > 1 since we added multiple
-                expect(result.current.days.length).toBeGreaterThanOrEqual(1);
-            }, { timeout: 2000 });
+            await waitFor(
+                () => {
+                    // Days should be > 1 since we added multiple
+                    expect(result.current.days.length).toBeGreaterThanOrEqual(1);
+                },
+                { timeout: 2000 },
+            );
 
             // Buffer should never exceed MAX_BUFFERED_DAYS due to conditional slicing
             expect(result.current.days.length).toBeLessThanOrEqual(MAX_BUFFERED_DAYS);
@@ -281,10 +272,9 @@ describe('useDayBuffer', () => {
 
     describe('config changes', () => {
         it('should reinitialize when coordinates change', async () => {
-            const { result, rerender } = renderHook(
-                ({ config }) => useDayBuffer(config),
-                { initialProps: { config: mockConfig } }
-            );
+            const { result, rerender } = renderHook(({ config }) => useDayBuffer(config), {
+                initialProps: { config: mockConfig },
+            });
 
             await waitFor(() => {
                 expect(result.current.days.length).toBeGreaterThan(0);
@@ -300,7 +290,7 @@ describe('useDayBuffer', () => {
             await act(async () => {
                 rerender({ config: newConfig });
                 // Wait a tick for useEffect to run
-                await new Promise(resolve => setTimeout(resolve, 0));
+                await new Promise((resolve) => setTimeout(resolve, 0));
             });
 
             await waitFor(() => {
@@ -313,25 +303,21 @@ describe('useDayBuffer', () => {
         });
 
         it('should reinitialize when method changes', async () => {
-            const { result, rerender } = renderHook(
-                ({ config }) => useDayBuffer(config),
-                { initialProps: { config: mockConfig } }
-            );
+            const { result, rerender } = renderHook(({ config }) => useDayBuffer(config), {
+                initialProps: { config: mockConfig },
+            });
 
             await waitFor(() => {
                 expect(result.current.days.length).toBeGreaterThan(0);
             });
 
-            const newConfig: CalculationConfig = {
-                ...mockConfig,
-                method: 'NorthAmerica',
-            };
+            const newConfig: CalculationConfig = { ...mockConfig, method: 'NorthAmerica' };
 
             // Rerender triggers useEffect, which updates state
             await act(async () => {
                 rerender({ config: newConfig });
                 // Wait a tick for useEffect to run
-                await new Promise(resolve => setTimeout(resolve, 0));
+                await new Promise((resolve) => setTimeout(resolve, 0));
             });
 
             await waitFor(() => {
@@ -345,11 +331,7 @@ describe('useDayBuffer', () => {
 
     describe('edge cases', () => {
         it('should handle empty days array gracefully', () => {
-            const invalidConfig: CalculationConfig = {
-                ...mockConfig,
-                latitude: '',
-                longitude: '',
-            };
+            const invalidConfig: CalculationConfig = { ...mockConfig, latitude: '', longitude: '' };
 
             const { result } = renderHook(() => useDayBuffer(invalidConfig));
 
@@ -397,4 +379,3 @@ describe('useDayBuffer', () => {
         });
     });
 });
-

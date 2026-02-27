@@ -17,7 +17,7 @@ export const Controls = ({ showLoadNext, showLoadPrev, handleLoadNext, handleLoa
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="-translate-x-1/2 absolute top-20 left-1/2 z-60"
+                    className="absolute top-20 left-1/2 z-60 -translate-x-1/2"
                 >
                     <Button
                         onClick={handleLoadPrev}
@@ -34,7 +34,7 @@ export const Controls = ({ showLoadNext, showLoadPrev, handleLoadNext, handleLoa
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="-translate-x-1/2 absolute bottom-20 left-1/2 z-60"
+                    className="absolute bottom-20 left-1/2 z-60 -translate-x-1/2"
                 >
                     <Button
                         onClick={handleLoadNext}

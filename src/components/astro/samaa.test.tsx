@@ -1,33 +1,29 @@
+import { describe, expect, it, mock } from 'bun:test';
 import { render, waitFor } from '@testing-library/react';
 import { motionValue } from 'motion/react';
-import { describe, expect, it, mock } from 'bun:test';
-import { Samaa } from './samaa';
 import type { Timeline } from '@/types/timeline';
+import { Samaa } from './samaa';
 
 // Mock the useSky hook
 const mockUseSky = mock(() => ({
+    fajrGradientOpacity: 0.3,
+    lightRaysOpacity: 0.1,
     skyColor: 'rgb(50, 100, 150)',
     starsOpacity: 0.5,
-    fajrGradientOpacity: 0.3,
     sunsetGradientOpacity: 0.2,
-    lightRaysOpacity: 0.1,
 }));
 
-mock.module('@/hooks/use-sky', () => ({
-    useSky: mockUseSky,
-}));
+mock.module('@/hooks/use-sky', () => ({ useSky: mockUseSky }));
 
 // Mock crossFade utility
 const mockCrossFade = mock(() => ({
-    hasPrev: false,
-    hasNext: false,
-    topSeamStarsOpacity: 0,
     bottomSeamFajrOpacity: 0,
+    hasNext: false,
+    hasPrev: false,
+    topSeamStarsOpacity: 0,
 }));
 
-mock.module('@/lib/utils', () => ({
-    crossFade: mockCrossFade,
-}));
+mock.module('@/lib/utils', () => ({ crossFade: mockCrossFade }));
 
 // Mock child components
 mock.module('@/components/astro/sky', () => ({
@@ -73,7 +69,13 @@ describe('Samaa', () => {
         it('should render without crashing with valid props', async () => {
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <Samaa scrollProgress={scrollProgress} timeline={mockTimeline} pNow={0.5} totalDays={3} currentDayIndex={1} />
+                <Samaa
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    pNow={0.5}
+                    totalDays={3}
+                    currentDayIndex={1}
+                />,
             );
 
             await waitFor(() => {
@@ -85,7 +87,13 @@ describe('Samaa', () => {
         it('should render all sky layers', async () => {
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <Samaa scrollProgress={scrollProgress} timeline={mockTimeline} pNow={0.5} totalDays={3} currentDayIndex={1} />
+                <Samaa
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    pNow={0.5}
+                    totalDays={3}
+                    currentDayIndex={1}
+                />,
             );
 
             await waitFor(() => {
@@ -102,7 +110,15 @@ describe('Samaa', () => {
             const scrollProgress = motionValue(0.5);
             mockUseSky.mockClear();
 
-            render(<Samaa scrollProgress={scrollProgress} timeline={mockTimeline} pNow={0.5} totalDays={3} currentDayIndex={1} />);
+            render(
+                <Samaa
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    pNow={0.5}
+                    totalDays={3}
+                    currentDayIndex={1}
+                />,
+            );
 
             await waitFor(() => {
                 expect(mockUseSky.mock.calls.length).toBeGreaterThan(0);
@@ -116,7 +132,13 @@ describe('Samaa', () => {
         it('should enable comets when pNow >= lastThird', async () => {
             const scrollProgress = motionValue(0.96); // Above lastThird (0.95)
             const { container } = render(
-                <Samaa scrollProgress={scrollProgress} timeline={mockTimeline} pNow={0.96} totalDays={3} currentDayIndex={1} />
+                <Samaa
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    pNow={0.96}
+                    totalDays={3}
+                    currentDayIndex={1}
+                />,
             );
 
             await waitFor(() => {
@@ -128,7 +150,13 @@ describe('Samaa', () => {
         it('should disable comets when pNow < lastThird', async () => {
             const scrollProgress = motionValue(0.5); // Below lastThird
             const { container } = render(
-                <Samaa scrollProgress={scrollProgress} timeline={mockTimeline} pNow={0.5} totalDays={3} currentDayIndex={1} />
+                <Samaa
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    pNow={0.5}
+                    totalDays={3}
+                    currentDayIndex={1}
+                />,
             );
 
             await waitFor(() => {
@@ -142,7 +170,7 @@ describe('Samaa', () => {
         it('should render without crashing with null timeline', async () => {
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <Samaa scrollProgress={scrollProgress} timeline={null} pNow={0.5} totalDays={3} currentDayIndex={1} />
+                <Samaa scrollProgress={scrollProgress} timeline={null} pNow={0.5} totalDays={3} currentDayIndex={1} />,
             );
 
             await waitFor(() => {
@@ -154,7 +182,7 @@ describe('Samaa', () => {
         it('should disable comets when timeline is null', async () => {
             const scrollProgress = motionValue(0.96);
             const { container } = render(
-                <Samaa scrollProgress={scrollProgress} timeline={null} pNow={0.96} totalDays={3} currentDayIndex={1} />
+                <Samaa scrollProgress={scrollProgress} timeline={null} pNow={0.96} totalDays={3} currentDayIndex={1} />,
             );
 
             await waitFor(() => {
@@ -167,22 +195,28 @@ describe('Samaa', () => {
     describe('mobile optimization', () => {
         it('should use different star density and delays based on device', async () => {
             const scrollProgress = motionValue(0.5);
-            
+
             // Mock matchMedia for mobile
             const originalMatchMedia = window.matchMedia;
             window.matchMedia = mock(() => ({
+                addEventListener: () => {},
+                addListener: () => {},
+                dispatchEvent: () => true,
                 matches: true, // Mobile
                 media: '',
                 onchange: null,
-                addListener: () => {},
-                removeListener: () => {},
-                addEventListener: () => {},
                 removeEventListener: () => {},
-                dispatchEvent: () => true,
+                removeListener: () => {},
             })) as any;
 
             const { container } = render(
-                <Samaa scrollProgress={scrollProgress} timeline={mockTimeline} pNow={0.5} totalDays={3} currentDayIndex={1} />
+                <Samaa
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    pNow={0.5}
+                    totalDays={3}
+                    currentDayIndex={1}
+                />,
             );
 
             await waitFor(() => {
@@ -198,15 +232,21 @@ describe('Samaa', () => {
     describe('crossfade seams', () => {
         it('should render top seam stars when hasPrev is true', async () => {
             mockCrossFade.mockReturnValue({
-                hasPrev: true,
-                hasNext: false,
-                topSeamStarsOpacity: 0.5,
                 bottomSeamFajrOpacity: 0,
+                hasNext: false,
+                hasPrev: true,
+                topSeamStarsOpacity: 0.5,
             });
 
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <Samaa scrollProgress={scrollProgress} timeline={mockTimeline} pNow={0.5} totalDays={3} currentDayIndex={1} />
+                <Samaa
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    pNow={0.5}
+                    totalDays={3}
+                    currentDayIndex={1}
+                />,
             );
 
             await waitFor(() => {
@@ -218,15 +258,21 @@ describe('Samaa', () => {
 
         it('should render bottom seam fajr when hasNext is true', async () => {
             mockCrossFade.mockReturnValue({
-                hasPrev: false,
-                hasNext: true,
-                topSeamStarsOpacity: 0,
                 bottomSeamFajrOpacity: 0.3,
+                hasNext: true,
+                hasPrev: false,
+                topSeamStarsOpacity: 0,
             });
 
             const scrollProgress = motionValue(0.5);
             const { container } = render(
-                <Samaa scrollProgress={scrollProgress} timeline={mockTimeline} pNow={0.5} totalDays={3} currentDayIndex={1} />
+                <Samaa
+                    scrollProgress={scrollProgress}
+                    timeline={mockTimeline}
+                    pNow={0.5}
+                    totalDays={3}
+                    currentDayIndex={1}
+                />,
             );
 
             await waitFor(() => {
@@ -244,7 +290,13 @@ describe('Samaa', () => {
             for (const pNow of testValues) {
                 const scrollProgress = motionValue(pNow);
                 const { unmount, container } = render(
-                    <Samaa scrollProgress={scrollProgress} timeline={mockTimeline} pNow={pNow} totalDays={3} currentDayIndex={1} />
+                    <Samaa
+                        scrollProgress={scrollProgress}
+                        timeline={mockTimeline}
+                        pNow={pNow}
+                        totalDays={3}
+                        currentDayIndex={1}
+                    />,
                 );
 
                 await waitFor(() => {
@@ -262,7 +314,13 @@ describe('Samaa', () => {
 
             for (const index of indices) {
                 const { unmount, container } = render(
-                    <Samaa scrollProgress={scrollProgress} timeline={mockTimeline} pNow={0.5} totalDays={5} currentDayIndex={index} />
+                    <Samaa
+                        scrollProgress={scrollProgress}
+                        timeline={mockTimeline}
+                        pNow={0.5}
+                        totalDays={5}
+                        currentDayIndex={index}
+                    />,
                 );
 
                 await waitFor(() => {
@@ -275,4 +333,3 @@ describe('Samaa', () => {
         });
     });
 });
-

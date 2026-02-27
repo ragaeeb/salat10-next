@@ -352,7 +352,7 @@ describe('initAnalytics()', () => {
         // Temporarily hide window to simulate server environment
         const originalWindow = (globalThis as any).window;
         delete (globalThis as any).window;
-        
+
         try {
             const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
             const mod = (await importFresh()) as typeof Analytics;
@@ -366,7 +366,7 @@ describe('initAnalytics()', () => {
 
     it('should schedule periodic flush', async () => {
         process.env.NEXT_PUBLIC_ANALYTICS_FLUSH_INTERVAL = '1000';
-        const { api: local, store } = createStorageMock();
+        const { api: local } = createStorageMock();
         const { api: session } = createStorageMock();
         setupClientWindow(local, session);
 
