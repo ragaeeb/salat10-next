@@ -14,18 +14,23 @@ import { salatLabels } from '@/lib/constants';
 import { useCalculationConfig } from '@/lib/prayer-utils';
 import { formatDateRangeDisplay, generateScheduleLabel, updateDateRangeParams } from '@/lib/time';
 import { cn } from '@/lib/utils';
+import { useHasHydrated } from '@/store/usePrayerStore';
 
-export type GraphClientProps = { initialFrom: Date; initialTo: Date };
+export type GraphClientProps = { initialFrom: string; initialTo: string };
 
 export function GraphClient({ initialFrom, initialTo }: GraphClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const hasHydrated = useHasHydrated();
     const config = useCalculationConfig();
     const selectId = useId();
     const [eventOptions, setEventOptions] = useState<{ event: string; label: string }[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<string | null>(() => searchParams.get('event'));
     const pendingEventRef = useRef<string | null>(null);
-    const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: initialFrom, to: initialTo });
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(() => ({
+        from: new Date(`${initialFrom}T12:00:00`),
+        to: new Date(`${initialTo}T12:00:00`),
+    }));
 
     const eventParam = searchParams.get('event');
 
@@ -59,7 +64,14 @@ export function GraphClient({ initialFrom, initialTo }: GraphClientProps) {
     };
 
     const handleOptionsChange = (options: { event: string; label: string }[], _defaultEvent: string | null) => {
-        setEventOptions(options);
+        setEventOptions((current) =>
+            current.length === options.length &&
+            current.every(
+                (option, index) => option.event === options[index]?.event && option.label === options[index]?.label,
+            )
+                ? current
+                : options,
+        );
     };
 
     const handleEventChange = (event: string) => {
@@ -138,6 +150,10 @@ export function GraphClient({ initialFrom, initialTo }: GraphClientProps) {
         ) : null;
 
     const dateRangeDisplay = formatDateRangeDisplay(dateRange);
+
+    if (!hasHydrated) {
+        return <div className="flex h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+    }
 
     return (
         <div className="flex h-screen flex-col gap-6 p-6">

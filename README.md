@@ -85,8 +85,8 @@ Beautiful, accurate Islamic prayer times with visual astronomy and Hijri calenda
 ## 🚀 Quick Start
 
 ### Prerequisites
-- [Bun](https://bun.sh/) >= 1.3.1
-- Node.js >= 22.x (for compatibility)
+- [Bun](https://bun.sh/) >= 1.3.10
+- Node.js >= 24.x (for compatibility)
 
 ### Installation
 
@@ -109,6 +109,26 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```bash
 bun run build
 bun run start
+```
+
+### Cloudflare Worker (vinext)
+
+The existing Next.js workflow remains available. Use the vinext commands to run the same app on the Cloudflare Workers runtime:
+
+```bash
+bun run dev:vinext
+bun run build:vinext
+bun run start:vinext
+```
+
+Before the first deployment, configure the Worker secrets without adding their values to `wrangler.jsonc`:
+
+```bash
+bunx wrangler secret put UPSTASH_REDIS_REST_URL
+bunx wrangler secret put UPSTASH_REDIS_REST_TOKEN
+bunx wrangler secret put GEOCODE_API_KEY # Optional
+bun run build:vinext
+bun run deploy:vinext
 ```
 
 ## 🔧 Configuration

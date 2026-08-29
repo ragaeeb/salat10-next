@@ -14,7 +14,7 @@ import { salatLabels } from '@/lib/constants';
 import { useCalculationConfig } from '@/lib/prayer-utils';
 import { formatDateRangeDisplay, generateScheduleLabel, updateDateRangeParams } from '@/lib/time';
 import { cn } from '@/lib/utils';
-import { useSettings } from '@/store/usePrayerStore';
+import { useHasHydrated, useSettings } from '@/store/usePrayerStore';
 
 export type DateFormatOption = { value: string; label: string; format: Intl.DateTimeFormatOptions };
 
@@ -35,15 +35,19 @@ const DATE_FORMAT_OPTIONS: DateFormatOption[] = [
     { format: { day: '2-digit', month: '2-digit', year: 'numeric' }, label: 'ISO (2025-01-01)', value: 'iso' },
 ];
 
-export type TimetableClientProps = { initialFrom: Date; initialTo: Date };
+export type TimetableClientProps = { initialFrom: string; initialTo: string };
 
 export function TimetableClient({ initialFrom, initialTo }: TimetableClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const hasHydrated = useHasHydrated();
     const config = useCalculationConfig();
     const settings = useSettings();
     const dateFormatId = useId();
-    const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: initialFrom, to: initialTo });
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(() => ({
+        from: new Date(`${initialFrom}T12:00:00`),
+        to: new Date(`${initialTo}T12:00:00`),
+    }));
     const [dateFormat, setDateFormat] = useState<string>(() => searchParams.get('dateFormat') ?? 'short');
 
     const schedule = (() => {
@@ -85,6 +89,10 @@ export function TimetableClient({ initialFrom, initialTo }: TimetableClientProps
     const dateRangeDisplay = formatDateRangeDisplay(dateRange);
 
     const selectedFormatOption = DATE_FORMAT_OPTIONS.find((opt) => opt.value === dateFormat) ?? DATE_FORMAT_OPTIONS[0];
+
+    if (!hasHydrated) {
+        return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+    }
 
     return (
         <div className="space-y-6">

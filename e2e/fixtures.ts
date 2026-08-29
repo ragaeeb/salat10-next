@@ -35,10 +35,7 @@ export async function setupOttawaStorage(page: Page): Promise<void> {
     // Set the store state in localStorage
     await page.evaluate(
         ({ key, settings }) => {
-            const storeState = {
-                state: { settings },
-                version: 0,
-            };
+            const storeState = { state: { settings }, version: 0 };
             localStorage.setItem(key, JSON.stringify(storeState));
         },
         { key: STORE_KEY, settings: OTTAWA_SETTINGS },
@@ -50,11 +47,7 @@ export async function setupOttawaStorage(page: Page): Promise<void> {
  */
 export async function mockAnalyticsEndpoint(page: Page): Promise<void> {
     await page.route('**/api/track', async (route) => {
-        await route.fulfill({
-            contentType: 'application/json',
-            json: { success: true },
-            status: 200,
-        });
+        await route.fulfill({ contentType: 'application/json', json: { success: true }, status: 200 });
     });
 }
 
@@ -105,9 +98,7 @@ export async function mockGeocodeEndpoint(page: Page): Promise<void> {
     });
 }
 
-type Fixtures = {
-    pageWithOttawa: Page;
-};
+type Fixtures = { pageWithOttawa: Page };
 
 /**
  * Extended test fixture that sets up Ottawa coordinates and mocks analytics

@@ -294,8 +294,8 @@ const StepDetail = memo(({ step, showDetails }: { step: ExplanationStep; showDet
 
             {showDetails && step.details && (
                 <div className="space-y-3 text-muted-foreground text-sm">
-                    {step.details.map((detail, index) => (
-                        <p key={`${step.id}-detail-${index}`}>{detail}</p>
+                    {step.details.map((detail) => (
+                        <p key={`${step.id}-${detail}`}>{detail}</p>
                     ))}
                 </div>
             )}

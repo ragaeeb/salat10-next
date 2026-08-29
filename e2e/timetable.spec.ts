@@ -15,7 +15,9 @@ test.describe('Timetable Page (/timetable)', () => {
         await expect(page.getByText('Fajr').first()).toBeVisible({ timeout: 15000 });
 
         // Should have a date range picker button
-        const dateRangeButton = page.locator('button').filter({ hasText: /Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/i });
+        const dateRangeButton = page
+            .locator('button')
+            .filter({ hasText: /Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/i });
         await expect(dateRangeButton.first()).toBeVisible();
     });
 
