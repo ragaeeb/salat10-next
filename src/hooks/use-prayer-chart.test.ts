@@ -6,8 +6,11 @@ import { usePrayerChart } from './use-prayer-chart';
 // Mock ResizeObserver
 const mockObserve = mock(() => {});
 const mockDisconnect = mock(() => {});
-global.ResizeObserver = ((_callback: ResizeObserverCallback) =>
-    ({ disconnect: mockDisconnect, observe: mockObserve }) as ResizeObserver) as any;
+global.ResizeObserver = class {
+    disconnect = mockDisconnect;
+    observe = mockObserve;
+    unobserve = mock(() => {});
+} as unknown as typeof ResizeObserver;
 
 const mockSchedule: Schedule = {
     dates: [

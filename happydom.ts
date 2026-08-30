@@ -2,6 +2,10 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator';
 
 GlobalRegistrator.register();
 
+// Happy DOM 20.12 rejects `animation.finished` when Motion cancels cleanup animations.
+// Let Motion use its JavaScript fallback in tests instead.
+Reflect.deleteProperty(Element.prototype, 'animate');
+
 // Happy DOM attaches `navigator` to `window`, but some libraries (and our hooks)
 // access `navigator` as a global. Make sure it's available in Bun's test runtime
 // (CI can differ from local).

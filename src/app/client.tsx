@@ -1,16 +1,23 @@
 'use client';
 
 import { IconCompass, IconSunMoon } from '@tabler/icons-react';
-import { Settings2Icon } from 'lucide-react';
+import { Eye, EyeOff, Settings2Icon } from 'lucide-react';
+import { motion, useMotionValue } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { CelestialSkyBackground } from '@/components/astro/celestial-sky-background';
+import { CelestialDevScrubber } from '@/components/dev/celestial-dev-scrubber';
+import { CelestialPhaseBanner } from '@/components/prayer/celestial-phase-banner';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QuoteCard } from '@/components/prayer/quote-card';
 import { Button } from '@/components/ui/button';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLiveCelestial } from '@/hooks/use-live-celestial';
+import { IS_DEV } from '@/lib/constants';
 import { formatCoordinate, formatHijriDate } from '@/lib/formatting';
 import { writeIslamicDate } from '@/lib/hijri';
+import { calculateLunarPhase } from '@/lib/lunar';
 import { useActiveEvent, useDayNavigation } from '@/lib/prayer-utils';
 import { methodLabelMap } from '@/lib/settings';
 import { useHasHydrated, useHasValidCoordinates, useNumericSettings, useSettings } from '@/store/usePrayerStore';
@@ -24,6 +31,25 @@ export function PrayerTimesPageClient() {
 
     const activeEvent = useActiveEvent();
     const { viewDate, timings, dateLabel, handlePrevDay, handleNextDay, handleToday } = useDayNavigation();
+
+    const live = useLiveCelestial();
+
+    // Dev Simulation & Visibility Controls (matches salat10-ios dev scrubber)
+    const [simulatedProgress, setSimulatedProgress] = useState<number | null>(null);
+    const [simulatedLunarCycle, setSimulatedLunarCycle] = useState<number | null>(null);
+    const [isForegroundVisible, setIsForegroundVisible] = useState(true);
+
+    const isSimulating = simulatedProgress !== null;
+    const effectiveProgress = isSimulating ? simulatedProgress : live.pNow;
+    const simProgressMv = useMotionValue(effectiveProgress);
+
+    useEffect(() => {
+        if (isSimulating) {
+            simProgressMv.set(simulatedProgress);
+        }
+    }, [isSimulating, simulatedProgress, simProgressMv]);
+
+    const activeProgressMv = isSimulating ? simProgressMv : live.progressMv;
 
     const hijri = writeIslamicDate(0, viewDate);
 
@@ -47,32 +73,64 @@ export function PrayerTimesPageClient() {
         return null;
     }
 
+    const lunarCycle = simulatedLunarCycle ?? calculateLunarPhase(new Date()).cycleFraction;
+
     return (
-        <div className="relative min-h-screen bg-background">
+        <div className="relative min-h-screen overflow-x-hidden">
+            {/* Living Celestial Sky Trajectory Background */}
+            <CelestialSkyBackground
+                lunarCycle={lunarCycle}
+                pNow={effectiveProgress}
+                progress={activeProgressMv}
+                timeline={live.timeline}
+            />
+
+            {/* Header Navigation Actions */}
             <div className="fixed top-4 right-4 z-50 flex items-center gap-2 sm:top-6 sm:right-6">
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                aria-label={isForegroundVisible ? 'Hide cards to see background' : 'Show cards'}
+                                className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
+                                onClick={() => setIsForegroundVisible(!isForegroundVisible)}
+                                size="sm"
+                                variant="default"
+                            >
+                                {isForegroundVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                            {isForegroundVisible ? 'Hide cards (Sky View)' : 'Show cards'}
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+
                 <Button
                     asChild
-                    className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90"
+                    className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
                     size="sm"
                     variant="default"
                 >
-                    <Link href="/v2">
+                    <Link aria-label="Parallax View" href="/v2">
                         <IconSunMoon />
                     </Link>
                 </Button>
+
                 <Button
                     asChild
-                    className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90"
+                    className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
                     size="sm"
                     variant="default"
                 >
-                    <Link href="/qibla">
+                    <Link aria-label="Qibla Compass" href="/qibla">
                         <IconCompass />
                     </Link>
                 </Button>
+
                 <Button
                     asChild
-                    className="rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg backdrop-blur-sm transition hover:bg-primary/90"
+                    className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
                     size="icon"
                 >
                     <Link aria-label="Open settings" href="/settings">
@@ -81,8 +139,25 @@ export function PrayerTimesPageClient() {
                 </Button>
             </div>
 
+            {/* Foreground Prayer Times & Quote Container (Initial Fade In for Sky Visibility) */}
             <TooltipProvider>
-                <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pt-24 pb-16 sm:px-6 lg:px-8">
+                <motion.div
+                    animate={{
+                        opacity: isForegroundVisible ? 1 : 0,
+                        pointerEvents: isForegroundVisible ? 'auto' : 'none',
+                        y: isForegroundVisible ? 0 : 20,
+                    }}
+                    className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pt-24 pb-16 sm:px-6 lg:px-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    transition={{ delay: 0.45, duration: 1.1, ease: 'easeInOut' }}
+                >
+                    {/* Live Celestial Phase Eye-Candy Banner */}
+                    <CelestialPhaseBanner
+                        lunarCycle={lunarCycle}
+                        progress={effectiveProgress}
+                        timeline={live.timeline}
+                    />
+
                     <QuoteCard />
 
                     <PrayerTimesCard
@@ -97,8 +172,27 @@ export function PrayerTimesPageClient() {
                         onToday={handleToday}
                         timings={timings}
                     />
-                </div>
+                </motion.div>
             </TooltipProvider>
+
+            {/* Developer Time & Lunar Scrubber (Simulation Container) */}
+            {IS_DEV && (
+                <CelestialDevScrubber
+                    isForegroundVisible={isForegroundVisible}
+                    isSimulating={simulatedProgress !== null || simulatedLunarCycle !== null}
+                    lunarCycle={lunarCycle}
+                    onResetToLive={() => {
+                        setSimulatedProgress(null);
+                        setSimulatedLunarCycle(null);
+                    }}
+                    onSetForegroundVisible={setIsForegroundVisible}
+                    onSetLunarCycle={setSimulatedLunarCycle}
+                    onSetSimulatedProgress={setSimulatedProgress}
+                    progress={effectiveProgress}
+                    simulatedLunarCycle={simulatedLunarCycle}
+                    timeline={live.timeline}
+                />
+            )}
         </div>
     );
 }

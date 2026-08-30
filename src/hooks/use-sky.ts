@@ -1,4 +1,5 @@
 import { type MotionValue, useSpring, useTransform } from 'motion/react';
+import { useEffect } from 'react';
 import {
     fajrGradientOpacityAt,
     lightRaysOpacityAt,
@@ -25,30 +26,6 @@ const OPACITY_SPRING_CONFIG = { damping: 28, mass: 0.25, stiffness: 220 };
  * @param {MotionValue<number>} scrollProgress - Normalized scroll progress (0-1) within current day
  * @param {Timeline | null} timeline - Prayer time timeline for the current day, or null if not loaded
  * @returns Sky animation values
- * @property {MotionValue<string>} skyColor - Base sky background color (RGB string)
- * @property {MotionValue<number>} starsOpacity - Stars layer opacity (0-1)
- * @property {MotionValue<number>} fajrGradientOpacity - Fajr gradient overlay opacity (0-1)
- * @property {MotionValue<number>} sunsetGradientOpacity - Sunset gradient overlay opacity (0-1)
- * @property {MotionValue<number>} lightRaysOpacity - Light rays effect opacity (0-1)
- *
- * @example
- * ```tsx
- * const { scrollProgress } = useScrollProgress(scrollY);
- * const timeline = useTimeline(currentDay);
- * const {
- *   skyColor,
- *   starsOpacity,
- *   fajrGradientOpacity
- * } = useSky(scrollProgress, timeline);
- *
- * return (
- *   <>
- *     <motion.div style={{ backgroundColor: skyColor }} />
- *     <FajrGradient opacity={fajrGradientOpacity} />
- *     <StarsLayer opacity={starsOpacity} />
- *   </>
- * );
- * ```
  */
 export function useSky(scrollProgress: MotionValue<number>, timeline: Timeline | null) {
     const skyColor = useTransform(scrollProgress, (p) => (timeline ? skyColorAt(p, timeline) : 'rgba(0,0,0,1)'));
@@ -66,6 +43,25 @@ export function useSky(scrollProgress: MotionValue<number>, timeline: Timeline |
     const fajrGradientOpacity = useSpring(fajrGradientOpacityRaw, OPACITY_SPRING_CONFIG);
     const sunsetGradientOpacity = useSpring(sunsetGradientOpacityRaw, OPACITY_SPRING_CONFIG);
     const lightRaysOpacity = useSpring(lightRaysOpacityRaw, OPACITY_SPRING_CONFIG);
+
+    useEffect(() => {
+        if (timeline) {
+            starsOpacity.jump(starsOpacityRaw.get());
+            fajrGradientOpacity.jump(fajrGradientOpacityRaw.get());
+            sunsetGradientOpacity.jump(sunsetGradientOpacityRaw.get());
+            lightRaysOpacity.jump(lightRaysOpacityRaw.get());
+        }
+    }, [
+        timeline,
+        starsOpacity,
+        fajrGradientOpacity,
+        sunsetGradientOpacity,
+        lightRaysOpacity,
+        starsOpacityRaw,
+        fajrGradientOpacityRaw,
+        sunsetGradientOpacityRaw,
+        lightRaysOpacityRaw,
+    ]);
 
     return { fajrGradientOpacity, lightRaysOpacity, skyColor, starsOpacity, sunsetGradientOpacity };
 }

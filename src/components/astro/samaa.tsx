@@ -1,4 +1,4 @@
-import type { MotionValue } from 'motion';
+import type { MotionValue } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { FajrGradient } from '@/components/astro/fajr-sky';
 import { LightRays } from '@/components/astro/light-rays';

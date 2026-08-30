@@ -1,6 +1,4 @@
-// components.tsx
-
-import { type MotionValue, motion, useMotionTemplate, useTransform } from 'framer-motion';
+import { type MotionValue, motion, useMotionTemplate, useTransform } from 'motion/react';
 import { memo, useId } from 'react';
 
 type SunProps = {

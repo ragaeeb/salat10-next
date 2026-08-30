@@ -1,4 +1,5 @@
 import { type MotionValue, useSpring, useTransform } from 'motion/react';
+import { useEffect } from 'react';
 import { moonOpacityAt } from '@/lib/colors';
 import { FRAC, POS } from '@/lib/constants';
 import { invLerp, lerp } from '@/lib/utils';
@@ -11,28 +12,9 @@ import type { Timeline } from '@/types/timeline';
  * Maghrib. Uses spring physics for smooth, natural transitions. Moon appears
  * progressively brighter as night deepens.
  *
- * Motion is linear (no arc) to differentiate from sun's daytime arc.
- *
  * @param {MotionValue<number>} scrollProgress - Normalized scroll progress (0-1) within current day
  * @param {Timeline | null} timeline - Prayer time timeline for the current day, or null if not loaded
  * @returns Moon animation values
- * @property {MotionValue<number>} moonX - Horizontal position (spring-smoothed)
- * @property {MotionValue<number>} moonY - Vertical position (constant, spring-smoothed for consistency)
- * @property {MotionValue<number>} moonOpacity - Opacity value (0-1, spring-smoothed)
- *
- * @example
- * ```tsx
- * const { scrollProgress } = useScrollProgress(scrollY);
- * const timeline = useTimeline(currentDay);
- * const { moonX, moonY, moonOpacity } = useMoon(scrollProgress, timeline);
- *
- * return (
- *   <motion.div
- *     style={{ x: moonX, y: moonY, opacity: moonOpacity }}
- *     className="moon"
- *   />
- * );
- * ```
  */
 export function useMoon(scrollProgress: MotionValue<number>, timeline: Timeline | null) {
     // Moon motion: LEFT <- RIGHT in a straight line
@@ -57,6 +39,13 @@ export function useMoon(scrollProgress: MotionValue<number>, timeline: Timeline 
     const moonX = useSpring(moonXRaw, springCfg);
     const moonY = useSpring(POS.MOON_Y, springCfg);
     const moonOpacity = useSpring(moonOpacityRaw, { damping: 25, mass: 0.25, stiffness: 180 });
+
+    useEffect(() => {
+        if (timeline) {
+            moonX.jump(moonXRaw.get());
+            moonOpacity.jump(moonOpacityRaw.get());
+        }
+    }, [timeline, moonX, moonOpacity, moonXRaw, moonOpacityRaw]);
 
     return { moonOpacity, moonX, moonY };
 }
