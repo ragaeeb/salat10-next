@@ -4,6 +4,7 @@ import vinext from 'vinext';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+    optimizeDeps: { exclude: ['next/link', 'next/router'] },
     plugins: [
         vinext({ cache: { cdn: cdnAdapter() } }),
         cloudflare({ viteEnvironment: { childEnvironments: ['ssr'], name: 'rsc' } }),

@@ -6,9 +6,32 @@ import type { Timeline } from '@/types/timeline';
 type ShamsProps = { scrollProgress: MotionValue<number>; timeline: Timeline | null };
 
 export const Shams = ({ scrollProgress, timeline }: ShamsProps) => {
-    const { sunX, sunY, sunOpacity, sunColorR, sunColorG, sunColorB } = useSun(scrollProgress, timeline);
+    const {
+        sunColorB,
+        sunColorG,
+        sunColorR,
+        sunGlowIntensity,
+        sunMiddayIntensity,
+        sunOpacity,
+        sunRayRotation,
+        sunRayScale,
+        sunX,
+        sunY,
+    } = useSun(scrollProgress, timeline);
 
     const sunColor = { b: sunColorB, g: sunColorG, r: sunColorR };
 
-    return <Sun color={sunColor} opacity={sunOpacity} size={120} x={sunX} y={sunY} />;
+    return (
+        <Sun
+            color={sunColor}
+            glowIntensity={sunGlowIntensity}
+            middayIntensity={sunMiddayIntensity}
+            opacity={sunOpacity}
+            rayRotation={sunRayRotation}
+            rayScale={sunRayScale}
+            size={240}
+            x={sunX}
+            y={sunY}
+        />
+    );
 };

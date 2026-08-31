@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, spyOn } from 'bun:test';
-import { renderHook } from '@testing-library/react';
+import { afterEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { renderHook, waitFor } from '@testing-library/react';
 import { defaultSettings } from '@/lib/constants';
 import { computePrayerTimesForDate } from '@/lib/store-utils';
 import { usePrayerStore } from '@/store/usePrayerStore';
@@ -8,14 +8,17 @@ import { useMotivationalQuote } from './use-motivational-quote';
 /**
  * Note: This hook depends on:
  * 1. useCurrentData() from the Zustand store
- * 2. quotes.json import
+ * 2. quotes.json request
  *
  * Since these are external dependencies, we test the hook's structure
  * and behavior rather than mocking the entire store. Integration tests
  * would be better suited for testing the full quote filtering logic.
  */
 describe('useMotivationalQuote', () => {
+    const originalFetch = globalThis.fetch;
+
     afterEach(() => {
+        globalThis.fetch = originalFetch;
         usePrayerStore.setState({ currentData: null });
     });
 
@@ -30,11 +33,10 @@ describe('useMotivationalQuote', () => {
             expect(typeof result.current.error).toBe('boolean');
         });
 
-        it('should always return loading: false and error: false', () => {
+        it('should start loading without an error', () => {
             const { result } = renderHook(() => useMotivationalQuote());
 
-            // Hook uses synchronous JSON import, so loading is always false
-            expect(result.current.loading).toBe(false);
+            expect(result.current.loading).toBe(true);
             expect(result.current.error).toBe(false);
         });
     });
@@ -48,23 +50,29 @@ describe('useMotivationalQuote', () => {
             expect(result.current.quote).toBeNull();
         });
 
-        it('should select a quote only once while the hook is mounted', () => {
+        it('should fetch and select a quote only once while the hook is mounted', async () => {
             const currentData = computePrayerTimesForDate(
                 { ...defaultSettings, latitude: '43.6532', longitude: '-79.3832' },
                 new Date('2026-08-31T12:00:00Z'),
             );
             usePrayerStore.setState({ currentData });
+            const fetchMock = mock(() =>
+                Promise.resolve(new Response(JSON.stringify({ quotes: [{ body: 'Test quote' }] }))),
+            );
+            globalThis.fetch = fetchMock as typeof fetch;
 
             const random = spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValue(0.999999);
 
             try {
                 const { result, rerender } = renderHook(() => useMotivationalQuote());
-                const initialQuote = result.current.quote;
+
+                await waitFor(() => expect(result.current.quote?.body).toBe('Test quote'));
+                const selectedQuote = result.current.quote;
 
                 rerender();
 
-                expect(initialQuote).not.toBeNull();
-                expect(result.current.quote).toBe(initialQuote);
+                expect(result.current.quote).toBe(selectedQuote);
+                expect(fetchMock).toHaveBeenCalledTimes(1);
                 expect(random).toHaveBeenCalledTimes(1);
             } finally {
                 random.mockRestore();

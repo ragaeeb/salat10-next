@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import quotesData from '@/../public/quotes.json';
 import { getRandomQuote } from '@/lib/quotes';
 import { useCurrentData } from '@/store/usePrayerStore';
 import type { Quote } from '@/types/quote';
@@ -12,15 +11,15 @@ export type MotivationalQuoteState = { error: boolean; loading: boolean; quote: 
  * Hook to load motivational quotes filtered by current prayer time
  *
  * Selects a random quote that's contextually appropriate for the current prayer
- * period (e.g., Fajr-related quotes during Fajr time). Uses direct JSON import
- * for performance - no API calls or loading states.
+ * period (e.g., Fajr-related quotes during Fajr time). The quote catalog is
+ * loaded after hydration so it stays out of the initial JavaScript bundle.
  *
  * The quote is selected once after current data becomes available and remains stable until page reload.
  *
  * @returns Quote state
  * @property {Quote | null} quote - Selected quote with text, author, and metadata
- * @property {boolean} loading - Always false (synchronous loading from JSON)
- * @property {boolean} error - Always false (no network errors possible)
+ * @property {boolean} loading - Whether the quote catalog is loading
+ * @property {boolean} error - Whether the quote catalog failed to load
  *
  * @example
  * ```tsx
@@ -40,7 +39,7 @@ export type MotivationalQuoteState = { error: boolean; loading: boolean; quote: 
  */
 export const useMotivationalQuote = (): MotivationalQuoteState => {
     const currentData = useCurrentData();
-    const [quote, setQuote] = useState<Quote | null>(null);
+    const [state, setState] = useState<MotivationalQuoteState>({ error: false, loading: true, quote: null });
     const hasSelectedQuote = useRef(false);
 
     useEffect(() => {
@@ -48,9 +47,28 @@ export const useMotivationalQuote = (): MotivationalQuoteState => {
             return;
         }
 
-        hasSelectedQuote.current = true;
-        setQuote(getRandomQuote(currentData, quotesData.quotes));
+        const controller = new AbortController();
+
+        fetch('/quotes.json', { signal: controller.signal })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load quotes: ${response.status}`);
+                }
+
+                return response.json() as Promise<{ quotes: Quote[] }>;
+            })
+            .then(({ quotes }) => {
+                hasSelectedQuote.current = true;
+                setState({ error: false, loading: false, quote: getRandomQuote(currentData, quotes) });
+            })
+            .catch(() => {
+                if (!controller.signal.aborted) {
+                    setState({ error: true, loading: false, quote: null });
+                }
+            });
+
+        return () => controller.abort();
     }, [currentData]);
 
-    return { error: false, loading: false, quote };
+    return state;
 };
