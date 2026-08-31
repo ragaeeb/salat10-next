@@ -54,13 +54,13 @@
         "wrangler": "^4.127.1"
     },
     "engines": {
-        "bun": ">=1.3.10",
+        "bun": ">=1.4.0",
         "node": ">=24.x"
     },
     "homepage": "https://github.com/ragaeeb/salat10-next",
     "license": "MIT",
     "name": "salat10-next",
-    "packageManager": "bun@1.3.10",
+    "packageManager": "bun@1.4.0",
     "private": true,
     "scripts": {
         "build": "vinext build",
@@ -74,5 +74,5 @@
         "test:e2e:ui": "npx playwright test --ui"
     },
     "type": "module",
-    "version": "1.8.1"
+    "version": "1.9.0"
 }

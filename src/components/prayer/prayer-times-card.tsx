@@ -20,6 +20,8 @@ type PrayerTimesCardProps = {
     activeEvent: SalatEvent | null;
     /** Location address label for display */
     addressLabel: string;
+    /** Optional countdown remaining string override (e.g., during simulation) */
+    countdownRemaining?: string;
     /** Formatted date string (e.g., "Nov 8, 2025") */
     dateLabel: string;
     /** Hijri calendar date string */
@@ -122,6 +124,7 @@ const PrayerTimeRow = ({
 export function PrayerTimesCard({
     activeEvent,
     addressLabel,
+    countdownRemaining: countdownOverride,
     dateLabel,
     defaultExpanded = false,
     hijriLabel,
@@ -134,7 +137,8 @@ export function PrayerTimesCard({
     timings,
 }: PrayerTimesCardProps) {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-    const countdownRemaining = useCountdownRemaining();
+    const liveCountdown = useCountdownRemaining();
+    const countdownRemaining = countdownOverride !== undefined ? countdownOverride : liveCountdown;
 
     // Identify current and next prayer events for compact view
     const currentIndex = activeEvent ? timings.findIndex((t) => t.event === activeEvent) : -1;
