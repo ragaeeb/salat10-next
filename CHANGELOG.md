@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/ragaeeb/salat10-next/compare/v1.7.1...v1.8.0) (2026-08-31)
+
+
+### Features
+
+* **cloudflare:** Migrate app to Cloudflare workers ([#18](https://github.com/ragaeeb/salat10-next/issues/18)) ([23cee9b](https://github.com/ragaeeb/salat10-next/commit/23cee9bf7e2f8cebd587c133b50727e9bcb18e9e))
+
 ## [1.7.1](https://github.com/ragaeeb/salat10-next/compare/v1.7.0...v1.7.1) (2026-02-27)
 
 
