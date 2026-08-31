@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import {
-    formatCoordinate,
-    formatDate,
-    formatHijriDate,
-    formatMinutesLabel,
-    formatTime,
-    phaseLabelAndTime,
-} from '@/lib/formatting';
+import { formatCoordinate, formatDate, formatHijriDate, formatMinutesLabel, formatTime } from '@/lib/formatting';
 import type { HijriDate } from '@/types/hijri';
-import type { DayData, Timeline } from '@/types/timeline';
 
 describe('formatTime', () => {
     it('should format time in 12-hour format', () => {
@@ -134,78 +126,5 @@ describe('formatCoordinate', () => {
 
     it('should format to 4 decimal places', () => {
         expect(formatCoordinate(12.3456789, 'N', 'S')).toBe('12.3457° N');
-    });
-});
-
-describe('phaseLabelAndTime', () => {
-    const mockTimeline: Timeline = {
-        asr: 0.6,
-        dhuhr: 0.4,
-        end: 1,
-        fajr: 0,
-        isha: 0.85,
-        lastThird: 0.95,
-        maghrib: 0.75,
-        midNight: 0.9,
-        sunrise: 0.15,
-    };
-
-    const mockTimings: DayData['timings'] = [
-        { event: 'fajr', label: 'Fajr', time: '5:00 AM', value: new Date('2025-01-01T10:00:00Z') },
-        { event: 'sunrise', label: 'Sunrise', time: '6:30 AM', value: new Date('2025-01-01T11:30:00Z') },
-        { event: 'dhuhr', label: 'Dhuhr', time: '12:00 PM', value: new Date('2025-01-01T17:00:00Z') },
-        { event: 'asr', label: 'Asr', time: '3:00 PM', value: new Date('2025-01-01T20:00:00Z') },
-        { event: 'maghrib', label: 'Maghrib', time: '5:30 PM', value: new Date('2025-01-01T22:30:00Z') },
-        { event: 'isha', label: 'Isha', time: '7:00 PM', value: new Date('2025-01-02T00:00:00Z') },
-        { event: 'middleOfTheNight', label: 'Half Night', time: '12:15 AM', value: new Date('2025-01-02T05:15:00Z') },
-        { event: 'lastThirdOfTheNight', label: 'Last Third', time: '2:30 AM', value: new Date('2025-01-02T07:30:00Z') },
-    ];
-
-    it('should return Fajr before sunrise', () => {
-        const result = phaseLabelAndTime(0.1, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('Fajr');
-        expect(result.time).toContain('5:00');
-    });
-
-    it('should return Sunrise between sunrise and dhuhr', () => {
-        const result = phaseLabelAndTime(0.2, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('Sunrise');
-        expect(result.time).toContain('6:30');
-    });
-
-    it('should return Dhuhr between dhuhr and asr', () => {
-        const result = phaseLabelAndTime(0.5, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('Dhuhr');
-        expect(result.time).toContain('12:00');
-    });
-
-    it('should return Asr between asr and maghrib', () => {
-        const result = phaseLabelAndTime(0.65, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('ʿAṣr');
-        expect(result.time).toContain('3:00');
-    });
-
-    it('should return Maghrib between maghrib and isha', () => {
-        const result = phaseLabelAndTime(0.8, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('Maġrib');
-        expect(result.time).toContain('5:30');
-    });
-
-    it('should return Isha between isha and midnight', () => {
-        const result = phaseLabelAndTime(0.87, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('ʿIshāʾ');
-        expect(result.time).toContain('7:00');
-    });
-
-    it('should return Half the Night between midnight and last third', () => {
-        const result = phaseLabelAndTime(0.92, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('1/2 Night Begins');
-        expect(result.time).toContain('12:15');
-    });
-
-    it('should return Last 1/3 after last third', () => {
-        const result = phaseLabelAndTime(0.97, mockTimeline, mockTimings, 'America/New_York');
-        expect(result.label).toBe('Last 1/3 Night Begins');
-        expect(result.time).toContain('2:30');
     });
 });

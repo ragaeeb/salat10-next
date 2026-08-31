@@ -96,6 +96,15 @@ describe('PrayerTimesCard', () => {
             expect(screen.getByText('2h 30m until Fajr')).toBeDefined();
         });
 
+        it('should use a transparent, unblurred surface after Maghrib', () => {
+            const { container } = renderWithProvider(<PrayerTimesCard {...defaultProps} isAfterMaghrib />);
+
+            const card = container.querySelector('section');
+            expect(card).not.toBeNull();
+            expect(card?.className).toContain('bg-background/25');
+            expect(card?.className).toContain('backdrop-blur-none');
+        });
+
         it('should not render countdown when null', () => {
             mockUseCountdownToNext.mockReturnValue(null);
             renderWithProvider(<PrayerTimesCard {...defaultProps} />);

@@ -136,6 +136,16 @@ describe('QuoteCard', () => {
 
             expect(screen.getByText(/Tap the copy icon to share with friends/)).toBeDefined();
         });
+
+        it('should use a transparent, unblurred surface after Maghrib', () => {
+            mockUseMotivationalQuote.mockReturnValue({ error: false, loading: false, quote: mockQuote });
+            const { container } = renderWithProvider(<QuoteCard isAfterMaghrib />);
+
+            const card = container.querySelector('section');
+            expect(card).not.toBeNull();
+            expect(card?.className).toContain('bg-background/25');
+            expect(card?.className).toContain('backdrop-blur-none');
+        });
     });
 
     describe('copy functionality', () => {

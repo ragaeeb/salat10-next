@@ -29,9 +29,6 @@ test.describe('Home Page (/)', () => {
         // Wait for hydration
         await expect(page.getByText('Fajr', { exact: true }).last()).toBeVisible({ timeout: 15000 });
 
-        // Should have link to parallax view
-        await expect(page.locator('a[href="/v2"]')).toBeVisible();
-
         // Should have link to qibla
         await expect(page.locator('a[href="/qibla"]')).toBeVisible();
 

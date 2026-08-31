@@ -16,6 +16,6 @@
         "enabled": true
     },
     "secrets": {
-        "required": ["UPSTASH_REDIS_REST_TOKEN", "UPSTASH_REDIS_REST_URL"]
+        "required": ["GEOCODE_API_KEY", "UPSTASH_REDIS_REST_TOKEN", "UPSTASH_REDIS_REST_URL"]
     }
 }

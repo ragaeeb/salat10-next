@@ -48,7 +48,7 @@
 
 ### Bug Fixes
 
-* **parallax:** Add security for endpoint and hijri date in v2 ([#10](https://github.com/ragaeeb/salat10-next/issues/10)) ([e88d1c7](https://github.com/ragaeeb/salat10-next/commit/e88d1c7fb354b058420b20bc0b1804899dac23f9))
+* **visualization:** Add security for endpoint and hijri date ([#10](https://github.com/ragaeeb/salat10-next/issues/10)) ([e88d1c7](https://github.com/ragaeeb/salat10-next/commit/e88d1c7fb354b058420b20bc0b1804899dac23f9))
 
 # [1.5.0](https://github.com/ragaeeb/salat10-next/compare/v1.4.0...v1.5.0) (2025-11-07)
 
@@ -76,7 +76,7 @@
 
 ### Features
 
-* **v1.2:** Add scrolling parallax with moon and sun ([#5](https://github.com/ragaeeb/salat10-next/issues/5)) ([99979aa](https://github.com/ragaeeb/salat10-next/commit/99979aaa8094f9718aa50b3250c2d4f91d14db8d))
+* **v1.2:** Add animated moon and sun visualization ([#5](https://github.com/ragaeeb/salat10-next/issues/5)) ([99979aa](https://github.com/ragaeeb/salat10-next/commit/99979aaa8094f9718aa50b3250c2d4f91d14db8d))
 
 # [1.1.0](https://github.com/ragaeeb/salat10-next/compare/v1.0.0...v1.1.0) (2025-10-26)
 
@@ -90,4 +90,4 @@
 
 ### Features
 
-* **v1:** Add parallax, quote, restyling, and theme switching ([#2](https://github.com/ragaeeb/salat10-next/issues/2)) ([de04756](https://github.com/ragaeeb/salat10-next/commit/de047562d383008b023b1264a3be1eb5cd1201ba)), closes [#1](https://github.com/ragaeeb/salat10-next/issues/1)
+* **v1:** Add celestial visualization, quote, restyling, and theme switching ([#2](https://github.com/ragaeeb/salat10-next/issues/2)) ([de04756](https://github.com/ragaeeb/salat10-next/commit/de047562d383008b023b1264a3be1eb5cd1201ba)), closes [#1](https://github.com/ragaeeb/salat10-next/issues/1)

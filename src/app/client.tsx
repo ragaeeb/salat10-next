@@ -1,18 +1,17 @@
 'use client';
 
-import { IconCompass, IconSunMoon } from '@tabler/icons-react';
-import { Eye, EyeOff, Settings2Icon } from 'lucide-react';
+import { IconCompass } from '@tabler/icons-react';
+import { Settings2Icon } from 'lucide-react';
 import { motion, useMotionValue } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { CelestialSkyBackground } from '@/components/astro/celestial-sky-background';
 import { CelestialDevScrubber } from '@/components/dev/celestial-dev-scrubber';
-import { CelestialPhaseBanner } from '@/components/prayer/celestial-phase-banner';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QuoteCard } from '@/components/prayer/quote-card';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { useLiveCelestial } from '@/hooks/use-live-celestial';
 import { IS_DEV } from '@/lib/constants';
 import { formatCoordinate, formatHijriDate } from '@/lib/formatting';
@@ -50,6 +49,7 @@ export function PrayerTimesPageClient() {
     }, [isSimulating, simulatedProgress, simProgressMv]);
 
     const activeProgressMv = isSimulating ? simProgressMv : live.progressMv;
+    const isAfterMaghrib = live.timeline !== null && effectiveProgress >= live.timeline.maghrib;
 
     const hijri = writeIslamicDate(0, viewDate);
 
@@ -87,36 +87,6 @@ export function PrayerTimesPageClient() {
 
             {/* Header Navigation Actions */}
             <div className="fixed top-4 right-4 z-50 flex items-center gap-2 sm:top-6 sm:right-6">
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                aria-label={isForegroundVisible ? 'Hide cards to see background' : 'Show cards'}
-                                className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
-                                onClick={() => setIsForegroundVisible(!isForegroundVisible)}
-                                size="sm"
-                                variant="default"
-                            >
-                                {isForegroundVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                            {isForegroundVisible ? 'Hide cards (Sky View)' : 'Show cards'}
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-
-                <Button
-                    asChild
-                    className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
-                    size="sm"
-                    variant="default"
-                >
-                    <Link aria-label="Parallax View" href="/v2">
-                        <IconSunMoon />
-                    </Link>
-                </Button>
-
                 <Button
                     asChild
                     className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
@@ -151,20 +121,14 @@ export function PrayerTimesPageClient() {
                     initial={{ opacity: 0, y: 20 }}
                     transition={{ delay: 0.45, duration: 1.1, ease: 'easeInOut' }}
                 >
-                    {/* Live Celestial Phase Eye-Candy Banner */}
-                    <CelestialPhaseBanner
-                        lunarCycle={lunarCycle}
-                        progress={effectiveProgress}
-                        timeline={live.timeline}
-                    />
-
-                    <QuoteCard />
+                    <QuoteCard isAfterMaghrib={isAfterMaghrib} />
 
                     <PrayerTimesCard
                         activeEvent={activeEvent}
                         addressLabel={settings.address?.trim()}
                         dateLabel={dateLabel}
                         hijriLabel={formatHijriDate(hijri)}
+                        isAfterMaghrib={isAfterMaghrib}
                         locationDetail={`${formatCoordinate(numeric.latitude, 'N', 'S')} · ${formatCoordinate(numeric.longitude, 'E', 'W')}`}
                         methodLabel={methodLabelMap[settings.method] ?? settings.method}
                         onNextDay={handleNextDay}

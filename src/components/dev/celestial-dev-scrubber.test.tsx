@@ -36,7 +36,7 @@ describe('CelestialDevScrubber', () => {
     });
 
     it('should open the scrubber panel when clicked', () => {
-        const { getByLabelText, getByText } = render(
+        const { getByLabelText, getByText, queryByText } = render(
             <CelestialDevScrubber
                 isForegroundVisible={true}
                 isSimulating={false}
@@ -57,6 +57,9 @@ describe('CelestialDevScrubber', () => {
         expect(getByText('Time of Day')).toBeDefined();
         expect(getByText('Lunar Phase')).toBeDefined();
         expect(getByLabelText('Time of day trajectory')).toBeDefined();
+        expect(queryByText(/^Day [12]$/)).toBeNull();
+        expect(queryByText(/^Cycle:/)).toBeNull();
+        expect(queryByText('LIVE TIME')).toBeNull();
         fireEvent.click(getByText('Lunar Phase'));
         expect(getByLabelText('Lunar cycle')).toBeDefined();
     });

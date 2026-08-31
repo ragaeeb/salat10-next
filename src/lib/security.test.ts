@@ -7,6 +7,10 @@ describe('security', () => {
             expect(validateOrigin('http://localhost:3000', null)).toBe(true);
         });
 
+        it('should accept the vinext development server origin', () => {
+            expect(validateOrigin('http://localhost:3001', null)).toBe(true);
+        });
+
         it('should accept allowed referer', () => {
             expect(validateOrigin(null, 'http://localhost:3000/page')).toBe(true);
         });

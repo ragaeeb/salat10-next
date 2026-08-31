@@ -10,11 +10,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { SITE_NAME, SITE_URL } from '@/config/seo';
 import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
 import { formatCitation } from '@/lib/quotes';
+import { cn } from '@/lib/utils';
 
 /**
  * Watermark appended to copied quotes for attribution
  */
 const QUOTE_WATERMARK = `\n\nShared from ${SITE_NAME} [${SITE_URL}]`;
+
+type QuoteCardProps = {
+    /** Whether the sky is past Maghrib, so the moon can show through the card */
+    isAfterMaghrib?: boolean;
+};
 
 /**
  * Displays a motivational Islamic quote with copy functionality.
@@ -27,7 +33,7 @@ const QUOTE_WATERMARK = `\n\nShared from ${SITE_NAME} [${SITE_URL}]`;
  *
  * @returns Quote card with copy button, or null if no quote available
  */
-export function QuoteCard() {
+export function QuoteCard({ isAfterMaghrib = false }: QuoteCardProps) {
     const { quote } = useMotivationalQuote();
 
     const copyQuote = async () => {
@@ -54,7 +60,10 @@ export function QuoteCard() {
     return (
         <motion.section
             animate={{ opacity: 1, y: 0 }}
-            className="relative w-full rounded-3xl border border-white/15 bg-background/60 p-6 text-foreground shadow-xl backdrop-blur-xl"
+            className={cn(
+                'relative w-full rounded-3xl border border-white/15 p-6 text-foreground shadow-xl',
+                isAfterMaghrib ? 'bg-background/25 backdrop-blur-none' : 'bg-background/60 backdrop-blur-xl',
+            )}
             initial={{ opacity: 0, y: 12 }}
         >
             <div className="flex items-start justify-between gap-4">

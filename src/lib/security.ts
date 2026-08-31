@@ -4,7 +4,12 @@ import { SITE_URL } from '@/config/seo';
  * List of allowed origins for CORS validation
  * Includes production site, www variant, and localhost
  */
-const ALLOWED_ORIGINS = [SITE_URL, `${SITE_URL.replace('https://', 'https://www.')}`, 'http://localhost:3000'];
+const ALLOWED_ORIGINS = [
+    SITE_URL,
+    `${SITE_URL.replace('https://', 'https://www.')}`,
+    'http://localhost:3000',
+    'http://localhost:3001',
+];
 
 /**
  * Validate origin or referer header for CORS security

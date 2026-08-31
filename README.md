@@ -27,13 +27,9 @@ Beautiful, accurate Islamic prayer times with visual astronomy and Hijri calenda
 - Live countdown to next prayer
 - Active prayer highlighting with aurora effect
 - Navigate between days with intuitive controls
-
-#### Parallax View
-- Immersive scrollable experience
-- Animated sun and moon following prayer times
+- Live animated sun and moon following prayer times
 - Dynamic sky colors (night → dawn → day → sunset)
 - Stars and meteors during night hours
-- Smooth parallax scrolling
 
 #### Timetable View
 - Monthly and yearly prayer schedules
@@ -234,7 +230,6 @@ bun run test:e2e
 src/
 ├── app/              # Next.js pages & routes
 │   ├── page.tsx      # Home (card view)
-│   ├── v2/           # Parallax view
 │   ├── qibla/        # AR Qibla finder
 │   ├── online/       # Online users map
 │   ├── settings/     # Location & method config

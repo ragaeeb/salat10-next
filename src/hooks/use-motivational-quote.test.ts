@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it, spyOn } from 'bun:test';
 import { renderHook } from '@testing-library/react';
+import { defaultSettings } from '@/lib/constants';
+import { computePrayerTimesForDate } from '@/lib/store-utils';
+import { usePrayerStore } from '@/store/usePrayerStore';
 import { useMotivationalQuote } from './use-motivational-quote';
 
 /**
@@ -12,6 +15,10 @@ import { useMotivationalQuote } from './use-motivational-quote';
  * would be better suited for testing the full quote filtering logic.
  */
 describe('useMotivationalQuote', () => {
+    afterEach(() => {
+        usePrayerStore.setState({ currentData: null });
+    });
+
     describe('return value structure', () => {
         it('should return quote, loading, and error properties', () => {
             const { result } = renderHook(() => useMotivationalQuote());
@@ -41,16 +48,27 @@ describe('useMotivationalQuote', () => {
             expect(result.current.quote).toBeNull();
         });
 
-        it('should memoize quote based on currentData', () => {
-            const { result, rerender } = renderHook(() => useMotivationalQuote());
+        it('should select a quote only once while the hook is mounted', () => {
+            const currentData = computePrayerTimesForDate(
+                { ...defaultSettings, latitude: '43.6532', longitude: '-79.3832' },
+                new Date('2026-08-31T12:00:00Z'),
+            );
+            usePrayerStore.setState({ currentData });
 
-            const initialQuote = result.current.quote;
+            const random = spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValue(0.999999);
 
-            // Rerender without changing dependencies
-            rerender();
+            try {
+                const { result, rerender } = renderHook(() => useMotivationalQuote());
+                const initialQuote = result.current.quote;
 
-            // Quote should remain the same (memoized)
-            expect(result.current.quote).toBe(initialQuote);
+                rerender();
+
+                expect(initialQuote).not.toBeNull();
+                expect(result.current.quote).toBe(initialQuote);
+                expect(random).toHaveBeenCalledTimes(1);
+            } finally {
+                random.mockRestore();
+            }
         });
     });
 });

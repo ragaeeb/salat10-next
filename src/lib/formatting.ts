@@ -1,7 +1,5 @@
 import type { HijriDate } from '@/types/hijri';
-import type { DayData, Timeline } from '@/types/timeline';
-import { MINUTES_IN_DAY, salatLabels } from './constants';
-import { pick } from './utils';
+import { MINUTES_IN_DAY } from './constants';
 
 /**
  * Format a Date object as localized 12-hour time string
@@ -70,38 +68,3 @@ export const formatHijriDate = (hijri: HijriDate) => {
 export const formatCoordinate = (value: number, positiveLabel: string, negativeLabel: string) => {
     return `${Math.abs(value).toFixed(4)}° ${value >= 0 ? positiveLabel : negativeLabel}`;
 };
-
-/**
- * Get prayer phase label and time at a given timeline position
- * Used for parallax view phase indicator
- *
- * @param p - Timeline position [0..1]
- * @param tl - Timeline with normalized event positions
- * @param timings - Array of timing entries
- * @param tz - IANA timezone identifier
- * @returns Object with label and formatted time
- */
-export function phaseLabelAndTime(p: number, tl: Timeline, timings: DayData['timings'], tz: string) {
-    if (p < tl.sunrise) {
-        return { label: salatLabels.fajr, time: formatTime(pick(timings, 'fajr')!, tz) };
-    }
-    if (p < tl.dhuhr) {
-        return { label: salatLabels.sunrise, time: formatTime(pick(timings, 'sunrise')!, tz) };
-    }
-    if (p < tl.asr) {
-        return { label: salatLabels.dhuhr, time: formatTime(pick(timings, 'dhuhr')!, tz) };
-    }
-    if (p < tl.maghrib) {
-        return { label: salatLabels.asr, time: formatTime(pick(timings, 'asr')!, tz) };
-    }
-    if (p < tl.isha) {
-        return { label: salatLabels.maghrib, time: formatTime(pick(timings, 'maghrib')!, tz) };
-    }
-    if (p < tl.midNight) {
-        return { label: salatLabels.isha, time: formatTime(pick(timings, 'isha')!, tz) };
-    }
-    if (p < tl.lastThird) {
-        return { label: salatLabels.middleOfTheNight, time: formatTime(pick(timings, 'middleOfTheNight')!, tz) };
-    }
-    return { label: salatLabels.lastThirdOfTheNight, time: formatTime(pick(timings, 'lastThirdOfTheNight')!, tz) };
-}

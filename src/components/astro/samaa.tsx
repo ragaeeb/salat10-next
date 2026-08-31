@@ -40,20 +40,7 @@ type SamaaProps = {
  * @param {number} props.currentDayIndex - Index of currently visible day
  *
  * @example
- * ```tsx
- * const { scrollProgress, pNow } = useScrollProgress(scrollY);
- * const timeline = useTimeline(currentDay);
- *
- * return (
- *   <Samaa
- *     scrollProgress={scrollProgress}
- *     timeline={timeline}
- *     pNow={pNow}
- *     totalDays={days.length}
- *     currentDayIndex={currentDayIndex}
- *   />
- * );
- * ```
+ * Pass normalized live celestial progress and the current timeline to this component.
  */
 export const Samaa = ({ scrollProgress, timeline, pNow, totalDays, currentDayIndex }: SamaaProps) => {
     const [mounted, setMounted] = useState(false);

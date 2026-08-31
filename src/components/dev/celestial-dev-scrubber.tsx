@@ -3,8 +3,6 @@
 import { ChevronDown, ChevronUp, Eye, EyeOff, Moon, RotateCcw, Sparkles, Sun, Wrench, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { type CelestialPhaseInfo, getCelestialPhase } from '@/lib/celestial-phases';
-import { getLunarPhaseForCycle, type LunarPhase } from '@/lib/lunar';
 import { cn } from '@/lib/utils';
 import type { Timeline } from '@/types/timeline';
 
@@ -110,9 +108,7 @@ export function CelestialDevScrubber({
         return null;
     }
 
-    const phaseInfo: CelestialPhaseInfo = getCelestialPhase(progress, timeline);
     const activeLunarCycle = simulatedLunarCycle ?? lunarCycle;
-    const lunarPhase = getLunarPhaseForCycle(activeLunarCycle);
 
     const applyPreset = (preset: DevPreset) => {
         const targetP = getPresetProgress(preset, timeline);
@@ -157,13 +153,6 @@ export function CelestialDevScrubber({
                             mode={mode}
                             onSetForegroundVisible={onSetForegroundVisible}
                             onSetMode={setMode}
-                        />
-
-                        <PhaseDiagnosticsCard
-                            isSimulating={isSimulating}
-                            lunarPhase={lunarPhase}
-                            phaseInfo={phaseInfo}
-                            progress={progress}
                         />
 
                         {mode === 'time' ? (
@@ -289,52 +278,6 @@ function DevModeBar({
                 {isForegroundVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                 {isForegroundVisible ? 'Cards: On' : 'Sky Only'}
             </Button>
-        </div>
-    );
-}
-
-function PhaseDiagnosticsCard({
-    progress,
-    phaseInfo,
-    lunarPhase,
-    isSimulating,
-}: {
-    isSimulating: boolean;
-    lunarPhase: LunarPhase;
-    phaseInfo: CelestialPhaseInfo;
-    progress: number;
-}) {
-    return (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <span
-                        className={cn(
-                            'rounded-full px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wider',
-                            progress < 1.0
-                                ? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
-                                : 'border border-purple-400/30 bg-purple-500/20 text-purple-300',
-                        )}
-                    >
-                        {progress < 1.0 ? 'Day 1' : 'Day 2'}
-                    </span>
-                    <span className="font-bold text-white text-xs">{phaseInfo.title}</span>
-                </div>
-                <span className="font-mono text-[11px] text-white/60">
-                    Cycle: {((progress % 1.0) * 100).toFixed(1)}%
-                </span>
-            </div>
-            <p className="mt-1.5 text-[11px] text-white/80">{phaseInfo.detail}</p>
-            <div className="mt-2 flex items-center justify-between border-white/10 border-t pt-2 text-[10px] text-white/60">
-                <span>
-                    🌙 {lunarPhase.name} ({Math.round(lunarPhase.illuminatedFraction * 100)}% lit)
-                </span>
-                {isSimulating ? (
-                    <span className="font-bold text-amber-400">● SIMULATED</span>
-                ) : (
-                    <span className="font-bold text-emerald-400">● LIVE TIME</span>
-                )}
-            </div>
         </div>
     );
 }

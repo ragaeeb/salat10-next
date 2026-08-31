@@ -108,6 +108,13 @@ describe('useSun', () => {
             expect(y).toBeLessThanOrEqual(beforeResult.current.sunY.get());
             expect(y).toBeLessThanOrEqual(afterResult.current.sunY.get());
         });
+
+        it('should place the solar-noon peak just below the top of the viewport', () => {
+            const noon = (mockTimeline.sunrise + mockTimeline.maghrib) / 2;
+            const { result } = renderHook(() => useSun(motionValue(noon), mockTimeline));
+
+            expect(result.current.sunY.get()).toBeLessThanOrEqual(15);
+        });
     });
 
     describe('sunOpacity', () => {
