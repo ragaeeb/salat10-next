@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { type CalculationConfig, daily, formatTimeRemaining, getActiveEvent, getTimeUntilNext } from '@/lib/calculator';
 import { useCurrentData, useSettings } from '@/store/usePrayerStore';
 import { type SalatEvent, salatLabels } from './constants';
@@ -230,13 +230,16 @@ export const useDayNavigation = () => {
 export const useCalculationConfig = (): CalculationConfig => {
     const settings = useSettings();
 
-    return {
-        fajrAngle: Number.parseFloat(settings.fajrAngle),
-        ishaAngle: Number.parseFloat(settings.ishaAngle),
-        ishaInterval: Number.parseFloat(settings.ishaInterval),
-        latitude: settings.latitude,
-        longitude: settings.longitude,
-        method: settings.method,
-        timeZone: settings.timeZone,
-    };
+    return useMemo(
+        () => ({
+            fajrAngle: Number.parseFloat(settings.fajrAngle),
+            ishaAngle: Number.parseFloat(settings.ishaAngle),
+            ishaInterval: Number.parseFloat(settings.ishaInterval),
+            latitude: settings.latitude,
+            longitude: settings.longitude,
+            method: settings.method,
+            timeZone: settings.timeZone,
+        }),
+        [settings],
+    );
 };

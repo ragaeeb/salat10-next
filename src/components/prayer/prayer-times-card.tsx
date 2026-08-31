@@ -132,7 +132,7 @@ export function PrayerTimesCard({
     return (
         <motion.section
             animate={{ opacity: 1, y: 0 }}
-            className="relative w-full overflow-hidden rounded-3xl border border-white/15 bg-background/90 p-6 shadow-2xl backdrop-blur"
+            className="relative w-full overflow-hidden rounded-3xl border border-white/15 bg-background/60 p-6 shadow-2xl backdrop-blur-xl"
             initial={{ opacity: 0, y: 16 }}
         >
             {activeEvent === 'lastThirdOfTheNight' && <Meteors className="pointer-events-none" number={18} />}

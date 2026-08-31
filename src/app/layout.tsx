@@ -4,12 +4,12 @@ import { AnalyticsProvider } from '@/components/analytics-provider';
 import { Footer } from '@/components/footer';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
-import { defaultMetadata, SITE_NAME } from '@/config/seo';
+import { defaultMetadata } from '@/config/seo';
 
 const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' });
 
-export const metadata: Metadata = { description: defaultMetadata.description, title: SITE_NAME };
+export const metadata: Metadata = defaultMetadata;
 
 /**
  * Root layout with global fonts/styles.

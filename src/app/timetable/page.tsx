@@ -1,5 +1,5 @@
 import { timetableMetadata } from '@/config/seo';
-import { parseInitialDateRange } from '@/lib/time';
+import { formatDateParam, parseInitialDateRange } from '@/lib/time';
 import { TimetableClient } from './client';
 
 export const metadata = timetableMetadata;
@@ -10,5 +10,5 @@ export default async function TimetablePage({ searchParams }: TimetablePageProps
     const resolvedParams = (await searchParams) ?? undefined;
     const { from, to } = parseInitialDateRange(resolvedParams);
 
-    return <TimetableClient initialFrom={from} initialTo={to} />;
+    return <TimetableClient initialFrom={formatDateParam(from)} initialTo={formatDateParam(to)} />;
 }

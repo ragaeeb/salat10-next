@@ -1,0 +1,21 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "assets": {
+        "binding": "ASSETS",
+        "directory": "dist/client",
+        "not_found_handling": "none"
+    },
+    "cache": {
+        "enabled": true
+    },
+    "compatibility_date": "2026-08-29",
+    "compatibility_flags": ["nodejs_compat"],
+    "main": "vinext/server/fetch-handler",
+    "name": "salat10-next",
+    "observability": {
+        "enabled": true
+    },
+    "secrets": {
+        "required": ["UPSTASH_REDIS_REST_TOKEN", "UPSTASH_REDIS_REST_URL"]
+    }
+}

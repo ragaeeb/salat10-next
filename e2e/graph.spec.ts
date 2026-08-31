@@ -2,6 +2,14 @@ import { expect, test } from './fixtures';
 
 test.describe('Graph Page (/graph)', () => {
     test('renders the prayer time graph', async ({ pageWithOttawa: page }) => {
+        const errors: string[] = [];
+        page.on('console', (message) => {
+            if (message.type() === 'error') {
+                errors.push(message.text());
+            }
+        });
+        page.on('pageerror', (error) => errors.push(error.message));
+
         await page.goto('/graph');
 
         // Should have a Home link - this confirms the page loaded
@@ -9,6 +17,8 @@ test.describe('Graph Page (/graph)', () => {
 
         // Should not show an error
         await expect(page.getByText(/error/i)).not.toBeVisible();
+        await expect(page.locator('select')).toBeVisible({ timeout: 10000 });
+        expect(errors).toEqual([]);
     });
 
     test('shows home navigation button', async ({ pageWithOttawa: page }) => {
@@ -25,7 +35,9 @@ test.describe('Graph Page (/graph)', () => {
         await expect(page.getByRole('link', { name: /home/i })).toBeVisible({ timeout: 15000 });
 
         // Should have a date range picker button
-        const dateRangeButton = page.locator('button').filter({ hasText: /Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/i });
+        const dateRangeButton = page
+            .locator('button')
+            .filter({ hasText: /Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/i });
         await expect(dateRangeButton.first()).toBeVisible();
     });
 

@@ -1,17 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-    expect: {
-        timeout: 10000,
-    },
+    expect: { timeout: 10000 },
     forbidOnly: !!process.env.CI,
     fullyParallel: true,
-    projects: [
-        {
-            name: 'chromium',
-            use: { ...devices['Desktop Chrome'] },
-        },
-    ],
+    projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
     reporter: [['html', { open: 'never' }], ['list']],
     retries: process.env.CI ? 2 : 0,
     testDir: './e2e',
@@ -22,7 +15,7 @@ export default defineConfig({
         video: 'retain-on-failure',
     },
     webServer: {
-        command: './node_modules/.bin/next start -p 3002',
+        command: './node_modules/.bin/wrangler dev --config dist/server/wrangler.json --port 3002',
         reuseExistingServer: !process.env.CI,
         timeout: 60000,
         url: 'http://localhost:3002',

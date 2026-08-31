@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { CalculationSettings } from '@/components/settings/calculation-settings';
 import { LocationSettings } from '@/components/settings/location-settings';
 import { Button } from '@/components/ui/button';
-import { usePrayerStore } from '@/store/usePrayerStore';
+import { useHasHydrated, usePrayerStore } from '@/store/usePrayerStore';
 
 const DEFAULT_TZ = 'UTC';
 
@@ -19,6 +19,7 @@ const getBrowserTimezone = (): string => {
 };
 
 export function SettingsClient() {
+    const hasHydrated = useHasHydrated();
     const settings = usePrayerStore((state) => state.settings);
     const updateSettings = usePrayerStore((state) => state.updateSettings);
     const updateSetting = usePrayerStore((state) => state.updateSetting);
@@ -43,6 +44,14 @@ export function SettingsClient() {
         null,
         2,
     );
+
+    if (!hasHydrated) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-background">
+                <div className="text-lg text-muted-foreground">Loading...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-background px-4 py-6 md:px-6 md:py-10">

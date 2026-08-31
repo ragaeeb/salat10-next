@@ -5,20 +5,19 @@ test.describe('Home Page (/)', () => {
         await page.goto('/');
 
         // Wait for the page to hydrate and show prayer times
-        // Use exact: true to avoid strict mode violation with multiple 'Fajr' matches
-        await expect(page.getByText('Fajr', { exact: true })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText('Fajr', { exact: true }).last()).toBeVisible({ timeout: 15000 });
 
         // Should show prayer time events
-        await expect(page.getByText('Fajr', { exact: true })).toBeVisible();
-        await expect(page.getByText('Sunrise', { exact: true })).toBeVisible();
-        await expect(page.getByText('Dhuhr', { exact: true })).toBeVisible();
+        await expect(page.getByText('Fajr', { exact: true }).last()).toBeVisible();
+        await expect(page.getByText('Sunrise', { exact: true }).last()).toBeVisible();
+        await expect(page.getByText('Dhuhr', { exact: true }).last()).toBeVisible();
     });
 
     test('shows Ottawa address label', async ({ pageWithOttawa: page }) => {
         await page.goto('/');
 
         // Wait for hydration
-        await expect(page.getByText('Fajr', { exact: true })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText('Fajr', { exact: true }).last()).toBeVisible({ timeout: 15000 });
 
         // Should show the address
         await expect(page.getByText('Ottawa, Ontario, Canada')).toBeVisible();
@@ -27,8 +26,8 @@ test.describe('Home Page (/)', () => {
     test('shows navigation buttons to other views', async ({ pageWithOttawa: page }) => {
         await page.goto('/');
 
-        // Wait for hydration - use first() to avoid strict mode violation
-        await expect(page.getByText('Fajr', { exact: true })).toBeVisible({ timeout: 15000 });
+        // Wait for hydration
+        await expect(page.getByText('Fajr', { exact: true }).last()).toBeVisible({ timeout: 15000 });
 
         // Should have link to parallax view
         await expect(page.locator('a[href="/v2"]')).toBeVisible();
@@ -44,7 +43,7 @@ test.describe('Home Page (/)', () => {
         await page.goto('/');
 
         // Wait for hydration
-        await expect(page.getByText('Fajr', { exact: true })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText('Fajr', { exact: true }).last()).toBeVisible({ timeout: 15000 });
 
         // Should show Hijri date (contains AH)
         await expect(page.getByText(/AH/)).toBeVisible();

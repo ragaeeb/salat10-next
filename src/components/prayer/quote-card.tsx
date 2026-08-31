@@ -54,7 +54,7 @@ export function QuoteCard() {
     return (
         <motion.section
             animate={{ opacity: 1, y: 0 }}
-            className="relative w-full rounded-3xl border border-white/20 bg-card p-6 text-foreground shadow-lg backdrop-blur"
+            className="relative w-full rounded-3xl border border-white/15 bg-background/60 p-6 text-foreground shadow-xl backdrop-blur-xl"
             initial={{ opacity: 0, y: 12 }}
         >
             <div className="flex items-start justify-between gap-4">
