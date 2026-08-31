@@ -9,8 +9,8 @@ test.describe('Home Page (/)', () => {
 
         // Should show prayer time events
         await expect(page.getByText('Fajr', { exact: true }).last()).toBeVisible();
-        await expect(page.getByText('Sunrise', { exact: true })).toBeVisible();
-        await expect(page.getByText('Dhuhr', { exact: true })).toBeVisible();
+        await expect(page.getByText('Sunrise', { exact: true }).last()).toBeVisible();
+        await expect(page.getByText('Dhuhr', { exact: true }).last()).toBeVisible();
     });
 
     test('shows Ottawa address label', async ({ pageWithOttawa: page }) => {

@@ -639,8 +639,10 @@ bun test --coverage                   # With coverage report
 bun test src/lib/calculator.test.ts   # Specific file
 bun run lint                          # Check code style
 bun run lint --write                  # Auto-fix issues
-bun run dev                           # Dev server
-bun run build                         # Production build
+bun run dev                           # vinext development server
+bun run build                         # Cloudflare Worker build via vinext
+bun run start                         # Local built Worker via Wrangler
+bun run deploy                        # Build and deploy to Cloudflare Workers
 ```
 
 ## Questions or Issues?

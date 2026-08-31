@@ -19,8 +19,8 @@ describe('security', () => {
             expect(validateOrigin(null, 'https://evil.com/page')).toBe(false);
         });
 
-        it('should accept production URL', () => {
-            expect(validateOrigin('https://salaten.vercel.app', null)).toBe(true);
+        it('should accept canonical production URL', () => {
+            expect(validateOrigin('https://salat10.app', null)).toBe(true);
         });
 
         it('should allow missing headers in development', () => {

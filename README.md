@@ -4,7 +4,6 @@ Beautiful, accurate Islamic prayer times with visual astronomy and Hijri calenda
 
 [![wakatime](https://wakatime.com/badge/user/a0b906ce-b8e7-4463-8bce-383238df6d4b/project/c086c613-a649-484a-be35-fccd9c27d714.svg)](https://wakatime.com/badge/user/a0b906ce-b8e7-4463-8bce-383238df6d4b/project/c086c613-a649-484a-be35-fccd9c27d714)
 [![codecov](https://codecov.io/gh/ragaeeb/salat10-next/graph/badge.svg?token=4F7LER2188)](https://codecov.io/gh/ragaeeb/salat10-next)
-[![Vercel Deploy](https://deploy-badge.vercel.app/vercel/salaten)](https://salaten.vercel.app)
 [![typescript](https://badgen.net/badge/icon/typescript?icon=typescript&label&color=blue)](https://www.typescriptlang.org)
 [![Node.js CI](https://github.com/ragaeeb/salat10-next/actions/workflows/build.yml/badge.svg)](https://github.com/ragaeeb/salat10-next/actions/workflows/build.yml)
 ![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white)
@@ -98,44 +97,40 @@ cd salat10-next
 # Install dependencies
 bun install
 
-# Run development server
+# Run the vinext development server
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3001](http://localhost:3001) in your browser.
 
-### Production Build
+### Cloudflare Worker
 
 ```bash
+# Build the Cloudflare Worker
 bun run build
+
+# Run the built Worker locally with Wrangler
 bun run start
 ```
 
-### Cloudflare Worker (vinext)
+Create a local `.env` file with the Worker secrets. It is gitignored and its values are uploaded by Wrangler during deployment:
 
-The existing Next.js workflow remains available. Use the vinext commands to run the same app on the Cloudflare Workers runtime:
-
-```bash
-bun run dev:vinext
-bun run build:vinext
-bun run start:vinext
+```dotenv
+UPSTASH_REDIS_REST_URL=your_upstash_redis_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
 ```
 
-Before the first deployment, configure the Worker secrets without adding their values to `wrangler.jsonc`:
+Deploy the Worker with one command:
 
 ```bash
-bunx wrangler secret put UPSTASH_REDIS_REST_URL
-bunx wrangler secret put UPSTASH_REDIS_REST_TOKEN
-bunx wrangler secret put GEOCODE_API_KEY # Optional
-bun run build:vinext
-bun run deploy:vinext
+bun run deploy
 ```
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
-Create a `.env.local` file:
+Create a `.env` file:
 
 ```bash
 # Optional: For address geocoding (geocode.maps.co API)
@@ -157,7 +152,7 @@ NEXT_PUBLIC_ANALYTICS_FLUSH_INTERVAL=3600000  # 1 hour in ms
 1. Create a free account at [Upstash](https://upstash.com/)
 2. Create a new Redis database
 3. Copy the REST URL and REST TOKEN from the database details
-4. Add them to your `.env.local` file
+4. Add them to your `.env` file
 
 The Redis database is used for:
 - Page view analytics
@@ -212,12 +207,16 @@ bun test --coverage
 
 # Specific file
 bun test src/lib/calculator.test.ts
+
+# End-to-end tests against the local Cloudflare Worker
+bun run test:e2e
 ```
 
 ## 📐 Architecture
 
 ### Tech Stack
-- **Framework**: Next.js 16 (App Router)
+- **Framework**: Next.js 16 (App Router, built with vinext)
+- **Deployment**: Cloudflare Workers via vinext and Wrangler
 - **Runtime**: React 19 with Server Components
 - **Package Manager**: Bun
 - **Language**: TypeScript with strict mode
