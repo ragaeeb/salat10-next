@@ -190,7 +190,7 @@ export const Sun = memo<SunProps>(
                 <motion.circle
                     cx="200"
                     cy="200"
-                    r="185"
+                    r="195"
                     fill={`url(#${outerAuraId})`}
                     filter={`url(#${deepBlurFilterId})`}
                     style={{ opacity: atmosphericAuraOpacity }}
@@ -200,7 +200,7 @@ export const Sun = memo<SunProps>(
                 <motion.circle
                     cx="200"
                     cy="200"
-                    r="115"
+                    r="140"
                     fill={`url(#${midCoronaId})`}
                     filter={`url(#${glowFilterId})`}
                     style={{ opacity: midCoronaOpacity }}
@@ -210,12 +210,12 @@ export const Sun = memo<SunProps>(
                 <motion.g transform={glareTransform} style={{ opacity: flareOpacity }}>
                     {/* Primary Horizontal & Vertical Diffraction Needle Spikes */}
                     <polygon
-                        points="20,200 190,198.5 380,200 190,201.5"
+                        points="10,200 185,198 390,200 185,202"
                         fill={`url(#${flareStreakGradId})`}
                         filter={`url(#${streakGlowFilterId})`}
                     />
                     <polygon
-                        points="200,20 198.5,190 200,380 201.5,190"
+                        points="200,10 198,185 200,390 202,185"
                         fill={`url(#${flareStreakGradId})`}
                         filter={`url(#${streakGlowFilterId})`}
                     />
@@ -223,13 +223,13 @@ export const Sun = memo<SunProps>(
                     {/* Diagonal Secondary Diffraction Needles */}
                     <g transform="rotate(45, 200, 200)">
                         <polygon
-                            points="50,200 190,199 350,200 190,201"
+                            points="40,200 185,198.5 360,200 185,201.5"
                             fill={`url(#${diagStreakGradId})`}
                             filter={`url(#${streakGlowFilterId})`}
                             opacity={0.65}
                         />
                         <polygon
-                            points="200,50 199,190 200,350 201,190"
+                            points="200,40 198.5,185 200,360 201.5,185"
                             fill={`url(#${diagStreakGradId})`}
                             filter={`url(#${streakGlowFilterId})`}
                             opacity={0.65}
@@ -241,19 +241,19 @@ export const Sun = memo<SunProps>(
                 <motion.circle
                     cx="200"
                     cy="200"
-                    r="56"
+                    r="80"
                     fill={`url(#${innerBloomId})`}
                     filter={`url(#${glowFilterId})`}
                     style={{ opacity: innerBloomOpacity }}
                 />
 
-                {/* 5. Radiant Solar Disk */}
-                <circle cx="200" cy="200" r="34" fill={`url(#${coreGradId})`} filter={`url(#${glowFilterId})`} />
-                <circle cx="200" cy="200" r="28" fill={`url(#${coreGradId})`} />
+                {/* 5. Radiant Solar Disk (Larger circumference than the moon) */}
+                <circle cx="200" cy="200" r="50" fill={`url(#${coreGradId})`} filter={`url(#${glowFilterId})`} />
+                <circle cx="200" cy="200" r="42" fill={`url(#${coreGradId})`} />
 
                 {/* 6. Pure White-Hot Photosphere Core */}
-                <circle cx="200" cy="200" r="18" fill="#ffffff" opacity="0.95" filter={`url(#${glowFilterId})`} />
-                <circle cx="200" cy="200" r="13" fill="#ffffff" opacity="1" />
+                <circle cx="200" cy="200" r="28" fill="#ffffff" opacity="0.95" filter={`url(#${glowFilterId})`} />
+                <circle cx="200" cy="200" r="20" fill="#ffffff" opacity="1" />
             </motion.svg>
         );
     },

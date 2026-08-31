@@ -40,16 +40,17 @@ mock.module('@/lib/quotes', () => ({ formatCitation: mockFormatCitation }));
 const mockWriteText = mock(() => Promise.resolve());
 
 beforeEach(() => {
+    mockWriteText.mockImplementation(() => Promise.resolve());
+    mockWriteText.mockClear();
+    mockToastSuccess.mockClear();
+    mockToastError.mockClear();
+    mockFormatCitation.mockClear();
     // Mock navigator.clipboard using Object.defineProperty
     Object.defineProperty(global, 'navigator', {
         configurable: true,
         value: { ...global.navigator, clipboard: { writeText: mockWriteText } },
         writable: true,
     });
-    mockWriteText.mockClear();
-    mockToastSuccess.mockClear();
-    mockToastError.mockClear();
-    mockFormatCitation.mockClear();
 });
 
 afterEach(() => {
@@ -150,6 +151,7 @@ describe('QuoteCard', () => {
 
     describe('copy functionality', () => {
         it('should copy quote to clipboard when copy button is clicked', async () => {
+            mockWriteText.mockResolvedValue(undefined);
             mockUseMotivationalQuote.mockReturnValue({ error: false, loading: false, quote: mockQuote });
             mockFormatCitation.mockReturnValue('Test Title, Test Author');
             renderWithProvider(<QuoteCard />);
@@ -168,6 +170,7 @@ describe('QuoteCard', () => {
         });
 
         it('should show success toast on successful copy', async () => {
+            mockWriteText.mockResolvedValue(undefined);
             mockUseMotivationalQuote.mockReturnValue({ error: false, loading: false, quote: mockQuote });
             mockFormatCitation.mockReturnValue('Test Title, Test Author');
             renderWithProvider(<QuoteCard />);
@@ -176,8 +179,7 @@ describe('QuoteCard', () => {
             fireEvent.click(copyButton);
 
             await waitFor(() => {
-                expect(mockToastSuccess.mock.calls.length).toBe(1);
-                expect(mockToastSuccess.mock.calls[0]![0]).toBe('Copied');
+                expect(mockToastSuccess).toHaveBeenCalledWith('Copied');
             });
         });
 

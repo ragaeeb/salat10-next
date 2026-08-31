@@ -2,10 +2,11 @@
 
 import { IconCompass } from '@tabler/icons-react';
 import { Settings2Icon } from 'lucide-react';
-import { motion, useMotionValue } from 'motion/react';
+import { useMotionValue } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { AsrBookShadow } from '@/components/astro/asr-book-shadow';
 import { CelestialSkyBackground } from '@/components/astro/celestial-sky-background';
 import { CelestialDevScrubber } from '@/components/dev/celestial-dev-scrubber';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
@@ -19,6 +20,7 @@ import { writeIslamicDate } from '@/lib/hijri';
 import { calculateLunarPhase } from '@/lib/lunar';
 import { useActiveEvent, useDayNavigation } from '@/lib/prayer-utils';
 import { methodLabelMap } from '@/lib/settings';
+import { cn } from '@/lib/utils';
 import { useHasHydrated, useHasValidCoordinates, useNumericSettings, useSettings } from '@/store/usePrayerStore';
 
 export function PrayerTimesPageClient() {
@@ -109,34 +111,39 @@ export function PrayerTimesPageClient() {
                 </Button>
             </div>
 
-            {/* Foreground Prayer Times & Quote Container (Initial Fade In for Sky Visibility) */}
+            {/* Foreground Prayer Times & Quote Container (Instant visibility toggle) */}
             <TooltipProvider>
-                <motion.div
-                    animate={{
-                        opacity: isForegroundVisible ? 1 : 0,
-                        pointerEvents: isForegroundVisible ? 'auto' : 'none',
-                        y: isForegroundVisible ? 0 : 20,
-                    }}
-                    className="relative z-10 mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-between gap-6 px-3 pt-16 pb-6 sm:gap-8 sm:px-6 sm:pt-20 sm:pb-8 lg:max-w-3xl"
-                    initial={{ opacity: 0, y: 20 }}
-                    transition={{ delay: 0.45, duration: 1.1, ease: 'easeInOut' }}
+                <div
+                    className={cn(
+                        'relative z-10 mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-between gap-6 px-3 pt-16 pb-6 sm:gap-8 sm:px-6 sm:pt-20 sm:pb-8 lg:max-w-3xl',
+                        !isForegroundVisible && 'pointer-events-none invisible',
+                    )}
                 >
                     <QuoteCard isAfterMaghrib={isAfterMaghrib} />
 
-                    <PrayerTimesCard
-                        activeEvent={activeEvent}
-                        addressLabel={settings.address?.trim()}
-                        dateLabel={dateLabel}
-                        hijriLabel={formatHijriDate(hijri)}
-                        isAfterMaghrib={isAfterMaghrib}
-                        locationDetail={`${formatCoordinate(numeric.latitude, 'N', 'S')} · ${formatCoordinate(numeric.longitude, 'E', 'W')}`}
-                        methodLabel={methodLabelMap[settings.method] ?? settings.method}
-                        onNextDay={handleNextDay}
-                        onPrevDay={handlePrevDay}
-                        onToday={handleToday}
-                        timings={timings}
-                    />
-                </motion.div>
+                    <div className="relative w-full">
+                        {/* Asr Book & Optical Shadow Animation on top of timings container */}
+                        <AsrBookShadow
+                            latitude={numeric.latitude}
+                            progress={activeProgressMv}
+                            timeline={live.timeline}
+                        />
+
+                        <PrayerTimesCard
+                            activeEvent={activeEvent}
+                            addressLabel={settings.address?.trim()}
+                            dateLabel={dateLabel}
+                            hijriLabel={formatHijriDate(hijri)}
+                            isAfterMaghrib={isAfterMaghrib}
+                            locationDetail={`${formatCoordinate(numeric.latitude, 'N', 'S')} · ${formatCoordinate(numeric.longitude, 'E', 'W')}`}
+                            methodLabel={methodLabelMap[settings.method] ?? settings.method}
+                            onNextDay={handleNextDay}
+                            onPrevDay={handlePrevDay}
+                            onToday={handleToday}
+                            timings={timings}
+                        />
+                    </div>
+                </div>
             </TooltipProvider>
 
             {/* Developer Time & Lunar Scrubber (Simulation Container) */}

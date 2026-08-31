@@ -29,7 +29,7 @@ export const Shams = ({ scrollProgress, timeline }: ShamsProps) => {
             opacity={sunOpacity}
             rayRotation={sunRayRotation}
             rayScale={sunRayScale}
-            size={240}
+            size={280}
             x={sunX}
             y={sunY}
         />

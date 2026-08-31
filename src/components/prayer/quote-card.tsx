@@ -1,5 +1,4 @@
 import { CopyIcon } from 'lucide-react';
-import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -66,13 +65,11 @@ export function QuoteCard({ isAfterMaghrib = false }: QuoteCardProps) {
     const citation = formatCitation(quote);
 
     return (
-        <motion.section
-            animate={{ opacity: 1, y: 0 }}
+        <section
             className={cn(
                 'relative w-full rounded-2xl border border-white/15 p-3.5 text-foreground shadow-lg sm:p-4',
                 isAfterMaghrib ? 'bg-background/25 backdrop-blur-none' : 'bg-background/60 backdrop-blur-xl',
             )}
-            initial={{ opacity: 0, y: 12 }}
         >
             <div className="flex items-start justify-between gap-3">
                 <blockquote className="flex-1 space-y-2 text-xs sm:text-sm">
@@ -122,6 +119,6 @@ export function QuoteCard({ isAfterMaghrib = false }: QuoteCardProps) {
                 </Tooltip>
             </div>
             <p className="mt-2 text-[10px] text-foreground/50 sm:text-xs">Tap the copy icon to share with friends.</p>
-        </motion.section>
+        </section>
     );
 }

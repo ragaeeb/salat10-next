@@ -36,7 +36,7 @@ describe('CelestialDevScrubber', () => {
     });
 
     it('should open the scrubber panel when clicked', () => {
-        const { getByLabelText, getByText, queryByText } = render(
+        const { getByLabelText } = render(
             <CelestialDevScrubber
                 isForegroundVisible={true}
                 isSimulating={false}
@@ -53,15 +53,12 @@ describe('CelestialDevScrubber', () => {
 
         fireEvent.click(getByLabelText('Open Dev Scrubber'));
 
-        expect(getByText('Celestial Dev Scrubber')).toBeDefined();
-        expect(getByText('Time of Day')).toBeDefined();
-        expect(getByText('Lunar Phase')).toBeDefined();
-        expect(getByLabelText('Time of day trajectory')).toBeDefined();
-        expect(queryByText(/^Day [12]$/)).toBeNull();
-        expect(queryByText(/^Cycle:/)).toBeNull();
-        expect(queryByText('LIVE TIME')).toBeNull();
-        fireEvent.click(getByText('Lunar Phase'));
-        expect(getByLabelText('Lunar cycle')).toBeDefined();
+        expect(getByLabelText('Time of Day Mode')).toBeDefined();
+        expect(getByLabelText('Lunar Phase Mode')).toBeDefined();
+        expect(getByLabelText('Time trajectory slider')).toBeDefined();
+
+        fireEvent.click(getByLabelText('Lunar Phase Mode'));
+        expect(getByLabelText('Lunar phase slider')).toBeDefined();
     });
 
     it('should trigger onSetForegroundVisible when toggle button is clicked', () => {
@@ -84,7 +81,7 @@ describe('CelestialDevScrubber', () => {
 
         fireEvent.click(getByLabelText('Open Dev Scrubber'));
 
-        const toggleBtn = getByLabelText('Toggle foreground visibility');
+        const toggleBtn = getByLabelText('Hide Cards');
         fireEvent.click(toggleBtn);
         expect(onSetForegroundVisible).toHaveBeenCalledWith(false);
     });
@@ -92,7 +89,7 @@ describe('CelestialDevScrubber', () => {
     it('should trigger onResetToLive when reset button is clicked', () => {
         const onResetToLive = mock(() => {});
 
-        const { getByLabelText, getByText } = render(
+        const { getByLabelText } = render(
             <CelestialDevScrubber
                 isForegroundVisible={true}
                 isSimulating={true}
@@ -109,7 +106,7 @@ describe('CelestialDevScrubber', () => {
 
         fireEvent.click(getByLabelText('Open Dev Scrubber'));
 
-        const resetBtn = getByText('Reset to Live Clock');
+        const resetBtn = getByLabelText('Reset to Live Clock');
         fireEvent.click(resetBtn);
         expect(onResetToLive).toHaveBeenCalled();
     });

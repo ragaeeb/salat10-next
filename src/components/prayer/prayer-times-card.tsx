@@ -1,7 +1,6 @@
 'use client';
 
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, SearchIcon, TableIcon, TrendingUpIcon } from 'lucide-react';
-import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { AuroraText } from '@/components/magicui/aurora-text';
@@ -144,13 +143,11 @@ export function PrayerTimesCard({
     const nextTiming = timings.length > 0 ? timings[nextIndex] : undefined;
 
     return (
-        <motion.section
-            animate={{ opacity: 1, y: 0 }}
+        <section
             className={cn(
-                'relative w-full overflow-hidden rounded-2xl border border-white/15 p-4 shadow-xl sm:rounded-3xl sm:p-6 sm:shadow-2xl',
+                'relative z-10 w-full overflow-hidden rounded-2xl border border-white/15 p-4 shadow-xl sm:rounded-3xl sm:p-6 sm:shadow-2xl',
                 isAfterMaghrib ? 'bg-background/25 backdrop-blur-none' : 'bg-background/60 backdrop-blur-xl',
             )}
-            initial={{ opacity: 0, y: 16 }}
         >
             {activeEvent === 'lastThirdOfTheNight' && <Meteors className="pointer-events-none" number={18} />}
             <div className="relative z-10 space-y-4 sm:space-y-5">
@@ -310,6 +307,6 @@ export function PrayerTimesCard({
                     </Button>
                 </div>
             </div>
-        </motion.section>
+        </section>
     );
 }
