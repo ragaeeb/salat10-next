@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/ragaeeb/salat10-next/compare/v1.8.0...v1.9.0) (2026-08-31)
+
+
+### Features
+
+* **asr:** Descope v2 route, UX improvements, Asr shadow animation, compact mode ([#19](https://github.com/ragaeeb/salat10-next/issues/19)) ([0f547f2](https://github.com/ragaeeb/salat10-next/commit/0f547f23f426c7752b1dd2fc28635043bf5961e7))
+
 # [1.8.0](https://github.com/ragaeeb/salat10-next/compare/v1.7.1...v1.8.0) (2026-08-31)
 
 
