@@ -277,33 +277,39 @@ const StepControls = ({
     </div>
 );
 
-const StepDetail = memo(({ step, showDetails }: { step: ExplanationStep; showDetails: boolean }) => (
-    <ScrollArea className="h-full min-h-0 pr-2">
-        <div className="space-y-4 pr-1">
-            <h3 className="font-bold text-2xl text-foreground">{step.title}</h3>
-            <p className="text-base text-muted-foreground">{step.summary}</p>
+const StepDetail = memo(({ step, showDetails }: { step: ExplanationStep; showDetails: boolean }) => {
+    const detailOccurrences = new Map<string, number>();
 
-            {step.finalValue && (
-                <div className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 font-semibold text-primary text-sm shadow-sm">
-                    <span className="text-primary/80 text-xs uppercase tracking-wide">Final value</span>
-                    <span className="text-base text-primary">{step.finalValue}</span>
-                </div>
-            )}
+    return (
+        <ScrollArea className="h-full min-h-0 pr-2">
+            <div className="space-y-4 pr-1">
+                <h3 className="font-bold text-2xl text-foreground">{step.title}</h3>
+                <p className="text-base text-muted-foreground">{step.summary}</p>
 
-            <StepVisual step={step} />
+                {step.finalValue && (
+                    <div className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 font-semibold text-primary text-sm shadow-sm">
+                        <span className="text-primary/80 text-xs uppercase tracking-wide">Final value</span>
+                        <span className="text-base text-primary">{step.finalValue}</span>
+                    </div>
+                )}
 
-            {showDetails && step.details && (
-                <div className="space-y-3 text-muted-foreground text-sm">
-                    {step.details.map((detail) => (
-                        <p key={`${step.id}-${detail}`}>{detail}</p>
-                    ))}
-                </div>
-            )}
+                <StepVisual step={step} />
 
-            {showDetails && <StepReferences references={step.references} />}
-        </div>
-    </ScrollArea>
-));
+                {showDetails && step.details && (
+                    <div className="space-y-3 text-muted-foreground text-sm">
+                        {step.details.map((detail) => {
+                            const occurrence = detailOccurrences.get(detail) ?? 0;
+                            detailOccurrences.set(detail, occurrence + 1);
+                            return <p key={`${step.id}-detail-${detail}-${occurrence}`}>{detail}</p>;
+                        })}
+                    </div>
+                )}
+
+                {showDetails && <StepReferences references={step.references} />}
+            </div>
+        </ScrollArea>
+    );
+});
 StepDetail.displayName = 'StepDetail';
 
 const SummaryView = memo(({ summary }: { summary: ExplanationSummary }) => (

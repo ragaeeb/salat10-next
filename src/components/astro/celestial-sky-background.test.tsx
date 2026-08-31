@@ -25,7 +25,7 @@ describe('CelestialSkyBackground', () => {
 
         await waitFor(() => {
             const backgroundDiv = container.querySelector('[aria-hidden="true"]');
-            expect(backgroundDiv).toBeDefined();
+            expect(backgroundDiv).not.toBeNull();
             // Should contain SVG elements (Sun/Moon/Sky)
             const svgs = container.querySelectorAll('svg');
             expect(svgs.length).toBeGreaterThan(0);
@@ -38,7 +38,7 @@ describe('CelestialSkyBackground', () => {
         );
 
         await waitFor(() => {
-            expect(container.firstChild).toBeDefined();
+            expect(container.firstChild).not.toBeNull();
         });
     });
 
@@ -55,7 +55,7 @@ describe('CelestialSkyBackground', () => {
 
         await waitFor(() => {
             const outerDiv = container.querySelector('.custom-bg-class');
-            expect(outerDiv).toBeDefined();
+            expect(outerDiv).not.toBeNull();
         });
     });
 });

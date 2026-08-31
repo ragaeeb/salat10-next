@@ -57,5 +57,16 @@ describe('use-live-celestial', () => {
             expect(result.isYesterday).toBe(false);
             expect(result.dayData.date.getDate()).toBe(15);
         });
+
+        it('should use the configured timezone when deriving the prayer date', () => {
+            const tokyoConfig = { ...sampleConfig, latitude: '35.6762', longitude: '139.6503', timeZone: 'Asia/Tokyo' };
+            const now = new Date('2026-06-14T23:30:00Z');
+            const result = getActivePrayerDate(now, tokyoConfig);
+
+            expect(result.isYesterday).toBe(false);
+            expect(result.dayData.date.getFullYear()).toBe(2026);
+            expect(result.dayData.date.getMonth()).toBe(5);
+            expect(result.dayData.date.getDate()).toBe(15);
+        });
     });
 });

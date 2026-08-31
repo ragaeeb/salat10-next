@@ -356,6 +356,7 @@ function TimeScrubberControls({
                     <span className="font-bold font-mono text-cyan-400">p = {progress.toFixed(3)}</span>
                 </div>
                 <input
+                    aria-label="Time of day trajectory"
                     className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-white/20 accent-cyan-400"
                     max={2.0}
                     min={0.0}
@@ -423,6 +424,7 @@ function LunarScrubberControls({
                     <span className="font-bold font-mono text-cyan-400">{(activeLunarCycle * 100).toFixed(1)}%</span>
                 </div>
                 <input
+                    aria-label="Lunar cycle"
                     className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-white/20 accent-cyan-400"
                     max={1.0}
                     min={0.0}

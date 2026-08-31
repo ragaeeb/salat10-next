@@ -56,6 +56,9 @@ describe('CelestialDevScrubber', () => {
         expect(getByText('Celestial Dev Scrubber')).toBeDefined();
         expect(getByText('Time of Day')).toBeDefined();
         expect(getByText('Lunar Phase')).toBeDefined();
+        expect(getByLabelText('Time of day trajectory')).toBeDefined();
+        fireEvent.click(getByText('Lunar Phase'));
+        expect(getByLabelText('Lunar cycle')).toBeDefined();
     });
 
     it('should trigger onSetForegroundVisible when toggle button is clicked', () => {

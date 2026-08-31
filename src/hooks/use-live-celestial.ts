@@ -37,7 +37,17 @@ export function buildLiveDayData(date: Date, config: CalculationConfig): DayData
  * @returns Active day data and whether it corresponds to yesterday's cycle start
  */
 export function getActivePrayerDate(now: Date, config: CalculationConfig): { dayData: DayData; isYesterday: boolean } {
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dateParts = Object.fromEntries(
+        new Intl.DateTimeFormat('en-US', {
+            day: 'numeric',
+            month: 'numeric',
+            timeZone: config.timeZone,
+            year: 'numeric',
+        })
+            .formatToParts(now)
+            .map(({ type, value }) => [type, value]),
+    );
+    const today = new Date(Number(dateParts.year), Number(dateParts.month) - 1, Number(dateParts.day));
     const todayData = buildLiveDayData(today, config);
     const todayFajr = todayData.timings.find((t) => t.event === 'fajr')?.value;
 
