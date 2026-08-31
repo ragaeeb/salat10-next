@@ -108,6 +108,13 @@ describe('useSun', () => {
             expect(y).toBeLessThanOrEqual(beforeResult.current.sunY.get());
             expect(y).toBeLessThanOrEqual(afterResult.current.sunY.get());
         });
+
+        it('should place the solar-noon peak just below the top of the viewport', () => {
+            const noon = (mockTimeline.sunrise + mockTimeline.maghrib) / 2;
+            const { result } = renderHook(() => useSun(motionValue(noon), mockTimeline));
+
+            expect(result.current.sunY.get()).toBeLessThanOrEqual(15);
+        });
     });
 
     describe('sunOpacity', () => {
@@ -232,6 +239,10 @@ describe('useSun', () => {
             expect(result.current).toHaveProperty('sunColorR');
             expect(result.current).toHaveProperty('sunColorG');
             expect(result.current).toHaveProperty('sunColorB');
+            expect(result.current).toHaveProperty('sunGlowIntensity');
+            expect(result.current).toHaveProperty('sunRayRotation');
+            expect(result.current).toHaveProperty('sunRayScale');
+            expect(result.current).toHaveProperty('sunMiddayIntensity');
 
             // Verify they are MotionValues
             expect(typeof result.current.sunX.get).toBe('function');
@@ -240,6 +251,43 @@ describe('useSun', () => {
             expect(typeof result.current.sunColorR.get).toBe('function');
             expect(typeof result.current.sunColorG.get).toBe('function');
             expect(typeof result.current.sunColorB.get).toBe('function');
+            expect(typeof result.current.sunGlowIntensity.get).toBe('function');
+            expect(typeof result.current.sunRayRotation.get).toBe('function');
+            expect(typeof result.current.sunRayScale.get).toBe('function');
+            expect(typeof result.current.sunMiddayIntensity.get).toBe('function');
+        });
+    });
+
+    describe('sunrise-to-sunset glow and ray adaptation', () => {
+        it('should have highest glow intensity and ray scale at sunrise', () => {
+            const nearSunrise = mockTimeline.sunrise + 0.001;
+            const { result } = renderHook(() => useSun(motionValue(nearSunrise), mockTimeline));
+
+            expect(result.current.sunGlowIntensity.get()).toBeCloseTo(1.0, 1);
+            expect(result.current.sunRayScale.get()).toBeGreaterThan(1.2);
+        });
+
+        it('should have moderate glow intensity at Dhuhr / midday', () => {
+            const noon = (mockTimeline.sunrise + mockTimeline.maghrib) / 2;
+            const { result } = renderHook(() => useSun(motionValue(noon), mockTimeline));
+
+            expect(result.current.sunGlowIntensity.get()).toBeCloseTo(0.5, 1);
+            expect(result.current.sunRayScale.get()).toBeCloseTo(0.7, 1);
+        });
+
+        it('should progressively fade glow intensity and ray scale to 0 by sunset', () => {
+            const nearSunset = mockTimeline.maghrib - 0.001;
+            const { result } = renderHook(() => useSun(motionValue(nearSunset), mockTimeline));
+
+            expect(result.current.sunGlowIntensity.get()).toBeLessThan(0.05);
+            expect(result.current.sunRayScale.get()).toBeLessThan(0.1);
+        });
+
+        it('should update ray rotation dynamically across the day', () => {
+            const { result: r1 } = renderHook(() => useSun(motionValue(0.2), mockTimeline));
+            const { result: r2 } = renderHook(() => useSun(motionValue(0.6), mockTimeline));
+
+            expect(r2.current.sunRayRotation.get()).toBeGreaterThan(r1.current.sunRayRotation.get());
         });
     });
 

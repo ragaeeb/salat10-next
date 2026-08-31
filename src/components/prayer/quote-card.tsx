@@ -1,8 +1,6 @@
-'use client';
-
 import { CopyIcon } from 'lucide-react';
-import { motion } from 'motion/react';
 import Link from 'next/link';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { TextAnimate } from '@/components/magicui/text-animate';
 import { Button } from '@/components/ui/button';
@@ -10,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { SITE_NAME, SITE_URL } from '@/config/seo';
 import { useMotivationalQuote } from '@/hooks/use-motivational-quote';
 import { formatCitation } from '@/lib/quotes';
+import { cn } from '@/lib/utils';
 
 /**
  * Watermark appended to copied quotes for attribution
@@ -17,9 +16,20 @@ import { formatCitation } from '@/lib/quotes';
 const QUOTE_WATERMARK = `\n\nShared from ${SITE_NAME} [${SITE_URL}]`;
 
 /**
- * Displays a motivational Islamic quote with copy functionality.
+ * Character limit beyond which a quote is truncated with click-to-expand
+ */
+const QUOTE_TRUNCATE_LENGTH = 160;
+
+type QuoteCardProps = {
+    /** Whether the sky is past Maghrib, so the moon can show through the card */
+    isAfterMaghrib?: boolean;
+};
+
+/**
+ * Displays a motivational Islamic quote with copy functionality and expandable truncation.
  *
  * Features:
+ * - Truncation with click-to-expand for long quotes (above threshold)
  * - Animated text reveal (fade-in by line)
  * - Formatted citation with optional URL link
  * - Copy to clipboard with attribution watermark
@@ -27,8 +37,9 @@ const QUOTE_WATERMARK = `\n\nShared from ${SITE_NAME} [${SITE_URL}]`;
  *
  * @returns Quote card with copy button, or null if no quote available
  */
-export function QuoteCard() {
+export function QuoteCard({ isAfterMaghrib = false }: QuoteCardProps) {
     const { quote } = useMotivationalQuote();
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const copyQuote = async () => {
         if (!quote) {
@@ -49,25 +60,34 @@ export function QuoteCard() {
         return null;
     }
 
+    const isLong = quote.body.length > QUOTE_TRUNCATE_LENGTH;
+    const displayText = isLong && !isExpanded ? `${quote.body.slice(0, QUOTE_TRUNCATE_LENGTH).trim()}…` : quote.body;
     const citation = formatCitation(quote);
 
     return (
-        <motion.section
-            animate={{ opacity: 1, y: 0 }}
-            className="relative w-full rounded-3xl border border-white/15 bg-background/60 p-6 text-foreground shadow-xl backdrop-blur-xl"
-            initial={{ opacity: 0, y: 12 }}
+        <section
+            className={cn(
+                'relative w-full rounded-2xl border border-white/15 p-3.5 text-foreground shadow-lg sm:p-4',
+                isAfterMaghrib ? 'bg-background/25 backdrop-blur-none' : 'bg-background/60 backdrop-blur-xl',
+            )}
         >
-            <div className="flex items-start justify-between gap-4">
-                <blockquote className="flex-1 space-y-4 text-base md:text-lg">
-                    <TextAnimate
-                        animation="fadeIn"
-                        as="div"
-                        by="line"
-                        className="whitespace-pre-wrap font-medium text-foreground leading-relaxed"
-                    >
-                        {quote.body}
-                    </TextAnimate>
-                    <footer className="text-foreground/80 text-sm italic">
+            <div className="flex items-start justify-between gap-3">
+                <blockquote className="flex-1 space-y-2 text-xs sm:text-sm">
+                    <div className="text-foreground/90 leading-relaxed">
+                        <TextAnimate animation="fadeIn" as="span" by="line" className="whitespace-pre-wrap font-medium">
+                            {displayText}
+                        </TextAnimate>
+                        {isLong && (
+                            <button
+                                type="button"
+                                onClick={() => setIsExpanded((prev) => !prev)}
+                                className="ml-1.5 inline-flex cursor-pointer items-center font-semibold text-primary/90 text-xs underline underline-offset-2 transition-colors hover:text-primary"
+                            >
+                                {isExpanded ? 'Show less' : 'Read more'}
+                            </button>
+                        )}
+                    </div>
+                    <footer className="text-[11px] text-foreground/75 italic sm:text-xs">
                         —{' '}
                         {quote.url ? (
                             <Link
@@ -87,18 +107,18 @@ export function QuoteCard() {
                     <TooltipTrigger asChild>
                         <Button
                             aria-label="Copy"
-                            className="shrink-0 rounded-full"
+                            className="h-7 w-7 shrink-0 rounded-full"
                             onClick={copyQuote}
                             size="icon"
                             variant="ghost"
                         >
-                            <CopyIcon className="h-4 w-4" />
+                            <CopyIcon className="h-3.5 w-3.5" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>Copy</TooltipContent>
                 </Tooltip>
             </div>
-            <p className="mt-4 text-foreground/60 text-xs">Tap the copy icon to share with friends.</p>
-        </motion.section>
+            <p className="mt-2 text-[10px] text-foreground/50 sm:text-xs">Tap the copy icon to share with friends.</p>
+        </section>
     );
 }

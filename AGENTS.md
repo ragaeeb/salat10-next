@@ -5,7 +5,7 @@ This document helps AI agents understand the Salat10 project structure, conventi
 ## Project Overview
 
 Salat10 is a Next.js 16 application that displays Islamic prayer times with:
-- Multiple viewing modes (card, parallax, table, graph)
+- Multiple viewing modes (card, table, graph)
 - Accurate astronomical calculations
 - Hijri calendar integration
 - Contextual Islamic quotes
@@ -82,7 +82,7 @@ Salat10 is a Next.js 16 application that displays Islamic prayer times with:
 #### Time & Formatting
 - **`formatting.ts`** + **`formatting.test.ts`**: Date/time formatting with timezone support, coordinate formatting
 - **`time.ts`** + **`time.test.ts`**: Date range parsing, URL params, schedule labels
-- **`timeline.ts`** + **`timeline.test.ts`**: Normalize prayer times to [0..1] range for parallax scrolling
+- **`timeline.ts`** + **`timeline.test.ts`**: Normalize prayer times to [0..1] range for celestial sky animation
 
 #### Visual Utilities
 - **`colors.ts`** + **`colors.test.ts`**: Color interpolation, RGB/hex conversion, sky color calculations
@@ -94,7 +94,7 @@ Salat10 is a Next.js 16 application that displays Islamic prayer times with:
   - `BASE_URL`: App base URL (from env or default)
   - `SITE_URL`: Canonical site URL for CORS and security
   - `defaultMetadata`: Shared metadata with OpenGraph, Twitter cards
-  - Page-specific metadata exports: `homeMetadata`, `parallaxMetadata`, `qiblaMetadata`, etc.
+  - Page-specific metadata exports: `homeMetadata`, `qiblaMetadata`, etc.
   - **Important**: Always set `metadataBase` to avoid build warnings
 
 ### State Management (`src/store/`)
@@ -166,7 +166,6 @@ Salat10 is a Next.js 16 application that displays Islamic prayer times with:
 
 #### Main Pages
 - **`page.tsx`** + **`client.tsx`**: Card view (home) - shows daily times with countdown
-- **`v2/page.tsx`**: Parallax view - scrollable sky with sun/moon animations
 - **`settings/page.tsx`** + **`settings/client.tsx`**: Location and calculation settings
 - **`timetable/page.tsx`**: Monthly/yearly table view
 - **`graph/page.tsx`**: Prayer time visualization charts
@@ -214,8 +213,6 @@ const QiblaFinderClient = dynamic(() => import('./client'), { ssr: false });
 
 ### Custom Hooks (`src/hooks/`)
 
-- **`use-days.ts`**: Manages multi-day buffer for scrolling (add prev/next day)
-- **`use-scroll-tracking.ts`**: Converts scroll position to timeline progress [0..1]
 - **`use-sun.ts`**: Calculates sun X/Y position and color based on timeline
 - **`use-moon.ts`**: Calculates moon X/Y position and opacity
 - **`use-sky.ts`**: Calculates sky color and gradient opacities
@@ -367,9 +364,9 @@ export const methodPresets: Record<MethodValue, MethodConfig> = {
 };
 ```
 
-### 8. Adding Animation to Parallax View
+### 8. Adding Celestial Sky Animation
 
-Edit `src/app/v2/samaa.tsx` (sky), `shams.tsx` (sun), or `qamar.tsx` (moon):
+Edit `src/components/astro/samaa.tsx` (sky), `src/components/shams.tsx` (sun), or `src/components/qamar.tsx` (moon):
 
 ```typescript
 // In your hook (e.g., use-sun.ts)
@@ -441,7 +438,7 @@ it('should validate coordinates', () => {
 - Example: At 2 AM on March 12, active event might be "March 11's lastThirdOfTheNight"
 
 ### Timeline Normalization
-- Parallax view uses [0..1] range for scroll position
+- The celestial sky uses [0..1] range for timeline progress
 - Midnight is normalized to 0, next Fajr is 1.0
 - Each prayer event gets a position: `fajr=0.05, sunrise=0.12, ...`
 - Allows smooth interpolation of sun/moon positions and colors
@@ -514,7 +511,7 @@ NEXT_PUBLIC_ANALYTICS_FLUSH_INTERVAL=3600000  # 1 hour in ms
 2. Verify current time with `data.date`
 3. Check if night events need yesterday's adjustment
 
-### "Parallax view stuck/jerky"
+### "Celestial sky stuck/jerky"
 1. Verify `totalHeight` is set correctly
 2. Check `scrollProgress` MotionValue updates
 3. Ensure `timeline` is not null

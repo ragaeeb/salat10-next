@@ -1,0 +1,16 @@
+{
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "icons": [
+        {
+            "sizes": "any",
+            "src": "/favicon.ico",
+            "type": "image/x-icon"
+        }
+    ],
+    "name": "Salat10",
+    "scope": "/",
+    "short_name": "Salat10",
+    "start_url": "/",
+    "theme_color": "#ffffff"
+}

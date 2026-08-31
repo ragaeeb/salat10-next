@@ -40,16 +40,17 @@ mock.module('@/lib/quotes', () => ({ formatCitation: mockFormatCitation }));
 const mockWriteText = mock(() => Promise.resolve());
 
 beforeEach(() => {
+    mockWriteText.mockImplementation(() => Promise.resolve());
+    mockWriteText.mockClear();
+    mockToastSuccess.mockClear();
+    mockToastError.mockClear();
+    mockFormatCitation.mockClear();
     // Mock navigator.clipboard using Object.defineProperty
     Object.defineProperty(global, 'navigator', {
         configurable: true,
         value: { ...global.navigator, clipboard: { writeText: mockWriteText } },
         writable: true,
     });
-    mockWriteText.mockClear();
-    mockToastSuccess.mockClear();
-    mockToastError.mockClear();
-    mockFormatCitation.mockClear();
 });
 
 afterEach(() => {
@@ -136,10 +137,21 @@ describe('QuoteCard', () => {
 
             expect(screen.getByText(/Tap the copy icon to share with friends/)).toBeDefined();
         });
+
+        it('should use a transparent, unblurred surface after Maghrib', () => {
+            mockUseMotivationalQuote.mockReturnValue({ error: false, loading: false, quote: mockQuote });
+            const { container } = renderWithProvider(<QuoteCard isAfterMaghrib />);
+
+            const card = container.querySelector('section');
+            expect(card).not.toBeNull();
+            expect(card?.className).toContain('bg-background/25');
+            expect(card?.className).toContain('backdrop-blur-none');
+        });
     });
 
     describe('copy functionality', () => {
         it('should copy quote to clipboard when copy button is clicked', async () => {
+            mockWriteText.mockResolvedValue(undefined);
             mockUseMotivationalQuote.mockReturnValue({ error: false, loading: false, quote: mockQuote });
             mockFormatCitation.mockReturnValue('Test Title, Test Author');
             renderWithProvider(<QuoteCard />);
@@ -158,6 +170,7 @@ describe('QuoteCard', () => {
         });
 
         it('should show success toast on successful copy', async () => {
+            mockWriteText.mockResolvedValue(undefined);
             mockUseMotivationalQuote.mockReturnValue({ error: false, loading: false, quote: mockQuote });
             mockFormatCitation.mockReturnValue('Test Title, Test Author');
             renderWithProvider(<QuoteCard />);
@@ -166,8 +179,7 @@ describe('QuoteCard', () => {
             fireEvent.click(copyButton);
 
             await waitFor(() => {
-                expect(mockToastSuccess.mock.calls.length).toBe(1);
-                expect(mockToastSuccess.mock.calls[0]![0]).toBe('Copied');
+                expect(mockToastSuccess).toHaveBeenCalledWith('Copied');
             });
         });
 
@@ -215,13 +227,38 @@ describe('QuoteCard', () => {
             expect(textAnimate.textContent).toBe('');
         });
 
-        it('should handle quote with very long body', () => {
-            const longQuote: Quote = { author: 'Test Author', body: 'A'.repeat(1000), title: 'Test Title' };
+        it('should handle quote with very long body by truncating and allowing click-to-expand', () => {
+            const longBody = 'A'.repeat(300);
+            const longQuote: Quote = { author: 'Test Author', body: longBody, title: 'Test Title' };
             mockUseMotivationalQuote.mockReturnValue({ error: false, loading: false, quote: longQuote });
             renderWithProvider(<QuoteCard />);
 
+            // Initially truncated
             const textAnimate = screen.getByTestId('text-animate');
-            expect(textAnimate.textContent).toBe('A'.repeat(1000));
+            expect(textAnimate.textContent).toBe(`${'A'.repeat(160)}…`);
+            expect(screen.getByText('Read more')).toBeDefined();
+
+            // Click to expand
+            fireEvent.click(screen.getByText('Read more'));
+            expect(textAnimate.textContent).toBe(longBody);
+            expect(screen.getByText('Show less')).toBeDefined();
+
+            // Click to collapse
+            fireEvent.click(screen.getByText('Show less'));
+            expect(textAnimate.textContent).toBe(`${'A'.repeat(160)}…`);
+            expect(screen.getByText('Read more')).toBeDefined();
+        });
+
+        it('should not truncate or show expand button when quote is short', () => {
+            const shortBody = 'Short quote under 160 characters.';
+            const shortQuote: Quote = { author: 'Test Author', body: shortBody, title: 'Test Title' };
+            mockUseMotivationalQuote.mockReturnValue({ error: false, loading: false, quote: shortQuote });
+            renderWithProvider(<QuoteCard />);
+
+            const textAnimate = screen.getByTestId('text-animate');
+            expect(textAnimate.textContent).toBe(shortBody);
+            expect(screen.queryByText('Read more')).toBeNull();
+            expect(screen.queryByText('Show less')).toBeNull();
         });
     });
 });

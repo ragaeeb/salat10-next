@@ -25,16 +25,8 @@ export const defaultSettings = {
     userId: '', // Will be initialized in store
 } as const;
 
-/* ================================
-   Data-driven layout (no brittle constants)
-================================= */
-
-export const DISTANCE_FROM_TOP_BOTTOM = 2000;
-export const DAY_HEIGHT_PX = 10000;
-export const MAX_BUFFERED_DAYS = 5;
-
 /** Screen-space positions */
-export const POS = { EAST_X: 85, LOW_Y: 80, MOON_Y: 76, SUN_PEAK_Y_DELTA: 40, WEST_X: 15 } as const;
+export const POS = { EAST_X: 85, LOW_Y: 80, MOON_Y: 48, SUN_PEAK_Y_DELTA: 68, WEST_X: 15 } as const;
 
 /** Seam band for inter-day crossfades (expressed as fraction of the day height) */
 export const SEAM_FRAC = 0.015;

@@ -1,25 +1,27 @@
 'use client';
 
-import { IconCompass, IconSunMoon } from '@tabler/icons-react';
-import { Eye, EyeOff, Settings2Icon } from 'lucide-react';
-import { motion, useMotionValue } from 'motion/react';
+import { IconCompass } from '@tabler/icons-react';
+import { Settings2Icon } from 'lucide-react';
+import { useMotionValue } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { AsrBookShadow } from '@/components/astro/asr-book-shadow';
 import { CelestialSkyBackground } from '@/components/astro/celestial-sky-background';
 import { CelestialDevScrubber } from '@/components/dev/celestial-dev-scrubber';
-import { CelestialPhaseBanner } from '@/components/prayer/celestial-phase-banner';
 import { PrayerTimesCard } from '@/components/prayer/prayer-times-card';
 import { QuoteCard } from '@/components/prayer/quote-card';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { useLiveCelestial } from '@/hooks/use-live-celestial';
-import { IS_DEV } from '@/lib/constants';
-import { formatCoordinate, formatHijriDate } from '@/lib/formatting';
+import { daily, formatTimeRemaining, getActiveEvent, getTimeUntilNext } from '@/lib/calculator';
+import { IS_DEV, salatLabels } from '@/lib/constants';
+import { formatCoordinate, formatDate, formatHijriDate } from '@/lib/formatting';
 import { writeIslamicDate } from '@/lib/hijri';
 import { calculateLunarPhase } from '@/lib/lunar';
-import { useActiveEvent, useDayNavigation } from '@/lib/prayer-utils';
+import { useActiveEvent, useCalculationConfig, useDayNavigation } from '@/lib/prayer-utils';
 import { methodLabelMap } from '@/lib/settings';
+import { cn, pick } from '@/lib/utils';
 import { useHasHydrated, useHasValidCoordinates, useNumericSettings, useSettings } from '@/store/usePrayerStore';
 
 export function PrayerTimesPageClient() {
@@ -33,6 +35,7 @@ export function PrayerTimesPageClient() {
     const { viewDate, timings, dateLabel, handlePrevDay, handleNextDay, handleToday } = useDayNavigation();
 
     const live = useLiveCelestial();
+    const config = useCalculationConfig();
 
     // Dev Simulation & Visibility Controls (matches salat10-ios dev scrubber)
     const [simulatedProgress, setSimulatedProgress] = useState<number | null>(null);
@@ -50,8 +53,47 @@ export function PrayerTimesPageClient() {
     }, [isSimulating, simulatedProgress, simProgressMv]);
 
     const activeProgressMv = isSimulating ? simProgressMv : live.progressMv;
+    const isAfterMaghrib = live.timeline !== null && effectiveProgress >= live.timeline.maghrib;
 
-    const hijri = writeIslamicDate(0, viewDate);
+    // Synchronize timings container with scrubber slider simulation
+    const simulatedState = useMemo(() => {
+        if (!isSimulating || !live.dayData) {
+            return null;
+        }
+
+        const tFajr = pick(live.dayData.timings, 'fajr')?.getTime();
+        const tNextFajr = live.dayData.nextFajr?.getTime();
+        if (!tFajr || !tNextFajr) {
+            return null;
+        }
+
+        const span = tNextFajr - tFajr;
+        const simulatedTimeMs = tFajr + simulatedProgress * span;
+        const simulatedDate = new Date(simulatedTimeMs);
+
+        const dailyResult = daily(salatLabels, config, simulatedDate);
+        const active = getActiveEvent(dailyResult.timings, simulatedTimeMs);
+        const timeUntil = getTimeUntilNext(dailyResult.timings, simulatedTimeMs);
+        const countdown = timeUntil && timeUntil > 0 ? `in ${formatTimeRemaining(timeUntil)}` : '';
+        const simHijri = writeIslamicDate(0, simulatedDate);
+
+        return {
+            activeEvent: active,
+            countdownRemaining: countdown,
+            date: simulatedDate,
+            dateLabel: formatDate(simulatedDate),
+            hijriLabel: formatHijriDate(simHijri),
+            timings: dailyResult.timings,
+        };
+    }, [config, isSimulating, live.dayData, simulatedProgress]);
+
+    const effectiveActiveEvent = simulatedState ? simulatedState.activeEvent : activeEvent;
+    const effectiveTimings = simulatedState ? simulatedState.timings : timings;
+    const effectiveDateLabel = simulatedState ? simulatedState.dateLabel : dateLabel;
+    const effectiveHijriLabel = simulatedState
+        ? simulatedState.hijriLabel
+        : formatHijriDate(writeIslamicDate(0, viewDate));
+    const effectiveCountdown = simulatedState ? simulatedState.countdownRemaining : undefined;
 
     useEffect(() => {
         if (hasHydrated && !hasValidCoordinates) {
@@ -86,37 +128,7 @@ export function PrayerTimesPageClient() {
             />
 
             {/* Header Navigation Actions */}
-            <div className="fixed top-4 right-4 z-50 flex items-center gap-2 sm:top-6 sm:right-6">
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                aria-label={isForegroundVisible ? 'Hide cards to see background' : 'Show cards'}
-                                className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
-                                onClick={() => setIsForegroundVisible(!isForegroundVisible)}
-                                size="sm"
-                                variant="default"
-                            >
-                                {isForegroundVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                            {isForegroundVisible ? 'Hide cards (Sky View)' : 'Show cards'}
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-
-                <Button
-                    asChild
-                    className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
-                    size="sm"
-                    variant="default"
-                >
-                    <Link aria-label="Parallax View" href="/v2">
-                        <IconSunMoon />
-                    </Link>
-                </Button>
-
+            <div className="fixed top-3 right-3 z-50 flex items-center gap-2 sm:top-6 sm:right-6">
                 <Button
                     asChild
                     className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
@@ -139,40 +151,40 @@ export function PrayerTimesPageClient() {
                 </Button>
             </div>
 
-            {/* Foreground Prayer Times & Quote Container (Initial Fade In for Sky Visibility) */}
+            {/* Foreground Prayer Times & Quote Container (Instant visibility toggle) */}
             <TooltipProvider>
-                <motion.div
-                    animate={{
-                        opacity: isForegroundVisible ? 1 : 0,
-                        pointerEvents: isForegroundVisible ? 'auto' : 'none',
-                        y: isForegroundVisible ? 0 : 20,
-                    }}
-                    className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pt-24 pb-16 sm:px-6 lg:px-8"
-                    initial={{ opacity: 0, y: 20 }}
-                    transition={{ delay: 0.45, duration: 1.1, ease: 'easeInOut' }}
+                <div
+                    className={cn(
+                        'relative z-10 mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-between gap-6 px-3 pt-16 pb-6 sm:gap-8 sm:px-6 sm:pt-20 sm:pb-8 lg:max-w-3xl',
+                        !isForegroundVisible && 'pointer-events-none invisible',
+                    )}
                 >
-                    {/* Live Celestial Phase Eye-Candy Banner */}
-                    <CelestialPhaseBanner
-                        lunarCycle={lunarCycle}
-                        progress={effectiveProgress}
-                        timeline={live.timeline}
-                    />
+                    <QuoteCard isAfterMaghrib={isAfterMaghrib} />
 
-                    <QuoteCard />
+                    <div className="relative w-full">
+                        {/* Asr Book & Optical Shadow Animation on top of timings container */}
+                        <AsrBookShadow
+                            latitude={numeric.latitude}
+                            progress={activeProgressMv}
+                            timeline={live.timeline}
+                        />
 
-                    <PrayerTimesCard
-                        activeEvent={activeEvent}
-                        addressLabel={settings.address?.trim()}
-                        dateLabel={dateLabel}
-                        hijriLabel={formatHijriDate(hijri)}
-                        locationDetail={`${formatCoordinate(numeric.latitude, 'N', 'S')} · ${formatCoordinate(numeric.longitude, 'E', 'W')}`}
-                        methodLabel={methodLabelMap[settings.method] ?? settings.method}
-                        onNextDay={handleNextDay}
-                        onPrevDay={handlePrevDay}
-                        onToday={handleToday}
-                        timings={timings}
-                    />
-                </motion.div>
+                        <PrayerTimesCard
+                            activeEvent={effectiveActiveEvent}
+                            addressLabel={settings.address?.trim()}
+                            countdownRemaining={effectiveCountdown}
+                            dateLabel={effectiveDateLabel}
+                            hijriLabel={effectiveHijriLabel}
+                            isAfterMaghrib={isAfterMaghrib}
+                            locationDetail={`${formatCoordinate(numeric.latitude, 'N', 'S')} · ${formatCoordinate(numeric.longitude, 'E', 'W')}`}
+                            methodLabel={methodLabelMap[settings.method] ?? settings.method}
+                            onNextDay={handleNextDay}
+                            onPrevDay={handlePrevDay}
+                            onToday={handleToday}
+                            timings={effectiveTimings}
+                        />
+                    </div>
+                </div>
             </TooltipProvider>
 
             {/* Developer Time & Lunar Scrubber (Simulation Container) */}

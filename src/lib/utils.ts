@@ -55,7 +55,7 @@ export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 export const pick = (timings: DayData['timings'], key: string) => timings.find((t) => t.event === key)?.value;
 
 /**
- * Calculate cross-fade opacities for parallax day transitions
+ * Calculate cross-fade opacities for adjacent celestial days
  * Handles seamless transitions between adjacent days
  *
  * Top seam: Stars fade out at beginning of day (for previous day's night)

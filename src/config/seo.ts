@@ -68,14 +68,6 @@ export const homeMetadata: Metadata = {
     title: 'Salat10 - Islamic Prayer Times',
 };
 
-// Parallax view metadata
-export const parallaxMetadata: Metadata = {
-    alternates: { canonical: `${SITE_URL}/v2` },
-    description:
-        'Experience prayer times with an immersive parallax view showing sun, moon, and sky transitions throughout the day.',
-    title: 'Parallax View - Prayer Times Visualization',
-};
-
 // Settings page metadata
 export const settingsMetadata: Metadata = {
     alternates: { canonical: `${SITE_URL}/settings` },
