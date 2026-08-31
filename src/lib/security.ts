@@ -1,15 +1,29 @@
 import { SITE_URL } from '@/config/seo';
 
 /**
- * List of allowed origins for CORS validation
- * Includes production site, www variant, and localhost
+ * Production origins allowed by CORS validation.
  */
-const ALLOWED_ORIGINS = [
-    SITE_URL,
-    `${SITE_URL.replace('https://', 'https://www.')}`,
-    'http://localhost:3000',
-    'http://localhost:3001',
-];
+const ALLOWED_ORIGINS = new Set([SITE_URL, `${SITE_URL.replace('https://', 'https://www.')}`]);
+
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+const isAllowedOrigin = (value: string): boolean => {
+    try {
+        const url = new URL(value);
+
+        if (ALLOWED_ORIGINS.has(url.origin)) {
+            return true;
+        }
+
+        return (
+            process.env.NODE_ENV !== 'production' &&
+            (url.protocol === 'http:' || url.protocol === 'https:') &&
+            LOCAL_HOSTNAMES.has(url.hostname)
+        );
+    } catch {
+        return false;
+    }
+};
 
 /**
  * Validate origin or referer header for CORS security
@@ -22,10 +36,10 @@ const ALLOWED_ORIGINS = [
  */
 export function validateOrigin(origin: string | null, referer: string | null): boolean {
     if (origin) {
-        return ALLOWED_ORIGINS.includes(origin);
+        return isAllowedOrigin(origin);
     }
     if (referer) {
-        return ALLOWED_ORIGINS.some((allowed) => referer.startsWith(allowed));
+        return isAllowedOrigin(referer);
     }
     return process.env.NODE_ENV === 'development';
 }

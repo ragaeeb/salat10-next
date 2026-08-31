@@ -97,7 +97,7 @@ bun install
 bun run dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser.
+Open the URL printed by vinext (usually [http://localhost:3000](http://localhost:3000); it selects another port when needed).
 
 ### Cloudflare Worker
 

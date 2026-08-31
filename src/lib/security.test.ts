@@ -7,8 +7,9 @@ describe('security', () => {
             expect(validateOrigin('http://localhost:3000', null)).toBe(true);
         });
 
-        it('should accept the vinext development server origin', () => {
-            expect(validateOrigin('http://localhost:3001', null)).toBe(true);
+        it('should accept any local development port', () => {
+            expect(validateOrigin('http://localhost:43127', null)).toBe(true);
+            expect(validateOrigin('http://127.0.0.1:54982', null)).toBe(true);
         });
 
         it('should accept allowed referer', () => {
@@ -21,6 +22,7 @@ describe('security', () => {
 
         it('should reject unknown referer', () => {
             expect(validateOrigin(null, 'https://evil.com/page')).toBe(false);
+            expect(validateOrigin(null, 'https://salat10.app.evil.com/page')).toBe(false);
         });
 
         it('should accept canonical production URL', () => {
@@ -41,6 +43,7 @@ describe('security', () => {
             process.env.NODE_ENV = 'production';
 
             expect(validateOrigin(null, null)).toBe(false);
+            expect(validateOrigin('http://localhost:43127', null)).toBe(false);
 
             process.env.NODE_ENV = original;
         });

@@ -65,7 +65,7 @@
     "scripts": {
         "build": "vinext build",
         "deploy": "bun run build && wrangler deploy --config dist/server/wrangler.json --secrets-file .env",
-        "dev": "vinext dev --port 3001",
+        "dev": "vinext dev",
         "lint": "biome check .",
         "start": "wrangler dev --config dist/server/wrangler.json",
         "test": "NODE_ENV=test bun -c ./bunfig.toml -r ./happydom.ts -r ./testing-library.ts test --coverage --coverage-reporter=lcov",
