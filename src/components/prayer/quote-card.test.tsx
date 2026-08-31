@@ -225,13 +225,38 @@ describe('QuoteCard', () => {
             expect(textAnimate.textContent).toBe('');
         });
 
-        it('should handle quote with very long body', () => {
-            const longQuote: Quote = { author: 'Test Author', body: 'A'.repeat(1000), title: 'Test Title' };
+        it('should handle quote with very long body by truncating and allowing click-to-expand', () => {
+            const longBody = 'A'.repeat(300);
+            const longQuote: Quote = { author: 'Test Author', body: longBody, title: 'Test Title' };
             mockUseMotivationalQuote.mockReturnValue({ error: false, loading: false, quote: longQuote });
             renderWithProvider(<QuoteCard />);
 
+            // Initially truncated
             const textAnimate = screen.getByTestId('text-animate');
-            expect(textAnimate.textContent).toBe('A'.repeat(1000));
+            expect(textAnimate.textContent).toBe(`${'A'.repeat(160)}…`);
+            expect(screen.getByText('Read more')).toBeDefined();
+
+            // Click to expand
+            fireEvent.click(screen.getByText('Read more'));
+            expect(textAnimate.textContent).toBe(longBody);
+            expect(screen.getByText('Show less')).toBeDefined();
+
+            // Click to collapse
+            fireEvent.click(screen.getByText('Show less'));
+            expect(textAnimate.textContent).toBe(`${'A'.repeat(160)}…`);
+            expect(screen.getByText('Read more')).toBeDefined();
+        });
+
+        it('should not truncate or show expand button when quote is short', () => {
+            const shortBody = 'Short quote under 160 characters.';
+            const shortQuote: Quote = { author: 'Test Author', body: shortBody, title: 'Test Title' };
+            mockUseMotivationalQuote.mockReturnValue({ error: false, loading: false, quote: shortQuote });
+            renderWithProvider(<QuoteCard />);
+
+            const textAnimate = screen.getByTestId('text-animate');
+            expect(textAnimate.textContent).toBe(shortBody);
+            expect(screen.queryByText('Read more')).toBeNull();
+            expect(screen.queryByText('Show less')).toBeNull();
         });
     });
 });

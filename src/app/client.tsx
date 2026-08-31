@@ -86,7 +86,7 @@ export function PrayerTimesPageClient() {
             />
 
             {/* Header Navigation Actions */}
-            <div className="fixed top-4 right-4 z-50 flex items-center gap-2 sm:top-6 sm:right-6">
+            <div className="fixed top-3 right-3 z-50 flex items-center gap-2 sm:top-6 sm:right-6">
                 <Button
                     asChild
                     className="rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
@@ -117,7 +117,7 @@ export function PrayerTimesPageClient() {
                         pointerEvents: isForegroundVisible ? 'auto' : 'none',
                         y: isForegroundVisible ? 0 : 20,
                     }}
-                    className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pt-24 pb-16 sm:px-6 lg:px-8"
+                    className="relative z-10 mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-between gap-6 px-3 pt-16 pb-6 sm:gap-8 sm:px-6 sm:pt-20 sm:pb-8 lg:max-w-3xl"
                     initial={{ opacity: 0, y: 20 }}
                     transition={{ delay: 0.45, duration: 1.1, ease: 'easeInOut' }}
                 >

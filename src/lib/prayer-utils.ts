@@ -155,6 +155,56 @@ export const useCountdownToNext = () => {
 };
 
 /**
+ * Hook to get countdown remaining time to next prayer with efficient updates
+ * Updates every second only while there's an active countdown
+ *
+ * @returns Formatted countdown remaining string like "in 2h 15m 30s", or empty if none
+ */
+export const useCountdownRemaining = () => {
+    const timings = useCurrentTimings();
+    const [countdown, setCountdown] = useState<string>('');
+
+    useEffect(() => {
+        if (timings.length === 0) {
+            setCountdown('');
+            return;
+        }
+
+        const updateCountdown = () => {
+            const now = Date.now();
+            const timeUntil = getTimeUntilNext(timings, now);
+
+            if (!timeUntil || timeUntil <= 0) {
+                setCountdown('');
+                return null;
+            }
+
+            const formatted = formatTimeRemaining(timeUntil);
+            setCountdown(`in ${formatted}`);
+
+            return { timeUntil };
+        };
+
+        const result = updateCountdown();
+
+        if (!result) {
+            return;
+        }
+
+        const intervalId = setInterval(() => {
+            const result = updateCountdown();
+            if (!result) {
+                clearInterval(intervalId);
+            }
+        }, 1000);
+
+        return () => clearInterval(intervalId);
+    }, [timings]);
+
+    return countdown;
+};
+
+/**
  * Helper to check if two dates are the same calendar day
  * Ignores time component
  *

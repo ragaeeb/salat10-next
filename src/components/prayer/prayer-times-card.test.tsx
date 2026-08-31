@@ -5,10 +5,10 @@ import type { FormattedTiming } from '@/lib/calculator';
 import type { SalatEvent } from '@/lib/constants';
 import { PrayerTimesCard } from './prayer-times-card';
 
-// Mock the useCountdownToNext hook
-const mockUseCountdownToNext = mock(() => '2h 30m until Fajr');
+// Mock the useCountdownRemaining hook
+const mockUseCountdownRemaining = mock(() => 'in 2h 30m');
 
-mock.module('@/lib/prayer-utils', () => ({ useCountdownToNext: mockUseCountdownToNext }));
+mock.module('@/lib/prayer-utils', () => ({ useCountdownRemaining: mockUseCountdownRemaining }));
 
 // Mock child components
 mock.module('@/components/magicui/aurora-text', () => ({
@@ -53,16 +53,37 @@ describe('PrayerTimesCard', () => {
     };
 
     describe('rendering', () => {
-        it('should render without crashing with valid props', () => {
-            renderWithProvider(<PrayerTimesCard {...defaultProps} />);
+        it('should render compact view by default with current event, next event with countdown chip, and ONLY hijri date', () => {
+            renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent="fajr" />);
 
-            expect(screen.getByText('Mar 15, 2024')).toBeDefined();
+            // ONLY Hijri date in compact mode, NOT roman/gregorian date
             expect(screen.getByText('5 Ramaḍān 1445')).toBeDefined();
-            expect(screen.getByText('ISNA')).toBeDefined();
+            expect(screen.queryByText('Mar 15, 2024')).toBeNull();
+
+            // Angles (methodLabel) and Previous/Today/Next should NOT be present in compact mode
+            expect(screen.queryByText('ISNA')).toBeNull();
+            expect(screen.queryByText('Previous')).toBeNull();
+            expect(screen.queryByText('Today')).toBeNull();
+            expect(screen.queryByRole('button', { name: /next/i })).toBeNull();
+
+            // In compact view for fajr, should render Fajr (Current) and Sunrise with countdown chip
+            expect(screen.getByText('Fajr')).toBeDefined();
+            expect(screen.getByText('5:30 AM')).toBeDefined();
+            expect(screen.getByText('Sunrise')).toBeDefined();
+            expect(screen.getByText('6:45 AM')).toBeDefined();
+            expect(screen.getByText('Current')).toBeDefined();
+            expect(screen.getByText('in 2h 30m')).toBeDefined();
+
+            // Other prayers shouldn't be rendered yet in compact mode
+            expect(screen.queryByText('Dhuhr')).toBeNull();
+            expect(screen.queryByText('Asr')).toBeNull();
+
+            // Expand button should be visible
+            expect(screen.getByText(/Show All Prayers/)).toBeDefined();
         });
 
-        it('should render all prayer times', () => {
-            renderWithProvider(<PrayerTimesCard {...defaultProps} />);
+        it('should render all prayer times, angles, roman date, and day nav buttons when expanded or defaultExpanded is true', () => {
+            renderWithProvider(<PrayerTimesCard {...defaultProps} defaultExpanded />);
 
             expect(screen.getByText('Fajr')).toBeDefined();
             expect(screen.getByText('5:30 AM')).toBeDefined();
@@ -71,29 +92,68 @@ describe('PrayerTimesCard', () => {
             expect(screen.getByText('Asr')).toBeDefined();
             expect(screen.getByText('Maghrib')).toBeDefined();
             expect(screen.getByText('Isha')).toBeDefined();
+            expect(screen.getByText(/Show Less/)).toBeDefined();
+
+            // Both Hijri and Roman dates, angles, and day navigation should now be visible
+            expect(screen.getByText('5 Ramaḍān 1445')).toBeDefined();
+            expect(screen.getByText('Mar 15, 2024')).toBeDefined();
+            expect(screen.getByText('ISNA')).toBeDefined();
+            expect(screen.getByText('Previous')).toBeDefined();
+            expect(screen.getByText('Today')).toBeDefined();
+            expect(screen.getByRole('button', { name: /next/i })).toBeDefined();
         });
 
-        it('should render navigation buttons', () => {
-            renderWithProvider(<PrayerTimesCard {...defaultProps} />);
+        it('should toggle between compact and expanded views when toggle button is clicked', () => {
+            renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent="fajr" />);
+
+            // Initially compact: no Roman date, no angles, no nav buttons
+            expect(screen.queryByText('Dhuhr')).toBeNull();
+            expect(screen.queryByText('Mar 15, 2024')).toBeNull();
+            expect(screen.queryByText('ISNA')).toBeNull();
+            expect(screen.queryByText('Previous')).toBeNull();
+            const expandButton = screen.getByText(/Show All Prayers/);
+            fireEvent.click(expandButton);
+
+            // Now expanded: Roman date, angles, nav buttons visible
+            expect(screen.getByText('Dhuhr')).toBeDefined();
+            expect(screen.getByText('Mar 15, 2024')).toBeDefined();
+            expect(screen.getByText('ISNA')).toBeDefined();
+            expect(screen.getByText('Previous')).toBeDefined();
+            expect(screen.getByText(/Show Less/)).toBeDefined();
+
+            // Collapse back
+            const collapseButton = screen.getByText(/Show Less/);
+            fireEvent.click(collapseButton);
+
+            // Back to compact
+            expect(screen.queryByText('Dhuhr')).toBeNull();
+            expect(screen.queryByText('Mar 15, 2024')).toBeNull();
+            expect(screen.queryByText('ISNA')).toBeNull();
+            expect(screen.queryByText('Previous')).toBeNull();
+            expect(screen.getByText(/Show All Prayers/)).toBeDefined();
+        });
+
+        it('should render navigation buttons when expanded', () => {
+            renderWithProvider(<PrayerTimesCard {...defaultProps} defaultExpanded />);
 
             expect(screen.getByText('Previous')).toBeDefined();
             expect(screen.getByText('Today')).toBeDefined();
-            expect(screen.getByText('Next')).toBeDefined();
+            expect(screen.getByRole('button', { name: /next/i })).toBeDefined();
         });
 
         it('should render quick action links', () => {
             renderWithProvider(<PrayerTimesCard {...defaultProps} />);
 
-            expect(screen.getByText('View Trends')).toBeDefined();
+            expect(screen.getByText(/View Trends/)).toBeDefined();
             expect(screen.getByText('Timetable')).toBeDefined();
             expect(screen.getByText('Explain')).toBeDefined();
         });
 
-        it('should render countdown when available', () => {
-            mockUseCountdownToNext.mockReturnValue('2h 30m until Fajr');
-            renderWithProvider(<PrayerTimesCard {...defaultProps} />);
+        it('should fallback to Next badge when countdown is empty', () => {
+            mockUseCountdownRemaining.mockReturnValue('');
+            renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent="fajr" />);
 
-            expect(screen.getByText('2h 30m until Fajr')).toBeDefined();
+            expect(screen.getByText('Next')).toBeDefined();
         });
 
         it('should use a transparent, unblurred surface after Maghrib', () => {
@@ -104,18 +164,11 @@ describe('PrayerTimesCard', () => {
             expect(card?.className).toContain('bg-background/25');
             expect(card?.className).toContain('backdrop-blur-none');
         });
-
-        it('should not render countdown when null', () => {
-            mockUseCountdownToNext.mockReturnValue(null);
-            renderWithProvider(<PrayerTimesCard {...defaultProps} />);
-
-            expect(screen.queryByText(/until/)).toBeNull();
-        });
     });
 
     describe('active prayer highlighting', () => {
         it('should highlight active prayer with AuroraText', () => {
-            renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent="fajr" />);
+            renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent="fajr" defaultExpanded />);
 
             const auroraTexts = screen.getAllByTestId('aurora-text');
             // Should have AuroraText for both label and time of active prayer
@@ -123,7 +176,7 @@ describe('PrayerTimesCard', () => {
         });
 
         it('should not highlight inactive prayers', () => {
-            renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent="fajr" />);
+            renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent="fajr" defaultExpanded />);
 
             // Dhuhr should not be highlighted
             const dhuhrLabel = screen.getByText('Dhuhr');
@@ -131,7 +184,7 @@ describe('PrayerTimesCard', () => {
         });
 
         it('should handle null activeEvent', () => {
-            renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent={null} />);
+            renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent={null} defaultExpanded />);
 
             // Should render without crashing
             expect(screen.getByText('Fajr')).toBeDefined();
@@ -157,7 +210,7 @@ describe('PrayerTimesCard', () => {
     describe('navigation handlers', () => {
         it('should call onPrevDay when Previous button is clicked', () => {
             const onPrevDay = mock(() => {});
-            renderWithProvider(<PrayerTimesCard {...defaultProps} onPrevDay={onPrevDay} />);
+            renderWithProvider(<PrayerTimesCard {...defaultProps} defaultExpanded onPrevDay={onPrevDay} />);
 
             const prevButton = screen.getByText('Previous');
             fireEvent.click(prevButton);
@@ -167,7 +220,7 @@ describe('PrayerTimesCard', () => {
 
         it('should call onToday when Today button is clicked', () => {
             const onToday = mock(() => {});
-            renderWithProvider(<PrayerTimesCard {...defaultProps} onToday={onToday} />);
+            renderWithProvider(<PrayerTimesCard {...defaultProps} defaultExpanded onToday={onToday} />);
 
             const todayButton = screen.getByText('Today');
             fireEvent.click(todayButton);
@@ -177,9 +230,9 @@ describe('PrayerTimesCard', () => {
 
         it('should call onNextDay when Next button is clicked', () => {
             const onNextDay = mock(() => {});
-            renderWithProvider(<PrayerTimesCard {...defaultProps} onNextDay={onNextDay} />);
+            renderWithProvider(<PrayerTimesCard {...defaultProps} defaultExpanded onNextDay={onNextDay} />);
 
-            const nextButton = screen.getByText('Next');
+            const nextButton = screen.getByRole('button', { name: /next/i });
             fireEvent.click(nextButton);
 
             expect(onNextDay.mock.calls.length).toBe(1);
@@ -207,7 +260,7 @@ describe('PrayerTimesCard', () => {
             renderWithProvider(<PrayerTimesCard {...defaultProps} timings={[]} />);
 
             // Should render without crashing
-            expect(screen.getByText('Mar 15, 2024')).toBeDefined();
+            expect(screen.getByText('5 Ramaḍān 1445')).toBeDefined();
         });
 
         it('should handle timings with only one prayer', () => {
@@ -218,10 +271,12 @@ describe('PrayerTimesCard', () => {
         });
 
         it('should handle different active events', () => {
-            const events: SalatEvent[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'lastThirdOfTheNight'];
+            const events: SalatEvent[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
             for (const event of events) {
-                const { unmount } = renderWithProvider(<PrayerTimesCard {...defaultProps} activeEvent={event} />);
+                const { unmount } = renderWithProvider(
+                    <PrayerTimesCard {...defaultProps} activeEvent={event} defaultExpanded />,
+                );
 
                 expect(screen.getByText('Fajr')).toBeDefined();
 

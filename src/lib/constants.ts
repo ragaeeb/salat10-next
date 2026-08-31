@@ -26,7 +26,7 @@ export const defaultSettings = {
 } as const;
 
 /** Screen-space positions */
-export const POS = { EAST_X: 85, LOW_Y: 80, MOON_Y: 76, SUN_PEAK_Y_DELTA: 68, WEST_X: 15 } as const;
+export const POS = { EAST_X: 85, LOW_Y: 80, MOON_Y: 48, SUN_PEAK_Y_DELTA: 68, WEST_X: 15 } as const;
 
 /** Seam band for inter-day crossfades (expressed as fraction of the day height) */
 export const SEAM_FRAC = 0.015;
